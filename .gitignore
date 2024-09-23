@@ -3,3 +3,6 @@ __pycache__/
 
 # vim files
 *.swp
+
+# intermediate files
+*.svg

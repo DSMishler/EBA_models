@@ -276,7 +276,7 @@ class EBA_Manager:
                 rn = self.nodes[random_node_name]
                 rn.run_one()
                 # This is where we'd get extra data
-                self.node_states[next_timeslice] = self.get_node_states()
+                self.node_states[self.next_timeslice] = self.get_node_states()
                 self.next_timeslice += 1
                 if terminate_at is not None:
                     terminate_at -= 1

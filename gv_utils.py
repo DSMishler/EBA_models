@@ -78,13 +78,13 @@ def all_timeslice_to_files(node_states, tdir="EBA_graphviz/testrun/"):
 def dot_to_png(fname):
     if fname[-4:] == ".dot":
         fbase = fname[:-4]
-    os.system(f"dot -Tsvg fname > {fbase}.svg")
+    os.system(f"dot -Tsvg {fname} > {fbase}.svg")
     os.system(f"convert {fbase}.svg {fbase}.png")
 
 def all_dot_to_png(tdir="EBA_graphviz/testrun/"):
-    for fname in os.listdir(tidr):
+    for fname in os.listdir(tdir):
         if fname[-4:] == ".dot":
-            dot_to_png(fname)
+            dot_to_png(tdir+"/"+fname)
 
 def all_png_to_gif(tdir="EBA_graphviz/testrun/", output_name="out.gif"):
     os.system(f"convert -size 1080x1080 -delay 0 -loop 0 {tdir}/*.png {tdir}/{output_name}")
