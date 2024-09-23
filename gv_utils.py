@@ -3,18 +3,20 @@ import sys
 
 
 def state_to_gv(state_slice):
-    nvertices = len(state_slice)
+    just_sent = state_slice["recent_sends"]
+    nodes = state_slice["nodes"]
+    nvertices = len(nodes)
     # we shouldn't need vertex numbers, right?
     # Just the vertex names will be fine, but we're going to make the matrix
     # anyway
     name_to_num = {}
-    for (i, key) in enumerate(state_slice):
+    for (i, key) in enumerate(nodes):
         name_to_num[key] = i
     which_edges = [[0 for i in range(nvertices)] for j in range(nvertices)]
 
     # Build adjacency matix
-    for node_name in state_slice:
-        node = state_slice[node_name]
+    for node_name in nodes:
+        node = nodes[node_name]
         for neighbor in node["neighbors"]:
             which_edges[name_to_num[node_name]][name_to_num[neighbor]] = 1
 
@@ -25,7 +27,7 @@ def state_to_gv(state_slice):
     gv_str += "{\n"
 
     # Add vertices to the graph
-    for v in state_slice.keys():
+    for v in nodes.keys():
         vnum = name_to_num[v]
         gv_str += f"\t{vnum} ["
         # now add special names or anything that is needed or added
@@ -41,9 +43,11 @@ def state_to_gv(state_slice):
             elif which_edges[i][j] and which_edges[j][i]:
                 gv_str += f"\t{i} -> {j} ["
                 # now add special names or anything that is needed or added
-                if False:
-                    # special edges
-                    pass # Nothing for now
+                # special edges
+                if [i,j] in [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]:
+                    gv_str += "dir=forward,color=red"
+                elif [j,i] in [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]:
+                    gv_str += "dir=back,color=red"
                 else:
                     gv_str += "dir=none"
                 gv_str += "]\n"

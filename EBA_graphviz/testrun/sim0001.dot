@@ -4,5 +4,8 @@ digraph
 	0 []
 	1 []
 	2 []
-	0 -> 1 [dir=none]
+	3 []
+	0 -> 1 [dir=back,color=red]
+	0 -> 2 [dir=none]
+	2 -> 3 [dir=none]
 }

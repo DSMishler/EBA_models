@@ -206,9 +206,11 @@ def show_node_state(state_dict, indent=0):
 class EBA_Manager:
     def __init__(self):
         self.nodes = {}
-        self.node_states = {} # a dictionary of timeslices
-                              # and states at those timeslices
+        # a dictionary of timeslices and states at those timeslices
+        self.system_state = {}
         self.next_timeslice = 0
+        self.recently_sent = []
+
     def new_node(self, name):
         if name in self.nodes:
             print(f"refusing to add node '{name}'. Name already exists.")
@@ -221,6 +223,11 @@ class EBA_Manager:
             node = self.nodes[nodename]
             node_state_slice[nodename] = copy.deepcopy(node.all_state())
         return node_state_slice
+
+    def purge_recently_sent(self):
+        returnme = self.recently_sent
+        self.recently_sent = []
+        return returnme
 
     def show(self, state_slice=None):
         if state_slice is None:
@@ -260,6 +267,10 @@ class EBA_Manager:
             # else they are connected. Deliver the message.
             # TODO: this is where noise would be added.
             self.nodes[receiver].message_queue.append(message)
+            self.recently_sent.append({
+                "sender": sender,
+                "receiver": receiver,
+                "message": message})
 
     def all_empty(self):
         for node_name in self.nodes:
@@ -276,7 +287,10 @@ class EBA_Manager:
                 rn = self.nodes[random_node_name]
                 rn.run_one()
                 # This is where we'd get extra data
-                self.node_states[self.next_timeslice] = self.get_node_states()
+                sys_state = {}
+                sys_state["nodes"] = self.get_node_states()
+                sys_state["recent_sends"] = self.purge_recently_sent()
+                self.system_state[self.next_timeslice] = sys_state
                 self.next_timeslice += 1
                 if terminate_at is not None:
                     terminate_at -= 1
