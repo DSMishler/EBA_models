@@ -1,6 +1,9 @@
 .ipynb_checkpoints/
 __pycache__/
 
+# EBA temp files
+nodebufdirs/*
+
 # vim files
 *.swp
 

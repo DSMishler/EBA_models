@@ -1,6 +1,9 @@
 import enum
 # import numpy as np
 import copy
+import os
+import shutil
+import pickle
 
 import gv_utils
 
@@ -46,7 +49,7 @@ class EBA_State(enum.Enum):
 class EBA_Node:
     def __init__(self, name, manager):
         self.name = name
-        self.state = EBA_State.IDLE
+        self.interrupt_state = EBA_State.IDLE
         self.manager = manager
         # manager is for Python exchanges, so that no node
         # has access to the code of another
@@ -55,15 +58,40 @@ class EBA_Node:
         self.next_RID = 0
         self.waiting_requests = {}
         self.message_queue = []
+        self.fnames_for = {
+                "all_state": "NODE_ALL_STATE.txt",
+                "interrupt_state": "NODE_INTERRUPT_STATE.txt",
+                "neighbors": "NODE_NEIGHBORS.txt",
+                "buffers": "NODE_BUFFERS.txt",
+                "waiting_requests": "NODE_WAITING_REQUESTS.txt",
+                "message_queue": "NODE_MESSAGE_QUEUE.txt"}
 
     def all_state(self):
         return {
                 "name": self.name,
-                "state": self.state,
+                "interrupt_state": self.interrupt_state,
                 "neighbors": self.neighbors,
                 "buffers": self.buffers,
                 "waiting_requests": self.waiting_requests,
                 "message_queue": self.message_queue}
+
+    def save_all_state(self, tdir):
+        fb = open(tdir+"/"+self.fnames_for["all_state"], "wb")
+        pickle.dump(self.all_state(), fb)
+        fb.close()
+
+    def load_all_state(self, tdir):
+        fb = open(tdir+"/"+self.fnames_for["all_state"], "rb")
+        all_state = pickle.load(fb)
+        fb.close()
+
+        self.name = all_state["name"]
+        self.interrupt_state = all_state["interrupt_state"]
+        self.neighbors = all_state["neighbors"]
+        self.buffers = all_state["buffers"]
+        self.waiting_requests = all_state["waiting_requests"]
+        self.message_queue = all_state["message_queue"]
+
 
     def message_template(self):
         message = blank_message_template()
@@ -193,7 +221,7 @@ def show_node_state(state_dict, indent=0):
     dash = "-"*50
     print(spc+dash)
     print(spc+f"EBA Node {state_dict['name']}")
-    print(spc+f"in state {state_dict['state']}")
+    print(spc+f"in state {state_dict['interrupt_state']}")
     print(spc+f"neighbors: {list(state_dict['neighbors'].keys())}")
     print(spc+f"buffers:")
     show_buffers(state_dict["buffers"], indent=indent+4)
@@ -204,18 +232,44 @@ def show_node_state(state_dict, indent=0):
 
 
 class EBA_Manager:
-    def __init__(self):
+    def __init__(self, manager_mode="load"):
+        self.manager_mode = manager_mode
         self.nodes = {}
         # a dictionary of timeslices and states at those timeslices
         self.system_state = {}
-        self.next_timeslice = 0
+        self.next_timeslice = 0 # Also needs to load/save state and timeslice info
         self.recently_sent = []
+        self.nodebufdirs_fname = "nodebufdirs"
+        self.fnames_for = {
+                "all_state": "MANAGER_ALL_STATE.txt"}
+        # Now create space for buffer files
+        if self.manager_mode == "init":
+            try:
+                os.mkdir(self.nodebufdirs_fname)
+            except OSError:
+                shutil.rmtree(self.nodebufdirs_fname)
+                os.mkdir(self.nodebufdirs_fname)
+        elif self.manager_mode == "load":
+            self.load()
+        else:
+            assert False, f"unknown mode '{self.manager_mode}'"
+
+    def all_state(self):
+        # Nodes are notably *NOT* in the manager all_state because
+        # nodes are known by which directories are present and node
+        # state is stored node-side, not manager-side
+        return {
+                "system_state": self.system_state,
+                "next_timeslice": self.next_timeslice,
+                "recently_sent": self.recently_sent}
 
     def new_node(self, name):
         if name in self.nodes:
             print(f"refusing to add node '{name}'. Name already exists.")
         else:
             self.nodes[name] = EBA_Node(name, manager=self)
+            if self.manager_mode == "init":
+                os.mkdir(self.nodebufdirs_fname+"/"+name)
 
     def get_node_states(self):
         node_state_slice = {}
@@ -224,6 +278,7 @@ class EBA_Manager:
             node_state_slice[nodename] = copy.deepcopy(node.all_state())
         return node_state_slice
 
+    # returns the "recently sent" list, but purges the class's handle first
     def purge_recently_sent(self):
         returnme = self.recently_sent
         self.recently_sent = []
@@ -236,6 +291,36 @@ class EBA_Manager:
         for node_state in state_slice.values():
             print()
             show_node_state(node_state, indent=4)
+
+    def save(self):
+        tfname = self.nodebufdirs_fname+"/"+self.fnames_for["all_state"]
+        fb = open(tfname, "wb")
+        pickle.dump(self.all_state(), fb)
+        fb.close()
+        for nodename in self.nodes:
+            node = self.nodes[nodename]
+            tdir = self.nodebufdirs_fname+"/"+nodename
+            node.save_all_state(tdir=tdir)
+
+    def load(self):
+        # first, load manager state
+        tfname = self.nodebufdirs_fname+"/"+self.fnames_for["all_state"]
+        fb = open(tfname, "rb")
+        all_state = pickle.load(fb)
+        fb.close()
+        self.system_state = all_state["system_state"]
+        self.next_timeslice = all_state["next_timeslice"]
+        self.recently_sent = all_state["recently_sent"]
+
+        # Now nodes and node states
+        self.nodes = {}
+        for entry in os.scandir(self.nodebufdirs_fname):
+            if entry.is_dir():
+                self.nodes[entry.name] = EBA_Node(entry.name, manager=self)
+        for nodename in self.nodes:
+            node = self.nodes[nodename]
+            tdir = self.nodebufdirs_fname+"/"+nodename
+            node.load_all_state(tdir=tdir)
 
     def connected(self, n1, n2):
         if n1 not in self.nodes[n2].neighbors:
