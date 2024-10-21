@@ -47,10 +47,12 @@ import gv_utils
 # invoke request, type of invoke (always pyexec here), buffer name
 # invoke what is in a buffer to be run as code
 # ex. INVOKE PYEXEC BUF1
-# response will only be given when the code is terminated with an exit code
-# ex. INVOKE 0
+# response will be given when the process is spawned
+# ex. INVOKE True
 # and the exit code will determine if there was an error
-# ex. INVOKE 1
+# ex. INVOKE False
+# If a process wants data from invoke, code needs to already exist to phone home
+# in the invoked code
 # it might be a good idea in the future to make more data optional
 
 
@@ -95,6 +97,17 @@ class EBA_Node:
         self.waiting_requests = {}
         self.message_queue = []
         self.process_dict = {}
+        self.next_PID = 0
+        # Process dict info:
+        # Process name (key, unique per node)
+        #    message: message that spawned the process
+        #    bufname: buffer the process code lives in
+        #    pickup_fname: fname for process pickup (often derivative of key)
+        #    dropoff_fname: fname for process dropoff (often derivative of key)
+        #    last_scheduled: number of times the scheduler did *not* choose
+        #                    this process. Every time a scheduler chooses, all
+        #                    processes have this number incremented by 1 except
+        #                    the scheduled process, which has this set to 0
         self.fnames_for = {
                 "all_state": "NODE_ALL_STATE.txt",
                 "interrupt_state": "NODE_INTERRUPT_STATE.txt",
@@ -151,7 +164,7 @@ class EBA_Node:
 
 
     ############################################################################
-    # BUFREQ
+    # BUFREQ                                                                   #
     ############################################################################
 
     # neighbor: the name of the neighbor this message is for
@@ -229,14 +242,14 @@ class EBA_Node:
 
 
     ############################################################################
-    # WRITE
+    # WRITE                                                                    #
     ############################################################################
     # neighbor: the name of the neighbor this message is for
     # bufname: name of the target buffer
     # mode: START or APPEND (only start implemented right now)
     # length: length of payload
     # payload: the content that will be written to the buffer
-    # process: the name of the process on this node which requests the bufrfer
+    # process: the name of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
     def write_to_buffer(self, neighbor, bufname, mode, length, payload, process):
@@ -299,9 +312,88 @@ class EBA_Node:
             assert False
 
         return None # writing it explicitly. No news is good news.
+        # TODO: don't do none for this and bufreq, but rather the "response"
+
+    ############################################################################
+    # INVOKE                                                                   #
+    ############################################################################
+    # neighbor: the name of the neighbor this message is for
+    # bufname: name of the target buffer that contains the code
+    # mode: which execution mode for the code (PYEXEC only one allowed for now)
+    # process: the name of the process on this node which requests the invoke
+        # process is allowed to be None, but this is not going to be implemented
+        # as a default
+    def invoke_to_buffer(self, neighbor, bufname, mode, process):
+        assert mode == "PYEXEC", f"invalid mode {mode}, only one allowed is PYEXEC"
+        message = self.message_template()
+        message["recipient"] = neighbor
+        message["API"]["request"] = "INVOKE"
+        message["API"]["target"] = bufname
+        message["API"]["mode"] = mode
+        message["process"] = process
+
+        self.waiting_requests[message["RID"]] = message
+        self.manager.send(self.name, neighbor, message)
+
+    # Now the neighbor, which received an invoke request,
+    # will resolve it on its end.
+    # It will spawn a process. Will it send a response immediately to
+    # let the sender know it was spawned successfully.
+    # Often, a sender will want more information from a process. This
+    # information must be baked into the code itself. The code must have
+    # instructions to write back to the sender, EBA does not manage return
+    # codes of pyexec.
+    # response: was a process successfully spawned? True or False.
+    def resolve_invoke_request(self, message):
+        target = message["API"]["target"]
+        mode = message["API"]["mode"]
+        response = self.response_to_message(message)
+        if target not in self.buffers:
+            # then the invoke request will fail
+            response["API"]["response"] = False
+        else:
+            # buffer target is in, and we can spawn
+            assert mode == "PYEXEC", f"invalid mode {mode}, only one allowed is PYEXEC"
+            # now spawn the process
+            proc_name = "PROC_"+str(self.next_PID)
+            self.next_PID += 1
+            # see EBA node description for comment about dictionary fields
+            self.process_dict[proc_name] = {}
+            this_process = self.process_dict[proc_name]
+            this_process["message"] = message
+            this_process["bufname"] = target
+            this_process["pickup_fname"] = target+".EBAPICKUP"
+            this_process["dropoff_fname"] = target+".EBADROPOFF"
+            this_process["last_scheduled"] = 0
+
+
+            response["API"]["response"] = True
+
+        self.manager.send(self.name, message["sender"], response)
+
+    # Now the original sender of the invoke request will acknowledge
+    # that it has, indeed, invoked what it wanted (or not).
+    # It doesn't need to send a message again, just
+    # needs to update its own data, and possibly inform the requesting process
+    def acknowledge_invoke_request(self, message):
+        if message["API"]["response"] == True:
+            # then the invoke was successful
+            # Nothing needs done here. If a process needed to know,
+            # then the wrapper will let it know
+            retval = True
+        else:
+            print(f"warning: rejected invoke request response.")
+            print(f"(response was {message['API']['response']})")
+            retval = False
+            # TODO: make other API acks not just assert, but rather return
+
+        return retval
+
 
     ############################################################################
 
+    # the manager pops a message off the queue for the node and the
+    # node resolves that specific message
     def resolve_message(self, message):
         if message["RID"] in self.waiting_requests:
             # resovle the request, the recipient has given a response back to us
@@ -313,6 +405,9 @@ class EBA_Node:
                 expected_len = self.waiting_requests[message["RID"]]["API"]["length"]
                 return_code = self.acknowledge_write_request(message, expected_len)
                 self.waiting_requests.pop(message["RID"])
+            elif message["API"]["request"] == "INVOKE":
+                return_code = self.acknowledge_invoke_request(message)
+                self.waiting_requests.pop(message["RID"])
             else:
                 print(f"unknown message type for the following:\n{message}")
             # TODO: if a process needed to know the return code, let it know
@@ -322,6 +417,8 @@ class EBA_Node:
                 self.resolve_buffer_request(message)
             elif message["API"]["request"] == "WRITE":
                 self.resolve_write_request(message)
+            elif message["API"]["request"] == "INVOKE":
+                self.resolve_invoke_request(message)
             else:
                 print(f"unknown message type for the following:\n{message}")
         return
@@ -330,14 +427,28 @@ class EBA_Node:
         # TODO: The interrupt system needs much more work.
         if len(self.process_dict.keys()) == 0 and len(self.message_queue) == 0:
             return # no need to do anything
-        elif len(self.process_dict.keys()) > 0:
-            # TODO: run a process
-            pass
-        else:
+        elif len(self.message_queue) > 0:
             # parse and respond to a message
             this_message = self.message_queue[0]
             self.message_queue = self.message_queue[1:]
             self.resolve_message(this_message)
+        elif len(self.process_dict.keys()) > 0:
+            # scheduler: choose the process which was least recently given time
+            proc_sched_times = {proc: self.process_dict[proc]["last_scheduled"] for proc in self.process_dict}
+            chosen_proc = max(proc_sched_times, key=proc_sched_times.get)
+            for proc in self.process_dict:
+                self.process_dict[proc]["last_scheduled"] += 1
+            # mark the process that gets time
+            self.process_dict[chosen_proc]["last_scheduled"] = 0
+
+            # For now, we just say the process name and pop it.
+            # TODO: run a process
+            print(f"chose and popped process {chosen_proc}")
+            print(self.process_dict[chosen_proc])
+            self.process_dict.pop(chosen_proc)
+            pass
+        else:
+            assert False, "code should never touch this spot"
 
 
 
@@ -515,7 +626,7 @@ class EBA_Manager:
     def all_empty(self):
         for node_name in self.nodes:
             node = self.nodes[node_name]
-            if len(node.message_queue) > 0:
+            if len(node.message_queue) > 0 or len(node.process_dict.keys()) > 0:
                 return False
         return True
 
