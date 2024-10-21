@@ -236,10 +236,13 @@ class EBA_Node:
     # mode: START or APPEND (only start implemented right now)
     # length: length of payload
     # payload: the content that will be written to the buffer
-    # process: the name of the process on this node which requests the buffer
+    # process: the name of the process on this node which requests the bufrfer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
     def write_to_buffer(self, neighbor, bufname, mode, length, payload, process):
+        assert length != 0, f"illegal request: write with length of 0"
+        assert length == len(payload), f"lllegal request: payload {payload} claimed to have length {length} instead of {len(payload)}"
+
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "WRITE"
@@ -259,18 +262,23 @@ class EBA_Node:
         target = message["API"]["target"]
         payload = message["API"]["payload"]
         mode = message["API"]["mode"]
-        if mode == "START":
-            self.buffers[target]["contents"] = payload
-        elif mode == "APPEND":
-            print("append not yet implemented")
-            # self.buffers[target]["contents"] += payload
-            exit(1)
-        else:
-            print(f"ERROR: unknown write mode {mode}")
-            exit(1)
-
         response = self.response_to_message(message)
-        response["API"]["response"] = message["API"]["length"]
+        if target not in self.buffers:
+            # then the write request will fail
+            response["API"]["response"] = 0
+        else:
+            # successful request for name
+            if mode == "START":
+                self.buffers[target]["contents"] = payload
+            elif mode == "APPEND":
+                print("append not yet implemented")
+                # self.buffers[target]["contents"] += payload
+                exit(1)
+            else:
+                print(f"ERROR: unknown write mode {mode}")
+                exit(1)
+
+            response["API"]["response"] = message["API"]["length"]
 
         self.manager.send(self.name, message["sender"], response)
 
@@ -288,7 +296,7 @@ class EBA_Node:
         else:
             print(f"rejected write request response. We don't handle these.")
             print(f"(response was {message['API']['response']})")
-            exit(1)
+            assert False
 
         return None # writing it explicitly. No news is good news.
 
@@ -302,7 +310,8 @@ class EBA_Node:
                 return_code = self.acknowledge_buffer(message)
                 self.waiting_requests.pop(message["RID"])
             elif message["API"]["request"] == "WRITE":
-                return_code = self.acknowledge_write_request(message)
+                expected_len = self.waiting_requests[message["RID"]]["API"]["length"]
+                return_code = self.acknowledge_write_request(message, expected_len)
                 self.waiting_requests.pop(message["RID"])
             else:
                 print(f"unknown message type for the following:\n{message}")
@@ -311,6 +320,8 @@ class EBA_Node:
             # This message is a request to me
             if message["API"]["request"] == "BUFREQ":
                 self.resolve_buffer_request(message)
+            elif message["API"]["request"] == "WRITE":
+                self.resolve_write_request(message)
             else:
                 print(f"unknown message type for the following:\n{message}")
         return
@@ -331,7 +342,7 @@ class EBA_Node:
 
 
 
-def show_buffers(buffers, indent=0):
+def show_buffers(buffers, indent=0, show_contents=False):
     spc = " "*indent
     dash = "-"*30
     print(spc+dash)
@@ -341,6 +352,8 @@ def show_buffers(buffers, indent=0):
         print(spc+f"owner: {buf['owner']}")
         print(spc+f"for: {buf['for']}")
         print(spc+f"size: {buf['size']}")
+        if show_contents:
+            print(spc+f"contents: {buf['contents']}")
         print(spc+dash)
 
 
@@ -358,15 +371,15 @@ def show_messages(messages, indent=0):
         print(spc+f"message for process: {msg['process']}")
         print(spc+dash)
 
-def show_node_state(state_dict, indent=0):
+def show_node_state(state_dict, indent=0, show_buffer_contents=False):
     spc = " "*indent
     dash = "-"*50
     print(spc+dash)
     print(spc+f"EBA Node {state_dict['name']}")
     print(spc+f"in state {state_dict['interrupt_state']}")
     print(spc+f"neighbors: {list(state_dict['neighbors'].keys())}")
-    print(spc+f"buffers:")
-    show_buffers(state_dict["buffers"], indent=indent+4)
+    print(spc+f"buffers (according to last known information by this node):")
+    show_buffers(state_dict["buffers"], indent=indent+4, show_contents=show_buffer_contents)
     print(spc+f"waiting messages in queue:")
     show_messages(state_dict["message_queue"], indent=indent+4)
     print(spc+f"waiting for responses to:")
@@ -426,13 +439,13 @@ class EBA_Manager:
         self.recently_sent = []
         return returnme
 
-    def show(self, state_slice=None):
+    def show(self, state_slice=None, show_buffer_contents=False):
         if state_slice is None:
             state_slice = self.get_node_states()
         print(f"manager of EBA nodes {list(self.nodes.keys())}")
         for node_state in state_slice.values():
             print()
-            show_node_state(node_state, indent=4)
+            show_node_state(node_state, indent=4, show_buffer_contents=show_buffer_contents)
 
     def save(self):
         tfname = self.nodebufdirs_fname+"/"+self.fnames_for["all_state"]

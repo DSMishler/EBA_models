@@ -1,0 +1,11 @@
+// network test graph
+digraph
+{
+	0 []
+	1 []
+	2 []
+	3 []
+	0 -> 1 [dir=forward,color=red]
+	0 -> 2 [dir=none]
+	2 -> 3 [dir=none]
+}
