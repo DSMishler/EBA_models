@@ -1,3 +1,16 @@
+# TODO
+# - I realized that unique node names and also unique buffer names does not
+#   guaranee unique node-buffer pairs. Example: nodes A and AAAA and buffers
+#   AAAAA and AA. You can have node-buffer pairs A.AAAAA and AAAA.AA
+#   (dots added). This means more logic (like dots) might be needed
+
+# As processes are implemented, I currently have them running until termination.
+# This is why on the code writing side, I have the code written to take frequent
+# breaks. Since a process will run until termination, it also won't get any API
+# call responses since it will hog all of the cycles. It is the process's
+# responsibility to place its API calls, then get out of the way.
+
+
 import enum
 # import numpy as np
 import copy
@@ -19,12 +32,34 @@ import gv_utils
 # ex BUFREQ REJ
 # and of course this is gonna be a dictionary in python.
 
+# WRITE
+# write request, buffer name, number of bytes to write,
+# where to write (start or end), message to write (string)
+# write to a known buffer
+# ex. WRITE BUF1 START 11 "hello world"
+# reponse is given with how many bytes were actually written
+# ex. WRITE 11
+# a failed write would look like
+# ex. WRITE 0
+# Jury's out on whether we want append. Currently only START is implemented
+
+# INVOKE CODE
+# invoke request, type of invoke (always pyexec here), buffer name
+# invoke what is in a buffer to be run as code
+# ex. INVOKE PYEXEC BUF1
+# response will only be given when the code is terminated with an exit code
+# ex. INVOKE 0
+# and the exit code will determine if there was an error
+# ex. INVOKE 1
+# it might be a good idea in the future to make more data optional
+
 
 # message format:
 # sender id
 # recipient id
 # sender request # (or recipient if responding)
 # API call specifics
+# which process it is waiting on (if any)
 
 def blank_message_template():
     return {
@@ -35,7 +70,8 @@ def blank_message_template():
             "request": None,
             "response": None
             # It is possible more will be added here, depending on the API call
-            }
+            },
+        "process": None
         }
 
 class EBA_State(enum.Enum):
@@ -58,13 +94,15 @@ class EBA_Node:
         self.next_RID = 0
         self.waiting_requests = {}
         self.message_queue = []
+        self.process_dict = {}
         self.fnames_for = {
                 "all_state": "NODE_ALL_STATE.txt",
                 "interrupt_state": "NODE_INTERRUPT_STATE.txt",
                 "neighbors": "NODE_NEIGHBORS.txt",
                 "buffers": "NODE_BUFFERS.txt",
                 "waiting_requests": "NODE_WAITING_REQUESTS.txt",
-                "message_queue": "NODE_MESSAGE_QUEUE.txt"}
+                "message_queue": "NODE_MESSAGE_QUEUE.txt",
+                "message_queue": "NODE_PROCESS_DICT.txt"}
 
     def all_state(self):
         return {
@@ -73,7 +111,8 @@ class EBA_Node:
                 "neighbors": self.neighbors,
                 "buffers": self.buffers,
                 "waiting_requests": self.waiting_requests,
-                "message_queue": self.message_queue}
+                "message_queue": self.message_queue,
+                "process_dict": self.process_dict}
 
     def save_all_state(self, tdir):
         fb = open(tdir+"/"+self.fnames_for["all_state"], "wb")
@@ -91,6 +130,7 @@ class EBA_Node:
         self.buffers = all_state["buffers"]
         self.waiting_requests = all_state["waiting_requests"]
         self.message_queue = all_state["message_queue"]
+        self.process_dict = all_state["process_dict"]
 
 
     def message_template(self):
@@ -106,13 +146,25 @@ class EBA_Node:
         response["recipient"] = message["sender"]
         response["RID"] = message["RID"]
         response["API"]["request"] = message["API"]["request"]
+        response["process"] = message["process"]
         return response
 
-    def request_buffer_from(self, neighbor, space):
+
+    ############################################################################
+    # BUFREQ
+    ############################################################################
+
+    # neighbor: the name of the neighbor this message is for
+    # space: the requested space of the buffer
+    # process: the name of the process on this node which requests the buffer
+        # process is allowed to be None, but this is not going to be implemented
+        # as a default
+    def request_buffer_from(self, neighbor, space, process):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
         message["API"]["space"] = space
+        message["process"] = process
         
         # note that we are now awaiting a response
         self.waiting_requests[message["RID"]] = message
@@ -120,6 +172,10 @@ class EBA_Node:
         # send the message
         self.manager.send(self.name, neighbor, message)
 
+
+    # Now the neighbor, which received a buffer request,
+    # will resolve it on its end. This neighbor will currently always
+    # give a buffer of requested size, but this does not *have* to be this way
     def resolve_buffer_request(self, message):
         bufname = "BUF_"+message["RID"]
 
@@ -142,11 +198,17 @@ class EBA_Node:
 
         self.manager.send(self.name, message["sender"], response)
 
+
+    # Now the original sender of the buffer request will acknowledge
+    # that it has a buffer. It doesn't need to send a message again, just
+    # needs to update its own data.
     def acknowledge_buffer(self, message):
         if message["API"]["response"] == "ACK":
             bufname = message["API"]["name"]
             owner = message["sender"]
             # TODO: the API should maybe tell me if I'm the only writer or not
+            # TODO: was there a process that wanted to know about this?
+            #       if so, then we need to inform that process of what's up
             buf_for = message["recipient"]
             size = message["API"]["size"]
 
@@ -157,19 +219,94 @@ class EBA_Node:
                     "contents": None
                     }
         elif message["API"]["response"] == "REJ":
-            print("rejected request")
+            print("rejected buffer request. We don't handle these.")
+            exit(1)
         else:
             print(f"unknown API response {message['API']['response']}")
+            exit(1)
+
+        return None # Explicitly writing that no news is good news
+
+
+    ############################################################################
+    # WRITE
+    ############################################################################
+    # neighbor: the name of the neighbor this message is for
+    # bufname: name of the target buffer
+    # mode: START or APPEND (only start implemented right now)
+    # length: length of payload
+    # payload: the content that will be written to the buffer
+    # process: the name of the process on this node which requests the buffer
+        # process is allowed to be None, but this is not going to be implemented
+        # as a default
+    def write_to_buffer(self, neighbor, bufname, mode, length, payload, process):
+        message = self.message_template()
+        message["recipient"] = neighbor
+        message["API"]["request"] = "WRITE"
+        message["API"]["target"] = bufname
+        message["API"]["mode"] = mode
+        message["API"]["length"] = length
+        message["API"]["payload"] = payload
+        message["process"] = process
+
+        self.waiting_requests[message["RID"]] = message
+        self.manager.send(self.name, neighbor, message)
+
+    # Now the neighbor, which received a write request,
+    # will resolve it on its end. This neighbor will currently always
+    # successfully write, but this does not *have* to be this way
+    def resolve_write_request(self, message):
+        target = message["API"]["target"]
+        payload = message["API"]["payload"]
+        mode = message["API"]["mode"]
+        if mode == "START":
+            self.buffers[target]["contents"] = payload
+        elif mode == "APPEND":
+            print("append not yet implemented")
+            # self.buffers[target]["contents"] += payload
+            exit(1)
+        else:
+            print(f"ERROR: unknown write mode {mode}")
+            exit(1)
+
+        response = self.response_to_message(message)
+        response["API"]["response"] = message["API"]["length"]
+
+        self.manager.send(self.name, message["sender"], response)
+
+    # Now the original sender of the write request will acknowledge
+    # that it has, indeed, written what it wanted (or not).
+    # It doesn't need to send a message again, just
+    # needs to update its own data.
+    def acknowledge_write_request(self, message, expected_len):
+        if message["API"]["response"] == expected_len:
+            # then the write was successful
+            # Nothing needs done here. If a process needed to know,
+            # then the wrapper will let it know
+            pass
+        
+        else:
+            print(f"rejected write request response. We don't handle these.")
+            print(f"(response was {message['API']['response']})")
+            exit(1)
+
+        return None # writing it explicitly. No news is good news.
+
+    ############################################################################
 
     def resolve_message(self, message):
         if message["RID"] in self.waiting_requests:
             # resovle the request, the recipient has given a response back to us
             # print(f"{self.name} received:\n{message}")
             if message["API"]["request"] == "BUFREQ":
-                self.acknowledge_buffer(message)
+                return_code = self.acknowledge_buffer(message)
+                self.waiting_requests.pop(message["RID"])
+            elif message["API"]["request"] == "WRITE":
+                return_code = self.acknowledge_write_request(message)
                 self.waiting_requests.pop(message["RID"])
             else:
                 print(f"unknown message type for the following:\n{message}")
+            # TODO: if a process needed to know the return code, let it know
         else:
             # This message is a request to me
             if message["API"]["request"] == "BUFREQ":
@@ -180,9 +317,13 @@ class EBA_Node:
 
     def run_one(self): # as if the interrupt was just triggered
         # TODO: The interrupt system needs much more work.
-        if len(self.message_queue) == 0:
+        if len(self.process_dict.keys()) == 0 and len(self.message_queue) == 0:
             return # no need to do anything
+        elif len(self.process_dict.keys()) > 0:
+            # TODO: run a process
+            pass
         else:
+            # parse and respond to a message
             this_message = self.message_queue[0]
             self.message_queue = self.message_queue[1:]
             self.resolve_message(this_message)
@@ -214,6 +355,7 @@ def show_messages(messages, indent=0):
         print(spc+f"message sender: {msg['sender']}")
         print(spc+f"message target: {msg['recipient']}")
         print(spc+f"message API: {msg['API']}")
+        print(spc+f"message for process: {msg['process']}")
         print(spc+dash)
 
 def show_node_state(state_dict, indent=0):
