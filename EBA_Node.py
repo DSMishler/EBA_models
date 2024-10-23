@@ -17,6 +17,7 @@ import copy
 import os
 import shutil
 import pickle
+import subprocess
 
 import gv_utils
 
@@ -100,6 +101,7 @@ class EBA_Node:
         self.next_PID = 0
         # Process dict info:
         # Process name (key, unique per node)
+        #    name: just a copy of the process name, used for printing later
         #    message: message that spawned the process
         #    bufname: buffer the process code lives in
         #    pickup_fname: fname for process pickup (often derivative of key)
@@ -115,7 +117,7 @@ class EBA_Node:
                 "buffers": "NODE_BUFFERS.txt",
                 "waiting_requests": "NODE_WAITING_REQUESTS.txt",
                 "message_queue": "NODE_MESSAGE_QUEUE.txt",
-                "message_queue": "NODE_PROCESS_DICT.txt"}
+                "process_dict": "NODE_PROCESS_DICT.txt"}
 
     def all_state(self):
         return {
@@ -360,11 +362,13 @@ class EBA_Node:
             # see EBA node description for comment about dictionary fields
             self.process_dict[proc_name] = {}
             this_process = self.process_dict[proc_name]
+            this_process["name"] = proc_name
             this_process["message"] = message
             this_process["bufname"] = target
-            this_process["pickup_fname"] = target+".EBAPICKUP"
-            this_process["dropoff_fname"] = target+".EBADROPOFF"
+            this_process["pickup_fname"] = proc_name+".EBAPICKUP.pkl"
+            this_process["dropoff_fname"] = proc_name+".EBADROPOFF.pkl"
             this_process["last_scheduled"] = 0
+            self.manager.init_process(self, this_process)
 
 
             response["API"]["response"] = True
@@ -441,8 +445,9 @@ class EBA_Node:
             # mark the process that gets time
             self.process_dict[chosen_proc]["last_scheduled"] = 0
 
+            self.manager.run_process(self, self.process_dict[chosen_proc])
+
             # For now, we just say the process name and pop it.
-            # TODO: run a process
             print(f"chose and popped process {chosen_proc}")
             print(self.process_dict[chosen_proc])
             self.process_dict.pop(chosen_proc)
@@ -482,6 +487,23 @@ def show_messages(messages, indent=0):
         print(spc+f"message for process: {msg['process']}")
         print(spc+dash)
 
+def show_processes(processes, indent=0):
+    spc = " "*indent
+    dash = "-"*30
+    if type(processes) is dict:
+        processes = list(processes.values())
+    print(spc+dash)
+    for proc in processes:
+        print(spc+f"process name {proc['name']}")
+        print(spc+f"message that spawned process:")
+        show_messages([proc["message"]], indent=indent+4)
+        print(spc+f"in buffer: {proc['bufname']}")
+        print(spc+f"pickup fname: {proc['pickup_fname']}")
+        print(spc+f"dropoff fname: {proc['dropoff_fname']}")
+        print(spc+f"last scheduled: {proc['last_scheduled']}")
+        print(spc+dash)
+
+
 def show_node_state(state_dict, indent=0, show_buffer_contents=False):
     spc = " "*indent
     dash = "-"*50
@@ -495,6 +517,8 @@ def show_node_state(state_dict, indent=0, show_buffer_contents=False):
     show_messages(state_dict["message_queue"], indent=indent+4)
     print(spc+f"waiting for responses to:")
     show_messages(state_dict["waiting_requests"], indent=indent+4)
+    print(spc+f"active processes:")
+    show_processes(state_dict["process_dict"], indent=indent+4)
 
 
 class EBA_Manager:
@@ -622,6 +646,49 @@ class EBA_Manager:
                 "sender": sender,
                 "receiver": receiver,
                 "message": message})
+        return
+
+
+    def init_process(self, host_node, process_info):
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name
+        full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
+        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
+        full_dropoff_fname = node_dir + "/" + process_info["dropoff_fname"]
+
+        init_pickup_dict = {}
+        init_pickup_dict["dropoff"] = full_dropoff_fname
+        init_pickup_dict["responses"] = {}
+
+        pf = open(full_pickup_fname, "wb")
+        pickle.dump(init_pickup_dict, pf)
+        pf.close()
+
+    def run_process(self, host_node, process_info):
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name
+        full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
+        # Possible TODO: pickup and dropoff fnames because obsolete fields
+        # if we just always append something to them here.
+        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
+        full_dropoff_fname = node_dir + "/" + process_info["dropoff_fname"]
+
+        # If the file's code doesn't already exist, write it in
+        # TODO: Does this need done *now* or in the init?
+        f = open(full_process_fname, "w")
+        f.write(host_node.buffers[process_info['bufname']]['contents'])
+        f.close()
+
+        # TODO: possibly different invocation on different systems
+        subprocess.run([f"python3", f"{full_process_fname}", f"{full_pickup_fname}"])
+
+
+        # TODO: Parse dropoff?
+        pf = open(full_dropoff_fname, "rb")
+        dropoff_dict = pickle.load(pf)
+        pf.close()
+        print(f"Reading dropoff dict from process {process_info['name']}")
+        print(dropoff_dict)
+
+
 
     def all_empty(self):
         for node_name in self.nodes:
