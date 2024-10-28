@@ -1,16 +1,12 @@
 import sys
 import pickle
 
-assert len(sys.argv) == 2, f"exactly two args allowed"
 
-pickup_fname = sys.argv[1]
-pf = open(pickup_fname, "rb")
-pickup_info = pickle.load(pf)
-pf.close
+assert_correct_args(sys.argv)
+pickup_info = get_pickup_info(sys.argv)
+
 
 dropoff_fname = pickup_info["dropoff"]
 dropoff_info = {"message": "RAAAAAAAAHHHH"}
 
-pf = open(dropoff_fname, "wb")
-pickle.dump(dropoff_info, pf)
-pf.close()
+prep_dropoff_file(dropoff_info, dropoff_fname)
