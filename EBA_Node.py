@@ -104,8 +104,6 @@ class EBA_Node:
         #    name: just a copy of the process name, used for printing later
         #    message: message that spawned the process
         #    bufname: buffer the process code lives in
-        #    pickup_fname: fname for process pickup (often derivative of key)
-        #    dropoff_fname: fname for process dropoff (often derivative of key)
         #    last_scheduled: number of times the scheduler did *not* choose
         #                    this process. Every time a scheduler chooses, all
         #                    processes have this number incremented by 1 except
@@ -364,8 +362,6 @@ class EBA_Node:
             this_process["name"] = proc_name
             this_process["message"] = message
             this_process["bufname"] = target
-            this_process["pickup_fname"] = proc_name+".EBAPICKUP.pkl"
-            this_process["dropoff_fname"] = proc_name+".EBADROPOFF.pkl"
             this_process["last_scheduled"] = 0
             self.manager.init_process(self, this_process)
 
@@ -527,8 +523,6 @@ def show_processes(processes, indent=0):
         print(spc+f"message that spawned process:")
         show_messages([proc["message"]], indent=indent+4)
         print(spc+f"in buffer: {proc['bufname']}")
-        print(spc+f"pickup fname: {proc['pickup_fname']}")
-        print(spc+f"dropoff fname: {proc['dropoff_fname']}")
         print(spc+f"last scheduled: {proc['last_scheduled']}")
         print(spc+dash)
 
@@ -683,8 +677,8 @@ class EBA_Manager:
     def init_process(self, host_node, process_info):
         node_dir = self.nodebufdirs_fname + "/" + host_node.name
         full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
-        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
-        full_dropoff_fname = node_dir + "/" + process_info["dropoff_fname"]
+        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
+        full_dropoff_fname = node_dir + "/" + process_info["name"] + ".EBADROPOFF.pkl"
 
         init_pickup_dict = {}
         init_pickup_dict["dropoff"] = full_dropoff_fname
@@ -700,8 +694,8 @@ class EBA_Manager:
         full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
         # Possible TODO: pickup and dropoff fnames become obsolete fields
         # if we just always append something to them here.
-        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
-        full_dropoff_fname = node_dir + "/" + process_info["dropoff_fname"]
+        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
+        full_dropoff_fname = node_dir + "/" + process_info["name"] + ".EBADROPOFF.pkl"
 
         # If the file's code doesn't already exist, write it in
         # TODO: Does this need done *now* or in the init?
@@ -721,7 +715,7 @@ class EBA_Manager:
 
     def inform_process(self, host_node, process_info, which_response, info):
         node_dir = self.nodebufdirs_fname + "/" + host_node.name
-        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
+        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
 
         pf = open(full_pickup_fname, "rb")
         pickup_dict = pickle.load(pf)
