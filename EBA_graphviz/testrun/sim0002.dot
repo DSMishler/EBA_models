@@ -6,6 +6,6 @@ digraph
 	2 []
 	3 []
 	0 -> 1 [dir=none]
-	0 -> 2 [dir=none]
+	0 -> 2 [dir=back,color=red]
 	2 -> 3 [dir=none]
 }

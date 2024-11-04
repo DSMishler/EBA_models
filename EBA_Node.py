@@ -240,7 +240,7 @@ class EBA_Node:
             print(f"unknown API response {message['API']['response']}")
             exit(1)
 
-        return None # Explicitly writing that no news is good news
+        return message["API"]
 
 
     ############################################################################
@@ -313,8 +313,7 @@ class EBA_Node:
             print(f"(response was {message['API']['response']})")
             assert False
 
-        return None # writing it explicitly. No news is good news.
-        # TODO: don't do none for this and bufreq, but rather the "response"
+        return message["API"]["response"]
 
     ############################################################################
     # INVOKE                                                                   #
@@ -404,17 +403,28 @@ class EBA_Node:
             # print(f"{self.name} received:\n{message}")
             if message["API"]["request"] == "BUFREQ":
                 return_code = self.acknowledge_buffer(message)
-                self.waiting_requests.pop(message["RID"])
             elif message["API"]["request"] == "WRITE":
                 expected_len = self.waiting_requests[message["RID"]]["API"]["length"]
                 return_code = self.acknowledge_write_request(message, expected_len)
-                self.waiting_requests.pop(message["RID"])
             elif message["API"]["request"] == "INVOKE":
                 return_code = self.acknowledge_invoke_request(message)
-                self.waiting_requests.pop(message["RID"])
             else:
                 print(f"unknown message type for the following:\n{message}")
-            # TODO: if a process needed to know the return code, let it know
+            requesting_process_info = self.waiting_requests[message["RID"]]["process"]
+            # if a process needed to know the return code, let it know
+            if requesting_process_info is None:
+                pass # No process needed to know this.
+            else:
+                proc_name = requesting_process_info["name"]
+                which_pickup = requesting_process_info["which_pickup"]
+                self.manager.inform_process(
+                        self,
+                        self.process_dict[proc_name],
+                        which_pickup,
+                        return_code)
+
+            self.waiting_requests.pop(message["RID"])
+
         else:
             # This message is a request to me
             if message["API"]["request"] == "BUFREQ":
@@ -446,18 +456,30 @@ class EBA_Node:
             self.process_dict[chosen_proc]["last_scheduled"] = 0
 
             # For now, we just say the process name and pop it.
-            print(f"chose process {chosen_proc}")
-            print(f"{self.process_dict[chosen_proc]}")
+            ### print(f"chose process {chosen_proc}")
+            ### print(f"{self.process_dict[chosen_proc]}")
             dropoff_dict = self.manager.run_process(self, self.process_dict[chosen_proc])
 
-            print(f"Reading dropoff dict from process {chosen_proc}")
-            print(dropoff_dict)
+            ### print(f"Reading dropoff dict from process {chosen_proc}")
+            ### print(dropoff_dict)
             if dropoff_dict["terminate"] is True:
                 self.process_dict.pop(chosen_proc)
                 print(f"{chosen_proc} terminated.")
             else:
-                pass # Proc is already in back of queue
-            # TODO: Parse dropoff? Do API calls?
+                # Proc is already in back of queue
+                # Parse dropoff & do API calls
+                for req_name in dropoff_dict["requests"]:
+                    req = dropoff_dict["requests"][req_name]
+                    if req["request"] == "BUFREQ":
+                        # Then do buffer request
+                        neighbor = req["neighbor"]
+                        space = req["space"]
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.request_buffer_from(neighbor, space, process_pass)
+                    else:
+                        assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
 
         else:
             assert False, "code should never touch this spot"
@@ -676,7 +698,7 @@ class EBA_Manager:
     def run_process(self, host_node, process_info):
         node_dir = self.nodebufdirs_fname + "/" + host_node.name
         full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
-        # Possible TODO: pickup and dropoff fnames because obsolete fields
+        # Possible TODO: pickup and dropoff fnames become obsolete fields
         # if we just always append something to them here.
         full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
         full_dropoff_fname = node_dir + "/" + process_info["dropoff_fname"]
@@ -688,7 +710,7 @@ class EBA_Manager:
         f.close()
 
         # TODO: possibly different invocation on different systems
-        print(f"running {full_process_fname}")
+        ### print(f"running {full_process_fname}")
         subprocess.run([f"python3", f"{full_process_fname}", f"{full_pickup_fname}"])
 
 
@@ -696,6 +718,21 @@ class EBA_Manager:
         dropoff_dict = pickle.load(pf)
         pf.close()
         return dropoff_dict
+
+    def inform_process(self, host_node, process_info, which_response, info):
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name
+        full_pickup_fname = node_dir + "/" + process_info["pickup_fname"]
+
+        pf = open(full_pickup_fname, "rb")
+        pickup_dict = pickle.load(pf)
+        pf.close()
+
+        pickup_dict["responses"][which_response] = info
+
+        pf = open(full_pickup_fname, "wb")
+        pickle.dump(pickup_dict, pf)
+        pf.close()
+
 
 
 

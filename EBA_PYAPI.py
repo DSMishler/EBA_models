@@ -17,7 +17,8 @@ def get_pickup_info(pickup_fname):
     pf.close()
     return pickup_info
 
-
+def init_dropoff_info():
+    return {"terminate": False, "requests": {}}
 
 # TODO: These are prety much the same function. Should we just make one function?
 def prep_dropoff_file(dropoff_info, dropoff_fname):
@@ -29,3 +30,25 @@ def prep_pickup_file(pickup_info, pickup_fname):
     pf = open(pickup_fname, "wb")
     pickle.dump(pickup_info, pf)
     pf.close()
+
+
+def have_requested_already(pickup_info, request_name):
+    if request_name not in pickup_info["responses"]:
+        # Then we never asked for this.
+        return False
+    else:
+        return True
+
+def waiting_for_response(pickup_info, request_name):
+    if pickup_info["responses"][request_name] is None:
+        return True
+    else:
+        return False # the thing is ready
+
+# Leave a buffer request in the dropoff and flag where it should go in pickup
+def bufreq(dropoff_info, pickup_info, neighbor, space, request_name):
+    dropoff_info["requests"][request_name] = {}
+    dropoff_info["requests"][request_name]["request"] = "BUFREQ"
+    dropoff_info["requests"][request_name]["neighbor"] = neighbor
+    dropoff_info["requests"][request_name]["space"] = space
+    pickup_info["responses"][request_name] = None
