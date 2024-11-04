@@ -445,13 +445,20 @@ class EBA_Node:
             # mark the process that gets time
             self.process_dict[chosen_proc]["last_scheduled"] = 0
 
-            self.manager.run_process(self, self.process_dict[chosen_proc])
-
             # For now, we just say the process name and pop it.
-            print(f"chose and popped process {chosen_proc}")
-            print(self.process_dict[chosen_proc])
-            self.process_dict.pop(chosen_proc)
-            pass
+            print(f"chose process {chosen_proc}")
+            print(f"{self.process_dict[chosen_proc]}")
+            dropoff_dict = self.manager.run_process(self, self.process_dict[chosen_proc])
+
+            print(f"Reading dropoff dict from process {chosen_proc}")
+            print(dropoff_dict)
+            if dropoff_dict["terminate"] is True:
+                self.process_dict.pop(chosen_proc)
+                print(f"{chosen_proc} terminated.")
+            else:
+                pass # Proc is already in back of queue
+            # TODO: Parse dropoff? Do API calls?
+
         else:
             assert False, "code should never touch this spot"
 
@@ -558,8 +565,10 @@ class EBA_Manager:
             print(f"refusing to add node '{name}'. Name already exists.")
         else:
             self.nodes[name] = EBA_Node(name, manager=self)
-            if self.manager_mode == "init":
-                os.mkdir(self.nodebufdirs_fname+"/"+name)
+
+            nodedirname = self.nodebufdirs_fname+"/"+name
+            os.mkdir(nodedirname)
+            subprocess.run(["cp", "EBA_PYAPI.py", f"{nodedirname}"])
 
     def get_node_states(self):
         node_state_slice = {}
@@ -657,6 +666,7 @@ class EBA_Manager:
 
         init_pickup_dict = {}
         init_pickup_dict["dropoff"] = full_dropoff_fname
+        init_pickup_dict["proc_state"] = "BEGIN"
         init_pickup_dict["responses"] = {}
 
         pf = open(full_pickup_fname, "wb")
@@ -678,15 +688,14 @@ class EBA_Manager:
         f.close()
 
         # TODO: possibly different invocation on different systems
+        print(f"running {full_process_fname}")
         subprocess.run([f"python3", f"{full_process_fname}", f"{full_pickup_fname}"])
 
 
-        # TODO: Parse dropoff?
         pf = open(full_dropoff_fname, "rb")
         dropoff_dict = pickle.load(pf)
         pf.close()
-        print(f"Reading dropoff dict from process {process_info['name']}")
-        print(dropoff_dict)
+        return dropoff_dict
 
 
 
