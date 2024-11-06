@@ -57,7 +57,7 @@ import gv_utils
 # it might be a good idea in the future to make more data optional
 
 # SYSTEM CALLS (not inter-node, only intra-node)
-# NEIGHBORS/ID
+# NEIGHBORS/ID/MYBUF
 # states which nodes connected to this node. This probably never needs to
 # be used over the network but *does* need to be used for local system calls.
 # Otherwise a distance routing process could never get implemented.
@@ -66,6 +66,13 @@ import gv_utils
 # ex. NEIGHBORS "one" "two" "three"
 # ex. ID
 # ex. ID "zero"
+
+# READ
+# list a buffer and receive the contents of that buffer
+# ex. READ buf0
+# response is the payload
+# ex. READ "Hello world"
+
 
 
 # message format:
@@ -459,10 +466,35 @@ class EBA_Node:
                 which_pickup,
                 response)
 
+    # process: the dict telling the system where to store the information
     def syscall_neighbors(self, process):
         response = [x for x in self.neighbors if self.neighbors[x] == "connected"]
         proc_name = process["name"]
         which_pickup = process["which_pickup"]
+        self.manager.inform_process(
+                self,
+                self.process_dict[proc_name],
+                which_pickup,
+                response)
+
+    def syscall_mybuf(self, process):
+        proc_name = process["name"]
+        which_pickup = process["which_pickup"]
+        response = self.process_dict[proc_name]["bufname"]
+        self.manager.inform_process(
+                self,
+                self.process_dict[proc_name],
+                which_pickup,
+                response)
+
+    def syscall_read(self, target_name, process):
+        proc_name = process["name"]
+        which_pickup = process["which_pickup"]
+        target = self.buffers[target_name]
+        if target["owner"] != self.name:
+            response = False
+            print(f"warning: attempt to access buffer {target_name} not from self")
+        response = target["contents"]
         self.manager.inform_process(
                 self,
                 self.process_dict[proc_name],
@@ -507,6 +539,8 @@ class EBA_Node:
                 # Parse dropoff & do API calls
                 for req_name in dropoff_dict["requests"]:
                     req = dropoff_dict["requests"][req_name]
+                    # Possible TODO: wrap all of this up in a bow for less duplicated code
+                    # maybe a general syscall which also does sends if it is a send
                     if req["request"] == "BUFREQ":
                         # Then do buffer request
                         neighbor = req["neighbor"]
@@ -525,6 +559,17 @@ class EBA_Node:
                                 "name": chosen_proc,
                                 "which_pickup": req_name}
                         self.syscall_neighbors(process_pass)
+                    elif req["request"] == "MYBUF":
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.syscall_mybuf(process_pass)
+                    elif req["request"] == "READ":
+                        target = req["target"]
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.syscall_read(target, process_pass)
                     else:
                         assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
 

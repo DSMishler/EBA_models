@@ -102,6 +102,11 @@ def neighbors(request_name):
 def id(request_name):
     syscall({"request": "ID"}, request_name)
 
+def mybuf(request_name):
+    syscall({"request": "MYBUF"}, request_name)
+
+def read(target_buf, request_name):
+    syscall({"request": "READ", "target": target_buf}, request_name)
 
 # For retreiving a response to a system call
 def retrieve_response(request_name):
