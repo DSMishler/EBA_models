@@ -90,3 +90,19 @@ def bufreq(neighbor, space, request_name):
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
     dropoff_info["requests"][request_name]["space"] = space
     pickup_info["responses"][request_name] = None
+
+# For basic system calls
+def syscall(args, request_name):
+    dropoff_info["requests"][request_name] = args
+    pickup_info["responses"][request_name] = None
+
+def neighbors(request_name):
+    syscall({"request": "NEIGHBORS"}, request_name)
+
+def id(request_name):
+    syscall({"request": "ID"}, request_name)
+
+
+# For retreiving a response to a system call
+def retrieve_response(request_name):
+    return pickup_info["responses"][request_name]

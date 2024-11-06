@@ -56,6 +56,17 @@ import gv_utils
 # in the invoked code
 # it might be a good idea in the future to make more data optional
 
+# SYSTEM CALLS (not inter-node, only intra-node)
+# NEIGHBORS/ID
+# states which nodes connected to this node. This probably never needs to
+# be used over the network but *does* need to be used for local system calls.
+# Otherwise a distance routing process could never get implemented.
+# ex. NEIGHBORS
+# response is simply a list of neighbors
+# ex. NEIGHBORS "one" "two" "three"
+# ex. ID
+# ex. ID "zero"
+
 
 # message format:
 # sender id
@@ -433,6 +444,36 @@ class EBA_Node:
                 print(f"unknown message type for the following:\n{message}")
         return
 
+    ############################################################################
+    # SYSTEM CALLS                                                             #
+    ############################################################################
+
+    # process: the dict telling the system where to store the information
+    def syscall_id(self, process):
+        response = self.name
+        proc_name = process["name"]
+        which_pickup = process["which_pickup"]
+        self.manager.inform_process(
+                self,
+                self.process_dict[proc_name],
+                which_pickup,
+                response)
+
+    def syscall_neighbors(self, process):
+        response = [x for x in self.neighbors if self.neighbors[x] == "connected"]
+        proc_name = process["name"]
+        which_pickup = process["which_pickup"]
+        self.manager.inform_process(
+                self,
+                self.process_dict[proc_name],
+                which_pickup,
+                response)
+
+
+    ############################################################################
+    # RUNNING THE NODE                                                         #
+    ############################################################################
+
     def run_one(self): # as if the interrupt was just triggered
         # TODO: The interrupt system needs much more work.
         if len(self.process_dict.keys()) == 0 and len(self.message_queue) == 0:
@@ -474,6 +515,16 @@ class EBA_Node:
                                 "name": chosen_proc,
                                 "which_pickup": req_name}
                         self.request_buffer_from(neighbor, space, process_pass)
+                    elif req["request"] == "ID":
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.syscall_id(process_pass)
+                    elif req["request"] == "NEIGHBORS":
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.syscall_neighbors(process_pass)
                     else:
                         assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
 
@@ -660,7 +711,15 @@ class EBA_Manager:
         # dictionary eventually
 
     def send(self, sender, receiver, message):
-        if not self.connected(sender, receiver):
+        if sender == receiver:
+            # Just pass it, but no need for noising.
+            # TODO this may eventually get removed, but it simplifies the
+            # code for now. Yes, you can send to yourself.
+            print(f"warning: self-send on {sender}-{receiver}")
+            self.nodes[receiver].message_queue.append(message)
+            # NOT marking any edges for the network. Self-messages don't
+            # go over the network.
+        elif not self.connected(sender, receiver):
             print(f"error: {sender} and {receiver} are not connected. Stop.")
             return
         else:
@@ -738,6 +797,8 @@ class EBA_Manager:
         return True
 
     def run(self, terminate_at=None):
+        if terminate_at is None:
+            terminate_at = 100 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
             # random_node_name = np.random.choice(self.nodes)
             # Locally this numpy doesn't have random. Bruh. #TODO Fix this.

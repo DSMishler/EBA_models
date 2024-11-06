@@ -27,11 +27,13 @@ def state_to_gv(state_slice):
     gv_str += "{\n"
 
     # Add vertices to the graph
-    for v in nodes.keys():
+    for v in nodes:
         vnum = name_to_num[v]
+        nprocs = len(nodes[v]["process_dict"])
         gv_str += f"\t{vnum} ["
         # now add special names or anything that is needed or added
         #
+        gv_str += f"label=\"{vnum}:{nprocs}\""
         gv_str += "]\n"
 
     # Add edges to graph
@@ -44,9 +46,12 @@ def state_to_gv(state_slice):
                 gv_str += f"\t{i} -> {j} ["
                 # now add special names or anything that is needed or added
                 # special edges
-                if [i,j] in [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]:
+                sender_receiver_nums = [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]
+                if [i,j] in sender_receiver_nums and [j,i] in sender_receiver_nums:
+                    gv_str += "dir=both,color=red"
+                elif [i,j] in sender_receiver_nums:
                     gv_str += "dir=forward,color=red"
-                elif [j,i] in [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]:
+                elif [j,i] in sender_receiver_nums:
                     gv_str += "dir=back,color=red"
                 else:
                     gv_str += "dir=none"

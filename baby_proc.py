@@ -1,5 +1,4 @@
 import sys
-import pickle
 import EBA_PYAPI as EBA
 
 
