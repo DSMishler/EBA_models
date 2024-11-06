@@ -549,6 +549,26 @@ class EBA_Node:
                                 "name": chosen_proc,
                                 "which_pickup": req_name}
                         self.request_buffer_from(neighbor, space, process_pass)
+                    elif req["request"] == "WRITE":
+                        # Then do write request
+                        neighbor = req["neighbor"]
+                        target = req["target"]
+                        mode = req["mode"]
+                        length = req["length"]
+                        payload = req["payload"]
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.write_to_buffer(neighbor, target, mode, length, payload, process_pass)
+                    elif req["request"] == "INVOKE":
+                        # Then do write request
+                        neighbor = req["neighbor"]
+                        target = req["target"]
+                        mode = req["mode"]
+                        process_pass = {
+                                "name": chosen_proc,
+                                "which_pickup": req_name}
+                        self.invoke_to_buffer(neighbor, target, mode, process_pass)
                     elif req["request"] == "ID":
                         process_pass = {
                                 "name": chosen_proc,
@@ -843,7 +863,7 @@ class EBA_Manager:
 
     def run(self, terminate_at=None):
         if terminate_at is None:
-            terminate_at = 100 # Max timeslices for testing
+            terminate_at = 500 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
             # random_node_name = np.random.choice(self.nodes)
             # Locally this numpy doesn't have random. Bruh. #TODO Fix this.

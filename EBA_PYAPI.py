@@ -91,6 +91,26 @@ def bufreq(neighbor, space, request_name):
     dropoff_info["requests"][request_name]["space"] = space
     pickup_info["responses"][request_name] = None
 
+# Leave a write request in the dropoff and flag where it should go in pickup
+def write(neighbor, bufname, mode, length, payload, request_name):
+    dropoff_info["requests"][request_name] = {}
+    dropoff_info["requests"][request_name]["request"] = "WRITE"
+    dropoff_info["requests"][request_name]["neighbor"] = neighbor
+    dropoff_info["requests"][request_name]["target"] = bufname
+    dropoff_info["requests"][request_name]["mode"] = mode
+    dropoff_info["requests"][request_name]["length"] = length
+    dropoff_info["requests"][request_name]["payload"] = payload
+    pickup_info["responses"][request_name] = None
+
+# Leave an invoke request in the dropoff and flag where it should go in pickup
+def invoke(neighbor, bufname, mode, request_name):
+    dropoff_info["requests"][request_name] = {}
+    dropoff_info["requests"][request_name]["request"] = "INVOKE"
+    dropoff_info["requests"][request_name]["neighbor"] = neighbor
+    dropoff_info["requests"][request_name]["target"] = bufname
+    dropoff_info["requests"][request_name]["mode"] = mode
+    pickup_info["responses"][request_name] = None
+
 # For basic system calls
 def syscall(args, request_name):
     dropoff_info["requests"][request_name] = args
