@@ -12,7 +12,7 @@
 
 
 import enum
-# import numpy as np
+import random
 import copy
 import os
 import shutil
@@ -238,8 +238,6 @@ class EBA_Node:
             bufname = message["API"]["name"]
             owner = message["sender"]
             # TODO: the API should maybe tell me if I'm the only writer or not
-            # TODO: was there a process that wanted to know about this?
-            #       if so, then we need to inform that process of what's up
             buf_for = message["recipient"]
             size = message["API"]["size"]
 
@@ -402,7 +400,6 @@ class EBA_Node:
             print(f"warning: rejected invoke request response.")
             print(f"(response was {message['API']['response']})")
             retval = False
-            # TODO: make other API acks not just assert, but rather return
 
         return retval
 
@@ -455,6 +452,10 @@ class EBA_Node:
     # SYSTEM CALLS                                                             #
     ############################################################################
 
+
+    # Builtins
+    ############################################################################
+
     # process: the dict telling the system where to store the information
     def syscall_id(self, process):
         response = self.name
@@ -501,6 +502,41 @@ class EBA_Node:
                 which_pickup,
                 response)
 
+    # System call wrapper
+    ############################################################################
+    def syscall_wrapper(self, req, process_pass):
+        if req["request"] == "BUFREQ":
+            # Then do buffer request
+            neighbor = req["neighbor"]
+            space = req["space"]
+            self.request_buffer_from(neighbor, space, process_pass)
+        elif req["request"] == "WRITE":
+            # Then do write request
+            neighbor = req["neighbor"]
+            target = req["target"]
+            mode = req["mode"]
+            length = req["length"]
+            payload = req["payload"]
+            self.write_to_buffer(neighbor, target, mode, length, payload, process_pass)
+        elif req["request"] == "INVOKE":
+            # Then do write request
+            neighbor = req["neighbor"]
+            target = req["target"]
+            mode = req["mode"]
+            self.invoke_to_buffer(neighbor, target, mode, process_pass)
+        elif req["request"] == "ID":
+            self.syscall_id(process_pass)
+        elif req["request"] == "NEIGHBORS":
+            self.syscall_neighbors(process_pass)
+        elif req["request"] == "MYBUF":
+            self.syscall_mybuf(process_pass)
+        elif req["request"] == "READ":
+            target = req["target"]
+            self.syscall_read(target, process_pass)
+        else:
+            assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
+        return
+
 
     ############################################################################
     # RUNNING THE NODE                                                         #
@@ -539,59 +575,10 @@ class EBA_Node:
                 # Parse dropoff & do API calls
                 for req_name in dropoff_dict["requests"]:
                     req = dropoff_dict["requests"][req_name]
-                    # Possible TODO: wrap all of this up in a bow for less duplicated code
-                    # maybe a general syscall which also does sends if it is a send
-                    if req["request"] == "BUFREQ":
-                        # Then do buffer request
-                        neighbor = req["neighbor"]
-                        space = req["space"]
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.request_buffer_from(neighbor, space, process_pass)
-                    elif req["request"] == "WRITE":
-                        # Then do write request
-                        neighbor = req["neighbor"]
-                        target = req["target"]
-                        mode = req["mode"]
-                        length = req["length"]
-                        payload = req["payload"]
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.write_to_buffer(neighbor, target, mode, length, payload, process_pass)
-                    elif req["request"] == "INVOKE":
-                        # Then do write request
-                        neighbor = req["neighbor"]
-                        target = req["target"]
-                        mode = req["mode"]
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.invoke_to_buffer(neighbor, target, mode, process_pass)
-                    elif req["request"] == "ID":
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.syscall_id(process_pass)
-                    elif req["request"] == "NEIGHBORS":
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.syscall_neighbors(process_pass)
-                    elif req["request"] == "MYBUF":
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.syscall_mybuf(process_pass)
-                    elif req["request"] == "READ":
-                        target = req["target"]
-                        process_pass = {
-                                "name": chosen_proc,
-                                "which_pickup": req_name}
-                        self.syscall_read(target, process_pass)
-                    else:
-                        assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
+                    process_pass = {
+                            "name": chosen_proc,
+                            "which_pickup": req_name}
+                    self.syscall_wrapper(req, process_pass)
 
         else:
             assert False, "code should never touch this spot"
@@ -807,6 +794,7 @@ class EBA_Manager:
         init_pickup_dict = {}
         init_pickup_dict["dropoff"] = full_dropoff_fname
         init_pickup_dict["proc_state"] = "BEGIN"
+        init_pickup_dict["proc_vars"] = {}
         init_pickup_dict["responses"] = {}
 
         pf = open(full_pickup_fname, "wb")
@@ -863,20 +851,19 @@ class EBA_Manager:
 
     def run(self, terminate_at=None):
         if terminate_at is None:
-            terminate_at = 500 # Max timeslices for testing
+            terminate_at = 200 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
-            # random_node_name = np.random.choice(self.nodes)
-            # Locally this numpy doesn't have random. Bruh. #TODO Fix this.
-            for random_node_name in self.nodes: # just do one at a time for now
-                rn = self.nodes[random_node_name]
-                rn.run_one()
-                # This is where we'd get extra data
-                sys_state = {}
-                sys_state["nodes"] = self.get_node_states()
-                sys_state["recent_sends"] = self.purge_recently_sent()
-                self.system_state[self.next_timeslice] = sys_state
-                self.next_timeslice += 1
-                if terminate_at is not None:
-                    terminate_at -= 1
+
+            random_node_name = random.choice(list(self.nodes.keys()))
+            rn = self.nodes[random_node_name]
+            rn.run_one()
+            # This is where we'd get extra data
+            sys_state = {}
+            sys_state["nodes"] = self.get_node_states()
+            sys_state["recent_sends"] = self.purge_recently_sent()
+            self.system_state[self.next_timeslice] = sys_state
+            self.next_timeslice += 1
+            if terminate_at is not None:
+                terminate_at -= 1
             if self.all_empty():
                 break

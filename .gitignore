@@ -4,6 +4,9 @@ __pycache__/*
 # EBA temp files
 nodebufdirs/*
 
+# temporary files for a run (commonly)
+EBA_graphviz/testrun/*
+
 # vim files
 *.swp
 

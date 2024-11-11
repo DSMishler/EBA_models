@@ -1,6 +1,13 @@
 import os
 import sys
+import shutil
 
+def refresh_directory(tdir="EBA_graphviz/testrun/"):
+    if "EBA_graphviz" not in tdir: # safety
+        print(f"refusing to remove directory {tdir}. I don't think it's safe")
+        return
+    shutil.rmtree(tdir)
+    os.mkdir(tdir)
 
 def state_to_gv(state_slice):
     just_sent = state_slice["recent_sends"]

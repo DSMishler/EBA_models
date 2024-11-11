@@ -66,6 +66,12 @@ def get_proc_state():
 def set_proc_state(new_state):
     pickup_info["proc_state"] = new_state
 
+def get_proc_var(var):
+    return pickup_info["proc_vars"][var]
+
+def set_proc_var(var, value):
+    pickup_info["proc_vars"][var] = value
+
 
 def have_requested_already(request_name):
     if request_name not in pickup_info["responses"]:
