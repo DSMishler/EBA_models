@@ -190,11 +190,12 @@ class EBA_Node:
     # process: the name of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def request_buffer_from(self, neighbor, space, process):
+    def request_buffer_from(self, neighbor, space, tags, process):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
         message["API"]["space"] = space
+        message["API"]["tags"] = tags.copy()
         message["process"] = process
         
         # note that we are now awaiting a response
@@ -268,6 +269,8 @@ class EBA_Node:
     # process: the name of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
+
+    # TODO: instead of being passed a buffer name directly, you get the tags info
     def write_to_buffer(self, neighbor, bufname, mode, length, payload, process):
         assert length != 0, f"illegal request: write with length of 0"
         assert length == len(payload), f"lllegal request: payload {payload} claimed to have length {length} instead of {len(payload)}"
@@ -338,13 +341,14 @@ class EBA_Node:
     # process: the name of the process on this node which requests the invoke
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def invoke_to_buffer(self, neighbor, bufname, mode, process):
+    def invoke_to_buffer(self, neighbor, bufname, mode, keys, process):
         assert mode == "PYEXEC", f"invalid mode {mode}, only one allowed is PYEXEC"
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "INVOKE"
         message["API"]["target"] = bufname
         message["API"]["mode"] = mode
+        message["API"]["keys"] = keys.copy()
         message["process"] = process
 
         self.waiting_requests[message["RID"]] = message
@@ -457,59 +461,38 @@ class EBA_Node:
     ############################################################################
 
     # process: the dict telling the system where to store the information
-    def syscall_id(self, process):
+    def syscall_id(self):
         response = self.name
-        proc_name = process["name"]
-        which_pickup = process["which_pickup"]
-        self.manager.inform_process(
-                self,
-                self.process_dict[proc_name],
-                which_pickup,
-                response)
+        return response
 
     # process: the dict telling the system where to store the information
-    def syscall_neighbors(self, process):
+    def syscall_neighbors(self):
         response = [x for x in self.neighbors if self.neighbors[x] == "connected"]
-        proc_name = process["name"]
-        which_pickup = process["which_pickup"]
-        self.manager.inform_process(
-                self,
-                self.process_dict[proc_name],
-                which_pickup,
-                response)
+        return response
 
     def syscall_mybuf(self, process):
         proc_name = process["name"]
-        which_pickup = process["which_pickup"]
         response = self.process_dict[proc_name]["bufname"]
-        self.manager.inform_process(
-                self,
-                self.process_dict[proc_name],
-                which_pickup,
-                response)
+        return response
 
-    def syscall_read(self, target_name, process):
-        proc_name = process["name"]
-        which_pickup = process["which_pickup"]
+    def syscall_read(self, target_name):
         target = self.buffers[target_name]
         if target["owner"] != self.name:
             response = False
             print(f"warning: attempt to access buffer {target_name} not from self")
         response = target["contents"]
-        self.manager.inform_process(
-                self,
-                self.process_dict[proc_name],
-                which_pickup,
-                response)
+        return response
 
     # System call wrapper
     ############################################################################
     def syscall_wrapper(self, req, process_pass):
+        response = None
         if req["request"] == "BUFREQ":
             # Then do buffer request
             neighbor = req["neighbor"]
             space = req["space"]
-            self.request_buffer_from(neighbor, space, process_pass)
+            tags = req["tags"]
+            self.request_buffer_from(neighbor, space, tags, process_pass)
         elif req["request"] == "WRITE":
             # Then do write request
             neighbor = req["neighbor"]
@@ -519,22 +502,32 @@ class EBA_Node:
             payload = req["payload"]
             self.write_to_buffer(neighbor, target, mode, length, payload, process_pass)
         elif req["request"] == "INVOKE":
-            # Then do write request
+            # Then do invoke request
             neighbor = req["neighbor"]
             target = req["target"]
             mode = req["mode"]
-            self.invoke_to_buffer(neighbor, target, mode, process_pass)
+            keys = req["keys"]
+            self.invoke_to_buffer(neighbor, target, mode, keys, process_pass)
         elif req["request"] == "ID":
-            self.syscall_id(process_pass)
+            response = self.syscall_id()
         elif req["request"] == "NEIGHBORS":
-            self.syscall_neighbors(process_pass)
+            response = self.syscall_neighbors()
         elif req["request"] == "MYBUF":
-            self.syscall_mybuf(process_pass)
+            response = self.syscall_mybuf(process_pass)
         elif req["request"] == "READ":
             target = req["target"]
-            self.syscall_read(target, process_pass)
+            response = self.syscall_read(target)
         else:
             assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
+
+        if response is not None: # If the call was a builtin
+            proc_name = process_pass["name"]
+            which_pickup = process_pass["which_pickup"]
+            self.manager.inform_process(
+                    self,
+                    self.process_dict[proc_name],
+                    which_pickup,
+                    response)
         return
 
 
@@ -560,13 +553,8 @@ class EBA_Node:
             # mark the process that gets time
             self.process_dict[chosen_proc]["last_scheduled"] = 0
 
-            # For now, we just say the process name and pop it.
-            ### print(f"chose process {chosen_proc}")
-            ### print(f"{self.process_dict[chosen_proc]}")
             dropoff_dict = self.manager.run_process(self, self.process_dict[chosen_proc])
 
-            ### print(f"Reading dropoff dict from process {chosen_proc}")
-            ### print(dropoff_dict)
             if dropoff_dict["terminate"] is True:
                 self.process_dict.pop(chosen_proc)
                 print(f"{chosen_proc} terminated.")
