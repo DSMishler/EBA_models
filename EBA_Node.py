@@ -10,6 +10,8 @@
 # call responses since it will hog all of the cycles. It is the process's
 # responsibility to place its API calls, then get out of the way.
 
+ROOT_STR = "root"
+SELF_BUFNAME = "me.EBA"
 
 import enum
 import random
@@ -20,14 +22,16 @@ import pickle
 import subprocess
 
 import gv_utils
+import EBA_Utils
 
 
 # API Calls:
 # BUFFER REQUEST
-# buffer request, size (in bytes) (-1 is infinity)
-# ex. BUFREQ -1
-# response will have "ACK" next along with the buffer name and space
-# ex. BUFREQ ACK BUF1 1000
+# buffer request, size (in bytes) (-1 is infinity), tags
+# tags are key-value pairs that processes can later use to refer to the buffer
+# ex. BUFREQ -1 {"secretkey": "DFS_checkpoint"}
+# response will have "ACK" next along with the buffer tags requested and space
+# ex. BUFREQ ACK {"secretkey": "DFS_checkpoint"} 1000
 # (you didn't get an infinite amount of space, just 1000 bytes)
 # or REJ if rejected
 # ex BUFREQ REJ
@@ -45,9 +49,9 @@ import gv_utils
 # Jury's out on whether we want append. Currently only START is implemented
 
 # INVOKE CODE
-# invoke request, type of invoke (always pyexec here), buffer name
+# invoke request, type of invoke (always pyexec here), buffer name, keys (opt.)
 # invoke what is in a buffer to be run as code
-# ex. INVOKE PYEXEC BUF1
+# ex. INVOKE PYEXEC BUF1 DFSKEY
 # response will be given when the process is spawned
 # ex. INVOKE True
 # and the exit code will determine if there was an error
@@ -120,6 +124,7 @@ class EBA_Node:
         # Process dict info:
         # Process name (key, unique per node)
         #    name: just a copy of the process name, used for printing later
+        #    keys: the unique keys that a process has for accessing buffers
         #    message: message that spawned the process
         #    bufname: buffer the process code lives in
         #    last_scheduled: number of times the scheduler did *not* choose
@@ -187,7 +192,11 @@ class EBA_Node:
 
     # neighbor: the name of the neighbor this message is for
     # space: the requested space of the buffer
-    # process: the name of the process on this node which requests the buffer
+    # tags: a dictionary of keys and names. Processes requesting to write
+        # or read from this buffer will be required to have one of these keys
+        # and processes calling "ls" on the node will only see buffers to which
+        # they own keys
+    # process: the info of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
     def request_buffer_from(self, neighbor, space, tags, process):
@@ -212,20 +221,21 @@ class EBA_Node:
         bufname = "BUF_"+message["RID"]
 
         # Allocate the buffer
-        if bufname in self.buffers:
-            pass
-        else:
-            self.buffers[bufname] = {
-                    "owner": self.name,
-                    "for": message["sender"],
-                    "size": -1,
-                    "contents": None
-                    }
+        assert bufname not in self.buffers, f"{bufname} already in {self.buffers}"
+
+        self.buffers[bufname] = {
+                "owner": self.name,
+                "for": message["sender"],
+                "tags": {**message["API"]["tags"].copy(), ROOT_STR: bufname},
+                "size": -1,
+                "contents": None
+                }
 
         # Send a message back to the sender
         response = self.response_to_message(message)
         response["API"]["response"] = "ACK"
-        response["API"]["name"] = bufname
+        # Don't tell the requester ALL tags, just the ones they asked for.
+        response["API"]["tags"] = message["API"]["tags"]
         response["API"]["size"] = self.buffers[bufname]["size"]
 
         self.manager.send(self.name, message["sender"], response)
@@ -236,18 +246,22 @@ class EBA_Node:
     # needs to update its own data.
     def acknowledge_buffer(self, message):
         if message["API"]["response"] == "ACK":
-            bufname = message["API"]["name"]
+            tags = message["API"]["tags"]
             owner = message["sender"]
             # TODO: the API should maybe tell me if I'm the only writer or not
             buf_for = message["recipient"]
             size = message["API"]["size"]
 
+            # TODO: maybe the node DOESN'T need to track other nodes' buffers
+            """
             self.buffers[bufname] = {
                     "owner": owner,
                     "for": buf_for,
+                    "tags": {**message["API"]["tags"].copy(), ROOT_STR: bufname},
                     "size": size,
                     "contents": None
                     }
+            """
         elif message["API"]["response"] == "REJ":
             print("rejected buffer request. We don't handle these.")
             exit(1)
@@ -262,27 +276,29 @@ class EBA_Node:
     # WRITE                                                                    #
     ############################################################################
     # neighbor: the name of the neighbor this message is for
-    # bufname: name of the target buffer
+    # tag: tag of the target buffer (given after filtering by process keys)
     # mode: START or APPEND (only start implemented right now)
     # length: length of payload
     # payload: the content that will be written to the buffer
-    # process: the name of the process on this node which requests the buffer
-        # process is allowed to be None, but this is not going to be implemented
-        # as a default
+    # process: the info of the process on this node which requests the buffer
+        # You can get away with process=None as long as there are extra keys
+    # extra_keys: in addition to process keys, other keys may be used. Often,
+        # this is because a process uniquely requests buffers with this key
+        # and then uses it later.
 
-    # TODO: instead of being passed a buffer name directly, you get the tags info
-    def write_to_buffer(self, neighbor, bufname, mode, length, payload, process):
+    def write_to_buffer(self, neighbor, tag, mode, length, payload, process, extra_keys=[]):
         assert length != 0, f"illegal request: write with length of 0"
         assert length == len(payload), f"lllegal request: payload {payload} claimed to have length {length} instead of {len(payload)}"
 
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "WRITE"
-        message["API"]["target"] = bufname
+        message["API"]["target"] = tag
         message["API"]["mode"] = mode
         message["API"]["length"] = length
         message["API"]["payload"] = payload
         message["process"] = process
+        message["extra_keys"] = extra_keys.copy()
 
         self.waiting_requests[message["RID"]] = message
         self.manager.send(self.name, neighbor, message)
@@ -294,17 +310,39 @@ class EBA_Node:
         target = message["API"]["target"]
         payload = message["API"]["payload"]
         mode = message["API"]["mode"]
+        if message["process"] is None:
+            proc_keys = []
+        else:
+            proc_keys = message["process"]["keys"]
+        keys = proc_keys + message["extra_keys"]
         response = self.response_to_message(message)
-        if target not in self.buffers:
-            # then the write request will fail
-            response["API"]["response"] = 0
+        available_buffers = [self.buffers[bufname]["tags"][key]
+            for bufname in self.buffers
+            for key in keys
+            if key in self.buffers[bufname]["tags"]]
+        if available_buffers.count(target) != 1:
+            # then the invoke request will fail
+            response["API"]["response"] = False
+            print(f"error in write: {target} appears in available buffers " +
+                  f"{available_buffers.count(target)} times")
+            print(available_buffers)
+            print(keys)
+            show_buffers(self.buffers)
         else:
             # successful request for name
+            # find the bufname
+            sys_bufname = None
+            for bufname in self.buffers:
+                for key in keys:
+                    if key in self.buffers[bufname]["tags"]:
+                        if self.buffers[bufname]["tags"][key] == target:
+                            sys_bufname = bufname
+            assert sys_bufname is not None, f"failed to find sys_bufname"
             if mode == "START":
-                self.buffers[target]["contents"] = payload
+                self.buffers[sys_bufname]["contents"] = payload
             elif mode == "APPEND":
                 print("append not yet implemented")
-                # self.buffers[target]["contents"] += payload
+                # self.buffers[sys_bufname]["contents"] += payload
                 exit(1)
             else:
                 print(f"ERROR: unknown write mode {mode}")
@@ -336,20 +374,27 @@ class EBA_Node:
     # INVOKE                                                                   #
     ############################################################################
     # neighbor: the name of the neighbor this message is for
-    # bufname: name of the target buffer that contains the code
+    # tag: name of the target buffer that contains the code
+        # (after filtered through the process's keys)
     # mode: which execution mode for the code (PYEXEC only one allowed for now)
-    # process: the name of the process on this node which requests the invoke
-        # process is allowed to be None, but this is not going to be implemented
-        # as a default
-    def invoke_to_buffer(self, neighbor, bufname, mode, keys, process):
+    # keys: the keys that will be bestowed to the new process.
+        # NOTE: These are NOT the keys used to unlock the buffer. Those are
+        # in the next argument
+    # process: the info of the process on this node which requests the invoke
+        # You can get away with process=None as long as there are extra keys
+    # extra_keys: in addition to process keys, other keys may be used. Often,
+        # this is because a process uniquely requests buffers with this key
+        # and then uses it later.
+    def invoke_to_buffer(self, neighbor, tag, mode, keys, process, extra_keys=[]):
         assert mode == "PYEXEC", f"invalid mode {mode}, only one allowed is PYEXEC"
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "INVOKE"
-        message["API"]["target"] = bufname
+        message["API"]["target"] = tag
         message["API"]["mode"] = mode
         message["API"]["keys"] = keys.copy()
         message["process"] = process
+        message["extra_keys"] = extra_keys.copy()
 
         self.waiting_requests[message["RID"]] = message
         self.manager.send(self.name, neighbor, message)
@@ -366,23 +411,54 @@ class EBA_Node:
     def resolve_invoke_request(self, message):
         target = message["API"]["target"]
         mode = message["API"]["mode"]
+        if message["process"] is None:
+            proc_keys = []
+        else:
+            proc_keys = message["process"]["keys"]
+        keys = proc_keys + message["extra_keys"]
         response = self.response_to_message(message)
-        if target not in self.buffers:
+        available_buffers = [self.buffers[bufname]["tags"][key]
+            for bufname in self.buffers
+            for key in keys
+            if key in self.buffers[bufname]["tags"]]
+        if available_buffers.count(target) != 1:
             # then the invoke request will fail
             response["API"]["response"] = False
+            print(f"error in invoke: {target} appears in available buffers " +
+                  f"{available_buffers.count(target)} times")
         else:
-            # buffer target is in, and we can spawn
-            assert mode == "PYEXEC", f"invalid mode {mode}, only one allowed is PYEXEC"
+            # buffer target is in the list of buffers, and we can spawn
+            # find the bufname
+            sys_bufname = None
+            # TODO: find a cleaner way to find the sys bufname - this is sloppy
+            for bufname in self.buffers:
+                for key in keys:
+                    if key in self.buffers[bufname]["tags"]:
+                        if self.buffers[bufname]["tags"][key] == target:
+                            sys_bufname = bufname
+            assert sys_bufname is not None, f"failed to find sys_bufname"
+
+            assert mode == "PYEXEC", f"invalid mode {mode}, only PYEXEC allowed"
             # now spawn the process
             proc_name = "PROC_"+str(self.next_PID)
             self.next_PID += 1
-            # see EBA node description for comment about dictionary fields
+            # see EBA node class description for comment about dictionary fields
             self.process_dict[proc_name] = {}
             this_process = self.process_dict[proc_name]
             this_process["name"] = proc_name
+            this_process["keys"] = message["API"]["keys"]
             this_process["message"] = message
-            this_process["bufname"] = target
+            this_process["bufname"] = bufname
             this_process["last_scheduled"] = 0
+
+            # Finally, give the buffer this proc lives in and this proc
+            # a unique key
+            random_key = EBA_Utils.random_name(length=20)
+            this_process["keys"].append(random_key)
+            self.buffers[sys_bufname]["tags"][random_key] = SELF_BUFNAME
+
+
+
             self.manager.init_process(self, this_process)
 
 
@@ -500,14 +576,22 @@ class EBA_Node:
             mode = req["mode"]
             length = req["length"]
             payload = req["payload"]
-            self.write_to_buffer(neighbor, target, mode, length, payload, process_pass)
+            if "extra_keys" in req:
+                extra_keys = req["extra_keys"]
+            else:
+                extra_keys = []
+            self.write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys)
         elif req["request"] == "INVOKE":
             # Then do invoke request
             neighbor = req["neighbor"]
             target = req["target"]
             mode = req["mode"]
             keys = req["keys"]
-            self.invoke_to_buffer(neighbor, target, mode, keys, process_pass)
+            if "extra_keys" in req:
+                extra_keys = req["extra_keys"]
+            else:
+                extra_keys = []
+            self.invoke_to_buffer(neighbor, target, mode, keys, process_pass, extra_keys)
         elif req["request"] == "ID":
             response = self.syscall_id()
         elif req["request"] == "NEIGHBORS":
@@ -548,6 +632,7 @@ class EBA_Node:
             # scheduler: choose the process which was least recently given time
             proc_sched_times = {proc: self.process_dict[proc]["last_scheduled"] for proc in self.process_dict}
             chosen_proc = max(proc_sched_times, key=proc_sched_times.get)
+            proc_keys = self.process_dict[chosen_proc]["keys"]
             for proc in self.process_dict:
                 self.process_dict[proc]["last_scheduled"] += 1
             # mark the process that gets time
@@ -565,6 +650,7 @@ class EBA_Node:
                     req = dropoff_dict["requests"][req_name]
                     process_pass = {
                             "name": chosen_proc,
+                            "keys": proc_keys,
                             "which_pickup": req_name}
                     self.syscall_wrapper(req, process_pass)
 
@@ -583,6 +669,7 @@ def show_buffers(buffers, indent=0, show_contents=False):
         print(spc+f"name: {bufname}")
         print(spc+f"owner: {buf['owner']}")
         print(spc+f"for: {buf['for']}")
+        print(spc+f"tags: {buf['tags']}")
         print(spc+f"size: {buf['size']}")
         if show_contents:
             print(spc+f"contents: {buf['contents']}")
@@ -601,6 +688,8 @@ def show_messages(messages, indent=0):
         print(spc+f"message target: {msg['recipient']}")
         print(spc+f"message API: {msg['API']}")
         print(spc+f"message for process: {msg['process']}")
+        if 'extra_keys' in msg:
+            print(spc+f"message with extra keys: {msg['extra_keys']}")
         print(spc+dash)
 
 def show_processes(processes, indent=0):
@@ -614,6 +703,7 @@ def show_processes(processes, indent=0):
         print(spc+f"message that spawned process:")
         show_messages([proc["message"]], indent=indent+4)
         print(spc+f"in buffer: {proc['bufname']}")
+        print(spc+f"with keys: {proc['keys']}")
         print(spc+f"last scheduled: {proc['last_scheduled']}")
         print(spc+dash)
 
@@ -839,7 +929,7 @@ class EBA_Manager:
 
     def run(self, terminate_at=None):
         if terminate_at is None:
-            terminate_at = 200 # Max timeslices for testing
+            terminate_at = 400 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
 
             random_node_name = random.choice(list(self.nodes.keys()))

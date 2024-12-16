@@ -1,3 +1,4 @@
+# NOTE: VIRUS IS NOW OUT OF DATE since the API was changed for tags
 """
 pseudocode:
     - pick up any new information and jump to the appropriate section of code

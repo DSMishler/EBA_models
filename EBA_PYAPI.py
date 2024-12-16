@@ -100,25 +100,29 @@ def bufreq(neighbor, space, tags, request_name):
     pickup_info["responses"][request_name] = None
 
 # Leave a write request in the dropoff and flag where it should go in pickup
-def write(neighbor, bufname, mode, length, payload, request_name):
+def write(neighbor, tag, mode, length, payload, request_name, extra_keys=None):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "WRITE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
-    dropoff_info["requests"][request_name]["target"] = bufname
+    dropoff_info["requests"][request_name]["target"] = tag
     dropoff_info["requests"][request_name]["mode"] = mode
     dropoff_info["requests"][request_name]["length"] = length
     dropoff_info["requests"][request_name]["payload"] = payload
+    if extra_keys is not None:
+        dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
     pickup_info["responses"][request_name] = None
 
 # Leave an invoke request in the dropoff and flag where it should go in pickup
-def invoke(neighbor, bufname, mode, keys, request_name):
+def invoke(neighbor, tag, mode, keys, request_name, extra_keys=None):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "INVOKE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
-    dropoff_info["requests"][request_name]["target"] = bufname
+    dropoff_info["requests"][request_name]["target"] = tag
     dropoff_info["requests"][request_name]["mode"] = mode
     dropoff_info["requests"][request_name]["keys"] = keys.copy()
-    # Technically, the copy of "keys" is guaranteed by the EBA infrastructure.
+    # Technically, the copying "keys" is guaranteed by the EBA infrastructure.
+    if extra_keys is not None:
+        dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
     pickup_info["responses"][request_name] = None
 
 # For basic system calls
