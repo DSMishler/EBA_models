@@ -44,6 +44,8 @@ def state_to_gv(state_slice):
         # now add special names or anything that is needed or added
         #
         gv_str += f"label=\"{vnum}:{nprocs}\""
+        if nprocs > 0:
+            gv_str += f",style=filled,fillcolor=turquoise"
         gv_str += "]\n"
 
     # Add edges to graph

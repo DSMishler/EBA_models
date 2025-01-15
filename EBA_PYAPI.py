@@ -119,6 +119,7 @@ def invoke(neighbor, tag, mode, keys, request_name, extra_keys=None):
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
     dropoff_info["requests"][request_name]["target"] = tag
     dropoff_info["requests"][request_name]["mode"] = mode
+    # NOTE: these keys are keys given to the child process, NOT used in the call
     dropoff_info["requests"][request_name]["keys"] = keys.copy()
     # Technically, the copying "keys" is guaranteed by the EBA infrastructure.
     if extra_keys is not None:

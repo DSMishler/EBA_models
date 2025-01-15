@@ -454,7 +454,12 @@ class EBA_Node:
             # Finally, give the buffer this proc lives in and this proc
             # a unique key
             random_key = EBA_Utils.random_name(length=20)
-            this_process["keys"].append(random_key)
+            this_process["keys"].insert(0, random_key)
+            # make this "secret" key always the first key
+            # possible TODO: insert checks that check (possibly sloppily)
+                # that this secret key is in fact first
+                # these would end up going in the bufreq name section
+
             self.buffers[sys_bufname]["tags"][random_key] = SELF_BUFNAME
 
 
@@ -919,20 +924,29 @@ class EBA_Manager:
 
 
 
+    # If a node has no work to do
+    def node_empty(self, node_name):
+        node = self.nodes[node_name]
+        if len(node.message_queue) == 0 and len(node.process_dict.keys()) == 0:
+            return True
+        else:
+            return False
 
     def all_empty(self):
         for node_name in self.nodes:
-            node = self.nodes[node_name]
-            if len(node.message_queue) > 0 or len(node.process_dict.keys()) > 0:
+            if not self.node_empty(node_name):
                 return False
         return True
 
     def run(self, terminate_at=None):
         if terminate_at is None:
-            terminate_at = 400 # Max timeslices for testing
+            terminate_at = 200 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
 
-            random_node_name = random.choice(list(self.nodes.keys()))
+            nodes_with_work =[node_name for node_name in list(self.nodes.keys())
+                if not self.node_empty(node_name)]
+            random_node_name = random.choice(nodes_with_work)
+            # print(f"iteration {terminate_at} running node {random_node_name}")
             rn = self.nodes[random_node_name]
             rn.run_one()
             # This is where we'd get extra data
