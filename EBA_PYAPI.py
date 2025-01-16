@@ -90,11 +90,14 @@ def set_terminate_flag(value):
     dropoff_info["terminate"] = value
 
 # Leave a buffer request in the dropoff and flag where it should go in pickup
-def bufreq(neighbor, space, tags, request_name):
+def bufreq(neighbor, space, lname, tags, request_name):
+    if tags is None:
+        tags = {}
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "BUFREQ"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
     dropoff_info["requests"][request_name]["space"] = space
+    dropoff_info["requests"][request_name]["lname"] = lname
     dropoff_info["requests"][request_name]["tags"] = tags.copy()
     # Technically, the copy of "tags" is guaranteed by the EBA infrastructure.
     pickup_info["responses"][request_name] = None
@@ -140,8 +143,17 @@ def id(request_name):
 def mybuf(request_name):
     syscall({"request": "MYBUF"}, request_name)
 
-def read(target_buf, request_name):
-    syscall({"request": "READ", "target": target_buf}, request_name)
+def read(target_buf, extra_keys, request_name):
+    # NOTE: technically the none-checking is done by the EBA, but here is extra
+    if extra_keys is None:
+        extra_keys = []
+    syscall({"request": "READ", "target": target_buf, "extra_keys": extra_keys}, request_name)
+
+def ls(extra_keys, request_name):
+    # NOTE: technically the none-checking is done by the EBA, but here is extra
+    if extra_keys is None:
+        extra_keys = []
+    syscall({"request": "READ", "extra_keys": extra_keys}, request_name)
 
 # For retreiving a response to a system call
 def retrieve_response(request_name):

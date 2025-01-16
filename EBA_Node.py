@@ -27,11 +27,14 @@ import EBA_Utils
 
 # API Calls:
 # BUFFER REQUEST
-# buffer request, size (in bytes) (-1 is infinity), tags
+# buffer request, size (in bytes) (-1 is infinity), lname, tags
+# lname, or local name, will be how the calling process refers the buffer later
 # tags are key-value pairs that processes can later use to refer to the buffer
-# ex. BUFREQ -1 {"secretkey": "DFS_checkpoint"}
+    # (tags are useful since they will be needed if you want other processes
+    # to see the buffer)
+# ex. BUFREQ -1 mylocalbuf {"secretkey": "DFS_checkpoint"}
 # response will have "ACK" next along with the buffer tags requested and space
-# ex. BUFREQ ACK {"secretkey": "DFS_checkpoint"} 1000
+# ex. BUFREQ ACK mylocalbuf {"secretkey": "DFS_checkpoint"} 1000
 # (you didn't get an infinite amount of space, just 1000 bytes)
 # or REJ if rejected
 # ex BUFREQ REJ
@@ -76,6 +79,12 @@ import EBA_Utils
 # ex. READ buf0
 # response is the payload
 # ex. READ "Hello world"
+
+# LS
+# return a list of what's on this buffer given your process keys and extra keys
+# ex. LS "dfs"
+# response is the list
+# ex. LS "['mybuf', 'dfs_tree'], ['visited'], ['scratch']"
 
 
 
@@ -192,18 +201,22 @@ class EBA_Node:
 
     # neighbor: the name of the neighbor this message is for
     # space: the requested space of the buffer
+    # lname: the name that the buffer will be called according to the caller
+        # None is allowed.
     # tags: a dictionary of keys and names. Processes requesting to write
         # or read from this buffer will be required to have one of these keys
         # and processes calling "ls" on the node will only see buffers to which
         # they own keys
+        # you are allowed to pass "None" to tags
     # process: the info of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def request_buffer_from(self, neighbor, space, tags, process):
+    def request_buffer_from(self, neighbor, space, lname, tags, process):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
         message["API"]["space"] = space
+        message["API"]["lname"] = lname
         message["API"]["tags"] = tags.copy()
         message["process"] = process
         
@@ -223,10 +236,19 @@ class EBA_Node:
         # Allocate the buffer
         assert bufname not in self.buffers, f"{bufname} already in {self.buffers}"
 
+        buffer_lname = {}
+        if (message["API"]["lname"] is not None and 
+                message["process"] is not None):
+            lname = message["API"]["lname"]
+            skey = message["process"]["keys"][0] #first key is secret key
+            buffer_lname[skey] = lname
+
         self.buffers[bufname] = {
                 "owner": self.name,
                 "for": message["sender"],
-                "tags": {**message["API"]["tags"].copy(), ROOT_STR: bufname},
+                "tags": {**buffer_lname,
+                    **message["API"]["tags"].copy(),
+                    ROOT_STR: bufname},
                 "size": -1,
                 "contents": None
                 }
@@ -234,6 +256,7 @@ class EBA_Node:
         # Send a message back to the sender
         response = self.response_to_message(message)
         response["API"]["response"] = "ACK"
+        response["API"]["lname"] = message["API"]["lname"]
         # Don't tell the requester ALL tags, just the ones they asked for.
         response["API"]["tags"] = message["API"]["tags"]
         response["API"]["size"] = self.buffers[bufname]["size"]
@@ -431,12 +454,14 @@ class EBA_Node:
             # find the bufname
             sys_bufname = None
             # TODO: find a cleaner way to find the sys bufname - this is sloppy
-            for bufname in self.buffers:
-                for key in keys:
-                    if key in self.buffers[bufname]["tags"]:
-                        if self.buffers[bufname]["tags"][key] == target:
-                            sys_bufname = bufname
-            assert sys_bufname is not None, f"failed to find sys_bufname"
+            buf_dict = self.syscall_ls(keys, as_root=True)
+            # already guaranteed no duplicated in the ls, so
+            for bufname in buf_dict:
+                if target in buf_dict[bufname]:
+                    sys_bufname = bufname
+                    break
+
+            assert sys_bufname is not None, f"failed to find sys_bufname for target {target}"
 
             assert mode == "PYEXEC", f"invalid mode {mode}, only PYEXEC allowed"
             # now spawn the process
@@ -456,6 +481,7 @@ class EBA_Node:
             random_key = EBA_Utils.random_name(length=20)
             this_process["keys"].insert(0, random_key)
             # make this "secret" key always the first key
+            # (Not that a process knows about its inherent keys anyway)
             # possible TODO: insert checks that check (possibly sloppily)
                 # that this secret key is in fact first
                 # these would end up going in the bufreq name section
@@ -551,18 +577,46 @@ class EBA_Node:
         response = [x for x in self.neighbors if self.neighbors[x] == "connected"]
         return response
 
-    def syscall_mybuf(self, process):
-        proc_name = process["name"]
-        response = self.process_dict[proc_name]["bufname"]
-        return response
+    def syscall_mybuf(self):
+        return SELF_BUFNAME
 
-    def syscall_read(self, target_name):
-        target = self.buffers[target_name]
+    def syscall_read(self, target_name, keys):
+        all_hits = self.syscall_ls(keys, as_root=True)
+        target = None
+        for bufname in all_hits:
+            if target_name in all_hits[bufname]:
+                target = self.buffers[bufname]
+        assert target is not None, f"failed to find target {target_name}"
+
         if target["owner"] != self.name:
             response = False
             print(f"warning: attempt to access buffer {target_name} not from self")
+            print("even more warning: this shouldn't be possible! It was deprecated. Stop.")
+            exit(1)
         response = target["contents"]
         return response
+
+    def syscall_ls(self, keys, as_root=False):
+        hits_dict = {}
+        for bufname in self.buffers:
+            # k=key
+            common = [k for k in keys if k in self.buffers[bufname]["tags"]]
+            bufnames = [self.buffers[bufname]["tags"][k] for k in common]
+            hits_dict[bufname] = bufnames
+
+        all_hits_list = list(hits_dict.values())
+
+        # check for duplicates
+        all_names = [name for bufnames in all_hits_list for name in bufnames]
+        if len(all_names) != len(set(all_names)):
+            print(f"warning! duplicate names in ls returning {all_names}")
+            print(f"buffers show {hits_dict}")
+
+        if as_root:
+            return hits_dict
+        else:
+            return all_names
+
 
     # System call wrapper
     ############################################################################
@@ -572,8 +626,9 @@ class EBA_Node:
             # Then do buffer request
             neighbor = req["neighbor"]
             space = req["space"]
+            lname = req["lname"]
             tags = req["tags"]
-            self.request_buffer_from(neighbor, space, tags, process_pass)
+            self.request_buffer_from(neighbor, space, lname, tags, process_pass)
         elif req["request"] == "WRITE":
             # Then do write request
             neighbor = req["neighbor"]
@@ -602,10 +657,20 @@ class EBA_Node:
         elif req["request"] == "NEIGHBORS":
             response = self.syscall_neighbors()
         elif req["request"] == "MYBUF":
-            response = self.syscall_mybuf(process_pass)
+            response = self.syscall_mybuf()
         elif req["request"] == "READ":
             target = req["target"]
-            response = self.syscall_read(target)
+            extra_keys = req["extra_keys"]
+            if extra_keys is None:
+                extra_keys = []
+            proc_keys = process_pass["keys"]
+            response = self.syscall_read(target, proc_keys + extra_keys)
+        elif req["request"] == "LS":
+            extra_keys = req["extra_keys"]
+            if extra_keys is None:
+                extra_keys = []
+            proc_keys = process_pass["keys"]
+            response = self.syscall_ls(proc_keys + extra_keys)
         else:
             assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
 

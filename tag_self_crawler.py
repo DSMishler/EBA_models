@@ -1,3 +1,7 @@
+# This crawler uses tags to refer to its next buffer, which is not necessary!
+# But it might show an example of how this is done.
+# This crawler is done with development on Jan 16, 2025
+
 import sys
 import random
 import EBA_PYAPI as EBA
@@ -9,14 +13,14 @@ idreq = "idreq"
 nreq = "nreq"
 myreq = "myreq"
 readreq = "readreq"
-bufname_next_host = "bufname_next_host_name"
+mykey = "mykey"
 if proc_state == "BEGIN": # Call all of the builtins then wait on process queue
     EBA.id(idreq)
     EBA.neighbors(nreq)
     EBA.mybuf(myreq)
     EBA.set_proc_state("ACK")
-    random_stuff = "".join([random.choice(["a","j","z"]) for i in range(20)])
-    EBA.set_proc_var(bufname_next_host, "host_"+random_stuff)
+    my_unique_key = "".join([random.choice(["a","j","z"]) for i in range(20)])
+    EBA.set_proc_var(mykey, my_unique_key)
 elif proc_state == "ACK":
     # technically this "if" is not necessary because system calls
     # will always respond in the current implementation (it's done before
@@ -32,18 +36,18 @@ elif proc_state == "ACK":
         # print(f"my id?: {EBA.retrieve_response(idreq)}")
         # print(f"neighbors?: {EBA.retrieve_response(nreq)}")
         # print(f"my buffer?: {EBA.retrieve_response(myreq)}")
-        EBA.read(EBA.retrieve_response(myreq), None, readreq)
+        EBA.read(EBA.retrieve_response(myreq), readreq)
         EBA.set_proc_state("PHASE0")
 elif proc_state == "PHASE0": # Identify which neighbor to host and bufreq
     neighbors = EBA.retrieve_response(nreq)
-    bufname = EBA.get_proc_var(bufname_next_host)
+    buf_key = EBA.get_proc_var(mykey)
     next_host = random.choice(neighbors)
     EBA.set_proc_var("next_host", next_host)
-    EBA.bufreq(next_host, -1, bufname, None, "bufreq_"+next_host)
+    EBA.bufreq(next_host, -1, {buf_key: "new_host"}, "bufreq_"+next_host)
     EBA.set_proc_state("PHASE1")
 elif proc_state == "PHASE1": # Ensure the bufreq worked, write the code forward
     next_host = EBA.get_proc_var("next_host")
-    bufname = EBA.get_proc_var(bufname_next_host)
+    buf_key = EBA.get_proc_var(mykey)
     thiscode = EBA.retrieve_response(readreq)
     bufresponse = EBA.retrieve_response("bufreq_"+next_host)
     if EBA.waiting_for_response("bufreq_"+next_host):
@@ -56,12 +60,13 @@ elif proc_state == "PHASE1": # Ensure the bufreq worked, write the code forward
         EBA.set_terminate_flag(True)
     else:
         # No errors: good to move on
+        buf_target = bufresponse["tags"][buf_key]
         wreq_name = "writereq_"+next_host
-        EBA.write(next_host, bufname, "START", len(thiscode), thiscode, wreq_name, extra_keys=None)
+        EBA.write(next_host, buf_target, "START", len(thiscode), thiscode, wreq_name, extra_keys=[buf_key])
         EBA.set_proc_state("PHASE2")
 elif proc_state == "PHASE2": # Ensure the writing worked, propagate with invoke
     next_host = EBA.get_proc_var("next_host")
-    bufname = EBA.get_proc_var(bufname_next_host)
+    buf_key = EBA.get_proc_var(mykey)
     thiscode = EBA.retrieve_response(readreq)
     writeresponse = EBA.retrieve_response("writereq_"+next_host)
     bufresponse = EBA.retrieve_response("bufreq_"+next_host)
@@ -72,8 +77,9 @@ elif proc_state == "PHASE2": # Ensure the writing worked, propagate with invoke
         all_responses = False
         EBA.set_terminate_flag(True)
     else:
+        buf_target = bufresponse["tags"][buf_key]
         invoke_name = "invokereq_"+next_host
-        EBA.invoke(next_host, bufname, "PYEXEC", [], invoke_name, extra_keys=None)
+        EBA.invoke(next_host, buf_target, "PYEXEC", [], invoke_name, extra_keys=[buf_key])
         EBA.set_proc_state("PHASE3")
 elif proc_state == "PHASE3": # Acknowledge the crawler is propagated
     next_host = EBA.get_proc_var("next_host")
