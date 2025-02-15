@@ -141,13 +141,13 @@ class EBA_Node:
         #                    processes have this number incremented by 1 except
         #                    the scheduled process, which has this set to 0
         self.fnames_for = {
-                "all_state": "NODE_ALL_STATE.txt",
-                "interrupt_state": "NODE_INTERRUPT_STATE.txt",
-                "neighbors": "NODE_NEIGHBORS.txt",
-                "buffers": "NODE_BUFFERS.txt",
-                "waiting_requests": "NODE_WAITING_REQUESTS.txt",
-                "message_queue": "NODE_MESSAGE_QUEUE.txt",
-                "process_dict": "NODE_PROCESS_DICT.txt"}
+                "all_state": "NODE_ALL_STATE.pkl",
+                "interrupt_state": "NODE_INTERRUPT_STATE.pkl",
+                "neighbors": "NODE_NEIGHBORS.pkl",
+                "buffers": "NODE_BUFFERS.pkl",
+                "waiting_requests": "NODE_WAITING_REQUESTS.pkl",
+                "message_queue": "NODE_MESSAGE_QUEUE.pkl",
+                "process_dict": "NODE_PROCESS_DICT.pkl"}
 
     def all_state(self):
         return {
@@ -805,7 +805,7 @@ class EBA_Manager:
         self.recently_sent = []
         self.nodebufdirs_fname = "nodebufdirs"
         self.fnames_for = {
-                "all_state": "MANAGER_ALL_STATE.txt"}
+                "all_state": "MANAGER_ALL_STATE.pkl"}
         # Now create space for buffer files
         if self.manager_mode == "init":
             try:
