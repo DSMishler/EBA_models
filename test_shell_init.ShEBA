@@ -1,0 +1,5 @@
+newsys
+show node
+newnode firstnode
+ssh firstnode
+show node
