@@ -1,5 +1,6 @@
-newsys
+sys init
 show node
 newnode firstnode
 ssh firstnode
 show node
+ls

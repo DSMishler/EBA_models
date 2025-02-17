@@ -27,8 +27,8 @@ import EBA_Utils
 
 # API Calls:
 # BUFFER REQUEST
-# buffer request, size (in bytes) (-1 is infinity), lname, tags
-# lname, or local name, will be how the calling process refers the buffer later
+# buffer request, size (in bytes) (-1 is infinity), local_name, tags
+# local_name, or local name, will be how the calling process refers the buffer later
 # tags are key-value pairs that processes can later use to refer to the buffer
     # (tags are useful since they will be needed if you want other processes
     # to see the buffer)
@@ -201,7 +201,8 @@ class EBA_Node:
 
     # neighbor: the name of the neighbor this message is for
     # space: the requested space of the buffer
-    # lname: the name that the buffer will be called according to the caller
+    # local_name: the name that the buffer will be locally called from
+        # the perspective of the caller. This will be done transparently.
         # None is allowed.
     # tags: a dictionary of keys and names. Processes requesting to write
         # or read from this buffer will be required to have one of these keys
@@ -211,12 +212,12 @@ class EBA_Node:
     # process: the info of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def request_buffer_from(self, neighbor, space, lname, tags, process):
+    def request_buffer_from(self, neighbor, space, local_name, tags, process):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
         message["API"]["space"] = space
-        message["API"]["lname"] = lname
+        message["API"]["local_name"] = local_name
         message["API"]["tags"] = tags.copy()
         message["process"] = process
         
@@ -236,17 +237,17 @@ class EBA_Node:
         # Allocate the buffer
         assert bufname not in self.buffers, f"{bufname} already in {self.buffers}"
 
-        buffer_lname = {}
-        if (message["API"]["lname"] is not None and 
+        buffer_local_name = {}
+        if (message["API"]["local_name"] is not None and 
                 message["process"] is not None):
-            lname = message["API"]["lname"]
+            local_name = message["API"]["local_name"]
             skey = message["process"]["keys"][0] #first key is secret key
-            buffer_lname[skey] = lname
+            buffer_local_name[skey] = local_name
 
         self.buffers[bufname] = {
                 "owner": self.name,
                 "for": message["sender"],
-                "tags": {**buffer_lname,
+                "tags": {**buffer_local_name,
                     **message["API"]["tags"].copy(),
                     ROOT_STR: bufname},
                 "size": -1,
@@ -256,7 +257,7 @@ class EBA_Node:
         # Send a message back to the sender
         response = self.response_to_message(message)
         response["API"]["response"] = "ACK"
-        response["API"]["lname"] = message["API"]["lname"]
+        response["API"]["local_name"] = message["API"]["local_name"]
         # Don't tell the requester ALL tags, just the ones they asked for.
         response["API"]["tags"] = message["API"]["tags"]
         response["API"]["size"] = self.buffers[bufname]["size"]
@@ -432,7 +433,7 @@ class EBA_Node:
     # codes of pyexec.
     # response: was a process successfully spawned? True or False.
     def resolve_invoke_request(self, message):
-        target = message["API"]["target"]
+        target_name = message["API"]["target"]
         mode = message["API"]["mode"]
         if message["process"] is None:
             proc_keys = []
@@ -440,28 +441,15 @@ class EBA_Node:
             proc_keys = message["process"]["keys"]
         keys = proc_keys + message["extra_keys"]
         response = self.response_to_message(message)
-        available_buffers = [self.buffers[bufname]["tags"][key]
-            for bufname in self.buffers
-            for key in keys
-            if key in self.buffers[bufname]["tags"]]
-        if available_buffers.count(target) != 1:
+        # find the buffer that contains the target, assuming it exists
+        sys_bufname = self.syscall_get_buffer(keys, target_name)
+        if sys_bufname is None:
             # then the invoke request will fail
             response["API"]["response"] = False
-            print(f"error in invoke: {target} appears in available buffers " +
-                  f"{available_buffers.count(target)} times")
+            print(f"error in invoke: {target_name} does not appear", end=""),
+            print(f"exactly once. Refusing invoke.")
         else:
             # buffer target is in the list of buffers, and we can spawn
-            # find the bufname
-            sys_bufname = None
-            # TODO: find a cleaner way to find the sys bufname - this is sloppy
-            buf_dict = self.syscall_ls(keys, as_root=True)
-            # already guaranteed no duplicated in the ls, so
-            for bufname in buf_dict:
-                if target in buf_dict[bufname]:
-                    sys_bufname = bufname
-                    break
-
-            assert sys_bufname is not None, f"failed to find sys_bufname for target {target}"
 
             assert mode == "PYEXEC", f"invalid mode {mode}, only PYEXEC allowed"
             # now spawn the process
@@ -473,7 +461,7 @@ class EBA_Node:
             this_process["name"] = proc_name
             this_process["keys"] = message["API"]["keys"]
             this_process["message"] = message
-            this_process["bufname"] = bufname
+            this_process["bufname"] = sys_bufname
             this_process["last_scheduled"] = 0
 
             # Finally, give the buffer this proc lives in and this proc
@@ -581,19 +569,20 @@ class EBA_Node:
         return SELF_BUFNAME
 
     def syscall_read(self, target_name, keys):
-        all_hits = self.syscall_ls(keys, as_root=True)
-        target = None
-        for bufname in all_hits:
-            if target_name in all_hits[bufname]:
-                target = self.buffers[bufname]
-        assert target is not None, f"failed to find target {target_name}"
-
-        if target["owner"] != self.name:
+        sys_bufname = self.syscall_get_buffer(keys, target_name)
+        target = self.buffers[sys_bufname]
+        if target is None:
+            print(f"READ error: failed to find target {target_name}")
+            print("returning an empty response")
             response = False
-            print(f"warning: attempt to access buffer {target_name} not from self")
+        elif target["owner"] != self.name:
+            response = False
+            print(f"fatal error: attempt to access buffer {target_name} not from self")
             print("even more warning: this shouldn't be possible! It was deprecated. Stop.")
             exit(1)
-        response = target["contents"]
+        else:
+            response = target["contents"]
+
         return response
 
     def syscall_ls(self, keys, as_root=False):
@@ -617,6 +606,31 @@ class EBA_Node:
         else:
             return all_names
 
+    # HELPER function
+    ############################################################################
+    # return the SYSTEM buffer name given a LOCAL buffer name. Similar to ls.
+    def syscall_get_buffer(self, keys, target_local_bufname):
+        buffer_hits = []
+        for sbnm in self.buffers:
+            # k=key
+            # sbnm=sys_bufname
+            common = [k for k in keys if k in self.buffers[sbnm]["tags"]]
+            local_bufnames = [self.buffers[sbnm]["tags"][k] for k in common]
+            if target_local_bufname in local_bufnames:
+                buffer_hits.append(sbnm)
+
+        if len(buffer_hits) == 0:
+            print(f"warning! buffer not found. No buffer labeled ", end="")
+            print(f"{target_local_bufname} found with keys {keys}.")
+            return None
+        elif len(buffer_hits) > 1:
+            print(f"warning! duplicate names seeking ", end="")
+            print(f"{target_local_bufname} with keys {keys}.")
+            print(f"No names will be returned due to ambiguity.")
+            return None
+        else:
+            return buffer_hits[0]
+
 
     # System call wrapper
     ############################################################################
@@ -626,9 +640,9 @@ class EBA_Node:
             # Then do buffer request
             neighbor = req["neighbor"]
             space = req["space"]
-            lname = req["lname"]
+            local_name = req["local_name"]
             tags = req["tags"]
-            self.request_buffer_from(neighbor, space, lname, tags, process_pass)
+            self.request_buffer_from(neighbor, space, local_name, tags, process_pass)
         elif req["request"] == "WRITE":
             # Then do write request
             neighbor = req["neighbor"]
@@ -664,6 +678,7 @@ class EBA_Node:
             if extra_keys is None:
                 extra_keys = []
             proc_keys = process_pass["keys"]
+            # TODO: should we allow system calls from non-processes?
             response = self.syscall_read(target, proc_keys + extra_keys)
         elif req["request"] == "LS":
             extra_keys = req["extra_keys"]
@@ -1003,16 +1018,19 @@ class EBA_Manager:
                 return False
         return True
 
-    def run(self, terminate_at=None):
+    def run(self, terminate_at=None, only_on=None):
         if terminate_at is None:
             terminate_at = 200 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
 
-            nodes_with_work =[node_name for node_name in list(self.nodes.keys())
-                if not self.node_empty(node_name)]
-            random_node_name = random.choice(nodes_with_work)
-            # print(f"iteration {terminate_at} running node {random_node_name}")
-            rn = self.nodes[random_node_name]
+            if only_on:
+                rn = self.nodes[only_on]
+            else:
+                nodes_with_work =[node_name for node_name in list(self.nodes.keys())
+                    if not self.node_empty(node_name)]
+                random_node_name = random.choice(nodes_with_work)
+                rn = self.nodes[random_node_name]
+            # print(f"iteration {terminate_at} running node {rn.name}")
             rn.run_one()
             # This is where we'd get extra data
             sys_state = {}
@@ -1022,5 +1040,7 @@ class EBA_Manager:
             self.next_timeslice += 1
             if terminate_at is not None:
                 terminate_at -= 1
-            if self.all_empty():
+            if only_on is not None and self.node_empty(only_on):
+                break
+            elif self.all_empty():
                 break

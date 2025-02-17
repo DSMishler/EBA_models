@@ -90,14 +90,14 @@ def set_terminate_flag(value):
     dropoff_info["terminate"] = value
 
 # Leave a buffer request in the dropoff and flag where it should go in pickup
-def bufreq(neighbor, space, lname, tags, request_name):
+def bufreq(neighbor, space, local_name, tags, request_name):
     if tags is None:
         tags = {}
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "BUFREQ"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
     dropoff_info["requests"][request_name]["space"] = space
-    dropoff_info["requests"][request_name]["lname"] = lname
+    dropoff_info["requests"][request_name]["local_name"] = local_name
     dropoff_info["requests"][request_name]["tags"] = tags.copy()
     # Technically, the copy of "tags" is guaranteed by the EBA infrastructure.
     pickup_info["responses"][request_name] = None
