@@ -1,6 +1,8 @@
 sys init
-show node
 newnode firstnode
-ssh firstnode
-show node
-ls
+newnode secondnode
+connect firstnode secondnode
+buf_alloc firstnode key1:name1
+show firstnode
+show
+ls firstnode

@@ -227,6 +227,14 @@ class EBA_Node:
         # send the message
         self.manager.send(self.name, neighbor, message)
 
+    def alloc_buffer(self, bufname, buf_for, tags, size):
+        self.buffers[bufname] = {
+            "owner": self.name,
+            "for": buf_for,
+            "tags": tags,
+            "size": size,
+            "contents": None
+            }
 
     # Now the neighbor, which received a buffer request,
     # will resolve it on its end. This neighbor will currently always
@@ -244,6 +252,15 @@ class EBA_Node:
             skey = message["process"]["keys"][0] #first key is secret key
             buffer_local_name[skey] = local_name
 
+        alloc_buffer(
+            bufname,
+            message["sender"],
+            {**buffer_local_name,
+                **message["API"]["tags"].copy(),
+                ROOT_STR: bufname},
+            message["API"]["size"])
+
+        """
         self.buffers[bufname] = {
                 "owner": self.name,
                 "for": message["sender"],
@@ -253,6 +270,7 @@ class EBA_Node:
                 "size": -1,
                 "contents": None
                 }
+        """
 
         # Send a message back to the sender
         response = self.response_to_message(message)
