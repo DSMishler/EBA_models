@@ -43,7 +43,8 @@ def state_to_gv(state_slice):
         gv_str += f"\t{vnum} ["
         # now add special names or anything that is needed or added
         #
-        gv_str += f"label=\"{vnum}:{nprocs}\""
+        # gv_str += f"label=\"{vnum}:{nprocs}\""
+        gv_str += f"label=\"{v}:{nprocs}\""
         if nprocs > 0:
             gv_str += f",style=filled,fillcolor=turquoise"
         gv_str += "]\n"
