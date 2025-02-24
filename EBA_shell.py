@@ -234,15 +234,7 @@ def shell_buf_alloc(usrin):
         tag_as_list = tag.split(":")
         tags[tag_as_list[0]] = tag_as_list[1]
 
-    # TODO: reconsider this extreme inefficiency
-    i = 0
-    while True:
-        sys_bufname = f"SYSBUF_{i}"
-        if sys_bufname in node.buffers:
-            continue
-        break
-
-    node.syscall_alloc_buffer(sys_bufname, node.name, -1, tags, local_name=None)
+    node.syscall_alloc_buffer(node.name, -1, tags, local_name=None)
     # TODO: check return values
 
 shell_dict["buf_alloc"] = {

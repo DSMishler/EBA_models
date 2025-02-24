@@ -130,6 +130,7 @@ class EBA_Node:
         self.message_queue = []
         self.process_dict = {}
         self.next_PID = 0
+        self.buf_counter = 0
         # Process dict info:
         # Process name (key, unique per node)
         #    name: just a copy of the process name, used for printing later
@@ -231,13 +232,8 @@ class EBA_Node:
     # will resolve it on its end. This neighbor will currently always
     # give a buffer of requested size, but this does not *have* to be this way
     def resolve_buffer_request(self, message):
-        bufname = "BUF_"+message["RID"]
-
-        # Allocate the buffer
-        assert bufname not in self.buffers, f"{bufname} already in {self.buffers}"
 
         syscall_response = self.syscall_alloc_buffer(
-            bufname,
             message["sender"],
             message["API"]["size"],
             message["API"]["tags"].copy(),
@@ -460,12 +456,15 @@ class EBA_Node:
     ############################################################################
     def syscall_alloc_buffer(
             self,
-            bufname,
             buf_for,
             size,
             tags,
             local_name=None,
             process=None):
+
+        bufname = "BUF_"+str(self.buf_counter)
+        self.buf_counter += 1
+        assert bufname not in self.buffers, f"{bufname} already in {self.buffers}"
 
         buffer_local_name = {}
         if (local_name is not None and process is not None):
@@ -672,7 +671,11 @@ class EBA_Node:
             size = req["size"]
             local_name = req["local_name"]
             tags = req["tags"]
-            self.request_buffer_from(neighbor, size, local_name, tags, process_pass)
+            if neighbor != self.name:
+                self.request_buffer_from(neighbor, size, local_name, tags, process_pass)
+            else:
+                # alloc-ing buffer on-node
+                response = self.syscall_alloc_buffer(self.name, size, tags, local_name, process_pass)
         elif req["request"] == "WRITE":
             # Then do write request
             neighbor = req["neighbor"]
@@ -680,22 +683,24 @@ class EBA_Node:
             mode = req["mode"]
             length = req["length"]
             payload = req["payload"]
-            if "extra_keys" in req:
-                extra_keys = req["extra_keys"]
+            extra_keys = req["extra_keys"]
+            if neighbor != self.name:
+                self.request_write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys)
             else:
-                extra_keys = []
-            self.request_write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys)
+                # writing to buffer on-node
+                response = self.syscall_write_to_buffer(target, mode, payload, length, extra_keys, process_pass)
         elif req["request"] == "INVOKE":
             # Then do invoke request
             neighbor = req["neighbor"]
             target = req["target"]
             mode = req["mode"]
             keys = req["keys"]
-            if "extra_keys" in req:
-                extra_keys = req["extra_keys"]
+            extra_keys = req["extra_keys"]
+            if neighbor != self.name:
+                self.request_invoke_to_buffer(neighbor, target, mode, keys, process_pass, extra_keys)
             else:
-                extra_keys = []
-            self.request_invoke_to_buffer(neighbor, target, mode, keys, process_pass, extra_keys)
+                # invoke to buffer on-node
+                response = self.syscall_invoke_to_buffer(target, mode, keys, process_pass, extra_keys)
         elif req["request"] == "ID":
             response = self.syscall_id()
         elif req["request"] == "NEIGHBORS":
@@ -757,7 +762,7 @@ class EBA_Node:
 
             if dropoff_dict["terminate"] is True:
                 self.process_dict.pop(chosen_proc)
-                print(f"{chosen_proc} terminated.")
+                # print(f"{chosen_proc} terminated.")
             else:
                 # Proc is already in back of queue
                 # Parse dropoff & do API calls

@@ -103,7 +103,7 @@ def bufreq(neighbor, size, local_name, tags, request_name):
     pickup_info["responses"][request_name] = None
 
 # Leave a write request in the dropoff and flag where it should go in pickup
-def write(neighbor, tag, mode, length, payload, request_name, extra_keys=None):
+def write(neighbor, tag, mode, length, payload, request_name, extra_keys=[]):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "WRITE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
@@ -111,12 +111,11 @@ def write(neighbor, tag, mode, length, payload, request_name, extra_keys=None):
     dropoff_info["requests"][request_name]["mode"] = mode
     dropoff_info["requests"][request_name]["length"] = length
     dropoff_info["requests"][request_name]["payload"] = payload
-    if extra_keys is not None:
-        dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
+    dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
     pickup_info["responses"][request_name] = None
 
 # Leave an invoke request in the dropoff and flag where it should go in pickup
-def invoke(neighbor, tag, mode, keys, request_name, extra_keys=None):
+def invoke(neighbor, tag, mode, keys, request_name, extra_keys=[]):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "INVOKE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
@@ -125,8 +124,7 @@ def invoke(neighbor, tag, mode, keys, request_name, extra_keys=None):
     # NOTE: these keys are keys given to the child process, NOT used in the call
     dropoff_info["requests"][request_name]["keys"] = keys.copy()
     # Technically, the copying "keys" is guaranteed by the EBA infrastructure.
-    if extra_keys is not None:
-        dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
+    dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
     pickup_info["responses"][request_name] = None
 
 # For basic system calls
@@ -144,16 +142,14 @@ def mybuf(request_name):
     syscall({"request": "MYBUF"}, request_name)
 
 def read(target_buf, extra_keys, request_name):
-    # NOTE: technically the none-checking is done by the EBA, but here is extra
     if extra_keys is None:
         extra_keys = []
     syscall({"request": "READ", "target": target_buf, "extra_keys": extra_keys}, request_name)
 
 def ls(extra_keys, request_name):
-    # NOTE: technically the none-checking is done by the EBA, but here is extra
     if extra_keys is None:
         extra_keys = []
-    syscall({"request": "READ", "extra_keys": extra_keys}, request_name)
+    syscall({"request": "LS", "extra_keys": extra_keys}, request_name)
 
 # For retreiving a response to a system call
 def retrieve_response(request_name):
