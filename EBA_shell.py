@@ -157,6 +157,9 @@ def shell_show(usrin):
         manager.show(show_buffer_contents=False)
     else:
         for nodename in show_nodes:
+            if not nodename in manager.nodes:
+                print(f"node {nodename} not in the system. Abort.")
+                return
             node = manager.nodes[nodename]
             EBA_Node.show_node_state(node.all_state(), indent=4, show_buffer_contents=True)
 
@@ -271,10 +274,10 @@ def shell_buf_write(usrin):
     node.syscall_write_to_buffer(
         which_bufname,
         which_mode,
-        payload,
         len(payload),
-        extra_keys_args,
-        process=None)
+        payload,
+        process=None,
+        extra_keys=extra_keys_args)
 
 shell_dict["buf_write"] = {
     "function": shell_buf_write,
@@ -303,8 +306,7 @@ def shell_buf_invoke(usrin):
     node.syscall_invoke_to_buffer(
         which_bufname,
         which_mode,
-        extra_keys=extra_keys_args,
-        spawning_message="Spawned by admin")
+        extra_keys=extra_keys_args)
 
 shell_dict["buf_invoke"] = {
     "function": shell_buf_invoke,
@@ -372,6 +374,20 @@ shell_dict["export_to_gif"] = {
     "required_nargs": 1,
     "comment": "runs `export_to_dot`, then `dot_to_png`, then `png_to_gif`"}
 
+def shell_echo(usrin):
+    next_arg = get_arg_if_exists(usrin, 1)
+    if next_arg is None:
+        return
+    
+    next_arg_idx = usrin.find(next_arg)
+    print(usrin[next_arg_idx:])
+
+shell_dict["echo"] = {
+    "function": shell_echo,
+    "usage": "echo ...",
+    "required_nargs": 1,
+    "comment": "repeats everything you say after 'echo'"}
+
 while True:
     try:
         current_node_str = f" (on node {current_node.name})"
@@ -394,5 +410,6 @@ while True:
         print(shell_dict[first_arg]["usage"])
     else:
         error_msg = shell_dict[first_arg]["function"](usrin)
+        # allowed functionality to print function-specific error messages
         if error_msg is not None:
             print(shell_dict[first_arg][error_msg])

@@ -5,6 +5,10 @@ newnode n3
 newnode n4
 newnode n5
 newnode n6
+newnode n7
+newnode n8
+newnode n9
+newnode n10
 connect n1 n2
 connect n2 n3
 #connect n3 n4
@@ -12,6 +16,10 @@ connect n4 n5
 connect n2 n4
 connect n3 n5
 connect n5 n6
+connect n2 n7
+connect n3 n8
+connect n4 n9
+connect n5 n10
 buf_alloc n1 key1:first_dfsbuf.py
 buf_write n1 first_dfsbuf.py START dfs_single_proc.py key1
 buf_invoke n1 first_dfsbuf.py PYEXEC key1

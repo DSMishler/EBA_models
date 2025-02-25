@@ -213,7 +213,7 @@ class EBA_Node:
     # process: the info of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def request_buffer_from(self, neighbor, size, local_name, tags, process):
+    def request_buffer_from(self, neighbor, size, tags, local_name, process):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
@@ -305,10 +305,10 @@ class EBA_Node:
         syscall_response = self.syscall_write_to_buffer(
             message["API"]["target"],
             message["API"]["mode"],
-            message["API"]["payload"],
             message["API"]["length"],
-            message["extra_keys"],
-            message["process"])
+            message["API"]["payload"],
+            message["process"],
+            message["extra_keys"])
 
         response = self.response_to_message(message)
         for el in syscall_response:
@@ -380,8 +380,7 @@ class EBA_Node:
             message["API"]["mode"],
             message["API"]["keys"],
             message["process"],
-            message["extra_keys"],
-            spawning_message = message)
+            message["extra_keys"])
 
         response = self.response_to_message(message)
         for el in syscall_response:
@@ -493,10 +492,10 @@ class EBA_Node:
             self,
             target_name,
             mode,
-            payload,
             length,
-            extra_keys,
-            process):
+            payload,
+            process,
+            extra_keys):
         if process is None:
             proc_keys = []
         else:
@@ -530,8 +529,7 @@ class EBA_Node:
             mode,
             keys_for_new_proc=[],
             process=None,
-            extra_keys=[],
-            spawning_message=None):
+            extra_keys=[]):
     
         if process is None:
             proc_keys = []
@@ -558,7 +556,6 @@ class EBA_Node:
             this_process = self.process_dict[proc_name]
             this_process["name"] = proc_name
             this_process["keys"] = keys_for_new_proc
-            this_process["message"] = spawning_message #TODO: this might be fluff
             this_process["bufname"] = sys_bufname
             this_process["last_scheduled"] = 0
 
@@ -672,7 +669,7 @@ class EBA_Node:
             local_name = req["local_name"]
             tags = req["tags"]
             if neighbor != self.name:
-                self.request_buffer_from(neighbor, size, local_name, tags, process_pass)
+                self.request_buffer_from(neighbor, size, tags, local_name, process_pass)
             else:
                 # alloc-ing buffer on-node
                 response = self.syscall_alloc_buffer(self.name, size, tags, local_name, process_pass)
@@ -688,7 +685,7 @@ class EBA_Node:
                 self.request_write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys)
             else:
                 # writing to buffer on-node
-                response = self.syscall_write_to_buffer(target, mode, payload, length, extra_keys, process_pass)
+                response = self.syscall_write_to_buffer(target, mode, length, payload, process_pass, extra_keys)
         elif req["request"] == "INVOKE":
             # Then do invoke request
             neighbor = req["neighbor"]
@@ -824,8 +821,6 @@ def show_processes(processes, indent=0):
     print(spc+dash)
     for proc in processes:
         print(spc+f"process name {proc['name']}")
-        print(spc+f"message that spawned process:")
-        show_messages([proc["message"]], indent=indent+4)
         print(spc+f"in buffer: {proc['bufname']}")
         print(spc+f"with keys: {proc['keys']}")
         print(spc+f"last scheduled: {proc['last_scheduled']}")
@@ -1059,7 +1054,7 @@ class EBA_Manager:
 
     def run(self, terminate_at=None, only_on=None):
         if terminate_at is None:
-            terminate_at = 200 # Max timeslices for testing
+            terminate_at = 500 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
 
             if only_on:
