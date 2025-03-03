@@ -292,8 +292,8 @@ def shell_buf_invoke(usrin):
     which_nodename = get_arg_if_exists(usrin, 1)
     # TODO: fail when node not found
     node = manager.nodes[which_nodename]
-    which_bufname = get_arg_if_exists(usrin, 2)
-    which_mode = get_arg_if_exists(usrin, 3)
+    which_mode = get_arg_if_exists(usrin, 2)
+    which_bufname = get_arg_if_exists(usrin, 3)
 
     extra_keys_args = []
     while True:
@@ -303,17 +303,16 @@ def shell_buf_invoke(usrin):
         else:
             extra_keys_args.append(new_key)
 
-    node.syscall_invoke_to_buffer(
-        which_bufname,
-        which_mode,
-        extra_keys=extra_keys_args)
+    mode_args = {"target_name": which_bufname, "extra_keys": extra_keys_args}
+
+    node.syscall_invoke_to_buffer(which_mode, mode_args)
 
 shell_dict["buf_invoke"] = {
     "function": shell_buf_invoke,
-    "usage": "buf_invoke <nodename> <bufname> <mode> <opt:key1> ... ",
+    "usage": "buf_invoke <nodename> <mode> <mode_args> ... ",
     "required_nargs": 4,
     "comment": "invoke the contents of the buffer `bufname` " +
-        "on `nodename` in `mode` using the keys provided"}
+        "on `nodename` in `mode` using the args provided"}
 
 def shell_run(usrin):
     if shell_check_manager() == False:

@@ -131,10 +131,9 @@ elif proc_state == "DFS_PROPAGATE":
         payload=this_code,
         request_name="PROCVAR_next_host_write",
         extra_keys=[])
-    EBA.invoke(
+    EBA.invoke_pyexec(
         neighbor=next_target,
         tag=local_bufname,
-        mode="PYEXEC",
         keys=[],
         request_name="PROCVAR_next_host_invoke",
         extra_keys=[])

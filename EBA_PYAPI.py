@@ -115,42 +115,48 @@ def write(neighbor, tag, mode, length, payload, request_name, extra_keys=[]):
     pickup_info["responses"][request_name] = None
 
 # Leave an invoke request in the dropoff and flag where it should go in pickup
-def invoke(neighbor, tag, mode, keys, request_name, extra_keys=[]):
+def invoke(neighbor, mode, mode_args, request_name):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "INVOKE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
-    dropoff_info["requests"][request_name]["target"] = tag
     dropoff_info["requests"][request_name]["mode"] = mode
-    # NOTE: these keys are keys given to the child process, NOT used in the call
-    dropoff_info["requests"][request_name]["keys"] = keys.copy()
-    # Technically, the copying "keys" is guaranteed by the EBA infrastructure.
-    dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
+    dropoff_info["requests"][request_name]["mode_args"] = mode_args.copy()
     pickup_info["responses"][request_name] = None
 
-# For basic system calls
-def syscall(args, request_name):
-    dropoff_info["requests"][request_name] = args
-    pickup_info["responses"][request_name] = None
+# wrapper for invoking with pyexec
+def invoke_pyexec(neighbor, tag, keys, request_name, extra_keys=[]):
+    mode_args = {"target_name": tag,
+        # NOTE: "keys" are keys given to the child process, NOT used in the call
+        # Copying "keys" could be guaranteed by the EBA infrastructure.
+        "keys_for_new_proc": keys.copy(),
+        "extra_keys": extra_keys.copy()}
+    invoke(neighbor, "PYEXEC", mode_args, request_name)
+
+# wrapper for invoking basic system calls
+def invoke_system(mode_args, request_name):
+    invoke(None, "SYSTEM", mode_args, request_name)
 
 def neighbors(request_name):
-    syscall({"request": "NEIGHBORS"}, request_name)
+    invoke_system({"syscall_name": "NEIGHBORS", "syscall_args": {}}, request_name)
 
 def id(request_name):
-    syscall({"request": "ID"}, request_name)
+    invoke_system({"syscall_name": "ID", "syscall_args": {}}, request_name)
 
 def mybuf(request_name):
-    syscall({"request": "MYBUF"}, request_name)
+    invoke_system({"syscall_name": "MYBUF", "syscall_args": {}}, request_name)
 
 def read(target_buf, extra_keys, request_name):
     if extra_keys is None:
         extra_keys = []
-    syscall({"request": "READ", "target": target_buf, "extra_keys": extra_keys}, request_name)
+    sa = {"target_name": target_buf, "keys": extra_keys}
+    invoke_system({"syscall_name": "READ", "syscall_args":  sa},request_name)
 
 def ls(extra_keys, request_name):
     if extra_keys is None:
         extra_keys = []
-    syscall({"request": "LS", "extra_keys": extra_keys}, request_name)
+    sa = {"keys": extra_keys}
+    invoke_system({"syscall_name": "LS", "syscall_args": sa}, request_name)
 
-# For retreiving a response to a system call
+# For retrieving a response to a system call
 def retrieve_response(request_name):
     return pickup_info["responses"][request_name]

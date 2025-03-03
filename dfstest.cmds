@@ -22,4 +22,4 @@ connect n4 n9
 connect n5 n10
 buf_alloc n1 key1:first_dfsbuf.py
 buf_write n1 first_dfsbuf.py START dfs_single_proc.py key1
-buf_invoke n1 first_dfsbuf.py PYEXEC key1
+buf_invoke n1 PYEXEC first_dfsbuf.py key1
