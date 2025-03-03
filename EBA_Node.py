@@ -475,16 +475,24 @@ class EBA_Node:
 
         sys_tags = {**buffer_local_name, **tags, ROOT_STR: bufname}
 
-        self.buffers[bufname] = {
-            "owner": self.name,
-            "for": buf_for,
-            "tags": sys_tags,
-            "size": size,
-            "contents": None
-            }
+        # if any individual key is overloaded on this node, refuse creation.
+        dup_keys = [key for key in sys_tags for buf in self.buffers.values()
+            if key in buf["tags"] and buf["tags"][key] == sys_tags[key]]
+        if len(dup_keys) > 0:
+            print(f"rejecting! found duplicate key(s) {dup_keys}")
+            resp = "REJ"
+        else:
+            self.buffers[bufname] = {
+                "owner": self.name,
+                "for": buf_for,
+                "tags": sys_tags,
+                "size": size,
+                "contents": None
+                }
+            resp = "ACK"
 
         syscall_response = {}
-        syscall_response["response"] = "ACK"
+        syscall_response["response"] = resp
         syscall_response["local_name"] = local_name
         # Don't tell the requester ALL tags, just the ones they asked for.
         syscall_response["tags"] = tags
