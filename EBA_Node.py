@@ -260,8 +260,7 @@ class EBA_Node:
             pass
 
         elif message["API"]["response"] == "REJ":
-            print("rejected buffer request. We don't handle these yet.")
-            exit(1)
+            pass
         else:
             print(f"unknown API response {message['API']['response']}")
             exit(1)
@@ -479,7 +478,7 @@ class EBA_Node:
         dup_keys = [key for key in sys_tags for buf in self.buffers.values()
             if key in buf["tags"] and buf["tags"][key] == sys_tags[key]]
         if len(dup_keys) > 0:
-            print(f"rejecting! found duplicate key(s) {dup_keys}")
+            # print(f"rejecting! found duplicate key(s) {dup_keys}")
             resp = "REJ"
         else:
             self.buffers[bufname] = {
@@ -517,7 +516,7 @@ class EBA_Node:
         syscall_response = {}
         if sys_bufname is None:
             # then the invoke request will fail
-            print(f"error in write: {target_name} does not appear", end=""),
+            print(f"error in write: {target_name} does not appear ", end=""),
             print(f"exactly once. Refusing write.")
             syscall_response["response"] = False
         else:
@@ -787,12 +786,14 @@ class EBA_Node:
         # TODO: The interrupt system needs much more work.
         if len(self.process_dict.keys()) == 0 and len(self.message_queue) == 0:
             return # no need to do anything
-        elif len(self.message_queue) > 0:
-            # parse and respond to a message
+        # parse and respond to all messages
+        starting_queue_length = len(self.message_queue)
+        while len(self.message_queue) > 0:
             this_message = self.message_queue[0]
             self.message_queue = self.message_queue[1:]
             self.resolve_message(this_message)
-        elif len(self.process_dict.keys()) > 0:
+        # Then run one iteration of a process
+        if len(self.process_dict.keys()) > 0:
             # scheduler: choose the process which was least recently given time
             proc_sched_times = {proc: self.process_dict[proc]["last_scheduled"] for proc in self.process_dict}
             chosen_proc = max(proc_sched_times, key=proc_sched_times.get)
@@ -819,7 +820,8 @@ class EBA_Node:
                     self.syscall_wrapper(req, process_pass)
 
         else:
-            assert False, "code should never touch this spot"
+            if starting_queue_length == 0:
+                assert False, "code should never touch this spot"
 
 
 
@@ -1099,20 +1101,27 @@ class EBA_Manager:
                 return False
         return True
 
-    def run(self, terminate_at=None, only_on=None):
+    def run(self, terminate_at=None, only_on=None, run_all=False):
         if terminate_at is None:
             terminate_at = 500 # Max timeslices for testing
         while terminate_at is None or terminate_at > 0:
 
+            run_nodes = []
             if only_on:
-                rn = self.nodes[only_on]
-            else:
+                run_nodes.append(self.nodes[only_on])
+            elif run_all == False: # choose one randomly
                 nodes_with_work =[node_name for node_name in list(self.nodes.keys())
                     if not self.node_empty(node_name)]
                 random_node_name = random.choice(nodes_with_work)
                 rn = self.nodes[random_node_name]
+                run_nodes.append(rn)
+            else:
+                # run all nodes once
+                run_nodes = self.nodes
+
             # print(f"iteration {terminate_at} running node {rn.name}")
-            rn.run_one()
+            for rn in run_nodes:
+                rn.run_one()
             # This is where we'd get extra data
             sys_state = {}
             sys_state["nodes"] = self.get_node_states()
@@ -1121,7 +1130,8 @@ class EBA_Manager:
             self.next_timeslice += 1
             if terminate_at is not None:
                 terminate_at -= 1
-            if only_on is not None and self.node_empty(only_on):
+            if only_on is True and self.node_empty(only_on):
                 break
             elif self.all_empty():
+                # print("all nodes empty")
                 break
