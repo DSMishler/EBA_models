@@ -1,0 +1,9 @@
+sys init
+newnode n1
+newnode n2
+connect n1 n2
+buf_alloc n2 key1:demo_databuf.txt
+buf_write n2 demo_databuf.txt START demo_data.txt key1
+buf_alloc n1 key1:fetch_readbuf.py
+buf_write n1 fetch_readbuf.py START demo_read.py key1
+buf_invoke n1 PYEXEC fetch_readbuf.py key1

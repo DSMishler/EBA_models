@@ -90,7 +90,7 @@ def set_terminate_flag(value):
     dropoff_info["terminate"] = value
 
 # Leave a buffer request in the dropoff and flag where it should go in pickup
-def bufreq(neighbor, size, local_name, tags, request_name):
+def bufreq(neighbor, size, local_name, tags, request_name, color=None):
     if tags is None:
         tags = {}
     dropoff_info["requests"][request_name] = {}
@@ -99,11 +99,12 @@ def bufreq(neighbor, size, local_name, tags, request_name):
     dropoff_info["requests"][request_name]["size"] = size
     dropoff_info["requests"][request_name]["local_name"] = local_name
     dropoff_info["requests"][request_name]["tags"] = tags.copy()
+    dropoff_info["requests"][request_name]["color"] = color
     # Technically, the copy of "tags" is guaranteed by the EBA infrastructure.
     pickup_info["responses"][request_name] = None
 
 # Leave a write request in the dropoff and flag where it should go in pickup
-def write(neighbor, tag, mode, length, payload, request_name, extra_keys=[]):
+def write(neighbor, tag, mode, length, payload, request_name, extra_keys=[], color=None):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "WRITE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
@@ -112,15 +113,17 @@ def write(neighbor, tag, mode, length, payload, request_name, extra_keys=[]):
     dropoff_info["requests"][request_name]["length"] = length
     dropoff_info["requests"][request_name]["payload"] = payload
     dropoff_info["requests"][request_name]["extra_keys"] = extra_keys.copy()
+    dropoff_info["requests"][request_name]["color"] = color
     pickup_info["responses"][request_name] = None
 
 # Leave an invoke request in the dropoff and flag where it should go in pickup
-def invoke(neighbor, mode, mode_args, request_name):
+def invoke(neighbor, mode, mode_args, request_name, color=None):
     dropoff_info["requests"][request_name] = {}
     dropoff_info["requests"][request_name]["request"] = "INVOKE"
     dropoff_info["requests"][request_name]["neighbor"] = neighbor
     dropoff_info["requests"][request_name]["mode"] = mode
     dropoff_info["requests"][request_name]["mode_args"] = mode_args.copy()
+    dropoff_info["requests"][request_name]["color"] = color
     pickup_info["responses"][request_name] = None
 
 # wrapper for invoking with pyexec

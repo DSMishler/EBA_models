@@ -13,7 +13,11 @@ class Input_Queue:
             self.inputs.remove(retval)
         return retval
     def load(self, fname):
-        f = open(fname, "r")
+        try:
+            f = open(fname, "r")
+        except FileNotFoundError:
+            print(f"no file of name '{fname}' found.")
+            return
         newlines = f.read()
         f.close()
 
@@ -313,6 +317,23 @@ shell_dict["buf_invoke"] = {
     "required_nargs": 4,
     "comment": "invoke the contents of the buffer `bufname` " +
         "on `nodename` in `mode` using the args provided"}
+
+def shell_node_pos(usrin):
+    if shell_check_manager() == False:
+        return
+    which_nodename = get_arg_if_exists(usrin, 1)
+    # TODO: fail when node not found
+    node = manager.nodes[which_nodename]
+    xpos = get_arg_if_exists(usrin, 2)
+    ypos = get_arg_if_exists(usrin, 3)
+
+    node.pos = [xpos,ypos]
+
+shell_dict["node_pos"] = {
+    "function": shell_node_pos,
+    "usage": "node_pos <nodename> <xpos> <ypos>",
+    "required_nargs": 4,
+    "comment": "(visualization only:) force this node to appear at a position"}
 
 def shell_run(usrin):
     if shell_check_manager() == False:

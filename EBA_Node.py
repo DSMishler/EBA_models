@@ -12,6 +12,9 @@
 
 ROOT_STR = "root"
 SELF_BUFNAME = "me.EBA"
+BUFREQ_COLOR = "blue"
+WRITE_COLOR = "green"
+INVOKE_COLOR = "red"
 
 import enum
 import random
@@ -108,7 +111,8 @@ def blank_message_template():
             "response": None
             # It is possible more will be added here, depending on the API call
             },
-        "process": None
+        "process": None,
+        "color": None
         }
 
 class EBA_State(enum.Enum):
@@ -134,6 +138,7 @@ class EBA_Node:
         self.process_dict = {}
         self.next_PID = 0
         self.buf_counter = 0
+        self.pos = None # pos is only for visualization
         # Process dict info:
         # Process name (key, unique per node)
         #    name: just a copy of the process name, used for printing later
@@ -156,6 +161,7 @@ class EBA_Node:
     def all_state(self):
         return {
                 "name": self.name,
+                "pos": self.pos,
                 "interrupt_state": self.interrupt_state,
                 "neighbors": self.neighbors,
                 "buffers": self.buffers,
@@ -196,6 +202,7 @@ class EBA_Node:
         response["RID"] = message["RID"]
         response["API"]["request"] = message["API"]["request"]
         response["process"] = message["process"]
+        response["color"] = "dark"+message["color"]
         return response
 
 
@@ -216,7 +223,8 @@ class EBA_Node:
     # process: the info of the process on this node which requests the buffer
         # process is allowed to be None, but this is not going to be implemented
         # as a default
-    def request_buffer_from(self, neighbor, size, tags, local_name, process):
+    # color: color of arrow in visualization (only used for visualization)
+    def request_buffer_from(self, neighbor, size, tags, local_name, process, color=None):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "BUFREQ"
@@ -224,6 +232,7 @@ class EBA_Node:
         message["API"]["local_name"] = local_name
         message["API"]["tags"] = tags.copy()
         message["process"] = process
+        message["color"] = BUFREQ_COLOR if color is None else color
         
         # note that we are now awaiting a response
         self.waiting_requests[message["RID"]] = message
@@ -281,8 +290,9 @@ class EBA_Node:
     # extra_keys: in addition to process keys, other keys may be used. Often,
         # this is because a process uniquely requests buffers with this key
         # and then uses it later.
+    # color: color of arrow in visualization (only used for visualization)
 
-    def request_write_to_buffer(self, neighbor, tag, mode, length, payload, process, extra_keys=[]):
+    def request_write_to_buffer(self, neighbor, tag, mode, length, payload, process, extra_keys=[], color=None):
         assert length != 0, f"illegal request: write with length of 0"
         assert length == len(payload), f"lllegal request: payload {payload} claimed to have length {length} instead of {len(payload)}"
 
@@ -295,6 +305,7 @@ class EBA_Node:
         message["API"]["payload"] = payload
         message["process"] = process
         message["extra_keys"] = extra_keys.copy()
+        message["color"] = WRITE_COLOR if color is None else color
 
         self.waiting_requests[message["RID"]] = message
         self.manager.send(self.name, neighbor, message)
@@ -358,13 +369,15 @@ class EBA_Node:
             # syscall_args: the args to that specific syscall
     # process: the info of the process on this node requesting the invoke.
         # You can get away with process=None as long as there are extra keys
-    def request_invoke_to_buffer(self, neighbor, mode, mode_args, process):
+    # color: color of arrow in visualization (only used for visualization)
+    def request_invoke_to_buffer(self, neighbor, mode, mode_args, process, color=None):
         message = self.message_template()
         message["recipient"] = neighbor
         message["API"]["request"] = "INVOKE"
         message["API"]["mode"] = mode
         message["API"]["mode_args"] = mode_args
         message["process"] = process
+        message["color"] = INVOKE_COLOR if color is None else color
 
         self.waiting_requests[message["RID"]] = message
         self.manager.send(self.name, neighbor, message)
@@ -710,12 +723,13 @@ class EBA_Node:
             size = req["size"]
             local_name = req["local_name"]
             tags = req["tags"]
+            color = req["color"]
             if neighbor is None or neighbor == self.name:
                 # alloc-ing buffer on-node
                 response = self.syscall_alloc_buffer(self.name, size, tags, local_name, process_pass)
             else:
                 # alloc-ing buffer off-node
-                self.request_buffer_from(neighbor, size, tags, local_name, process_pass)
+                self.request_buffer_from(neighbor, size, tags, local_name, process_pass, color)
         elif req["request"] == "WRITE":
             # Then do write request
             neighbor = req["neighbor"]
@@ -724,24 +738,26 @@ class EBA_Node:
             length = req["length"]
             payload = req["payload"]
             extra_keys = req["extra_keys"]
+            color = req["color"]
             if neighbor is None or neighbor == self.name:
                 # writing to buffer on-node
                 response = self.syscall_write_to_buffer(target, mode, length, payload, process_pass, extra_keys)
             else:
                 # writing to buffer off-node
-                self.request_write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys)
+                self.request_write_to_buffer(neighbor, target, mode, length, payload, process_pass, extra_keys, color)
         elif req["request"] == "INVOKE":
             # Then do invoke request
             neighbor = req["neighbor"]
             mode = req["mode"]
             mode_args = req["mode_args"]
             mode_args["process"] = process_pass
+            color = req["color"]
             if neighbor is None or neighbor == self.name:
                 # invoke to buffer on-node
                 response = self.syscall_invoke_to_buffer(mode, mode_args)
             else:
                 # invoke to buffer off-node
-                self.request_invoke_to_buffer(neighbor, mode, mode_args, process_pass)
+                self.request_invoke_to_buffer(neighbor, mode, mode_args, process_pass, color)
         else:
             assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
         """
@@ -1120,7 +1136,8 @@ class EBA_Manager:
                 run_nodes = self.nodes
 
             # print(f"iteration {terminate_at} running node {rn.name}")
-            for rn in run_nodes:
+            # shuffle order of nodes to ensure no strange order-related bugs occur
+            for rn in random.sample(run_nodes, len(run_nodes)):
                 rn.run_one()
             # This is where we'd get extra data
             sys_state = {}

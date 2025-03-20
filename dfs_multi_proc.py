@@ -1,24 +1,6 @@
 import EBA_PYAPI as EBA
 import sys
 
-################################################################################
-# LOGIC
-################################################################################
-#                                  BEGIN                                       #
-#                         (grab filename info, etc)                            #
-#                                                                              #
-#                                DFS_UPDATE                                    #
-#                              (grab path info)                                #
-#               (write a new whole path file if none existed)                  #
-#                                                                              #
-#                                DFS_PREP                                      #
-#                       (choose next neighbor in dfs)                          #
-#                      (alloc and write path on newnode)                       #
-#                                                                              #
-#                              DFS_PROPAGATE                                   #
-#                    (alloc, write, and invoke on newnode)                     #
-################################################################################
-
 whole_path_bufname = "path.dfs"
 whole_path_key = "my_whole_path"
 bufname_this_code = "next_dfs_host"

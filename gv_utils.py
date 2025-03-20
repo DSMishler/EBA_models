@@ -47,32 +47,42 @@ def state_to_gv(state_slice):
         gv_str += f"label=\"{v}:{nprocs}\""
         if nprocs > 0:
             gv_str += f",style=filled,fillcolor=turquoise"
+        if nodes[v]["pos"] is not None:
+            pos = nodes[v]["pos"]
+            gv_str += f",pos=\"{pos[0]},{pos[1]}\""
         gv_str += "]\n"
 
-    # Add edges to graph
+    # now add special names or anything that is needed or added
+    # special edges
+    message_edges_added = [[0 for i in range(nvertices)] for j in range(nvertices)]
+    for msg in just_sent:
+        colorstr = msg["message"]["color"]
+        if colorstr is None:
+            print("warning: color for message shouldn't end up 'None'")
+            print("defaulting to red.")
+            print(f"message: {msg['message']}")
+            colorstr = "black"
+        i = name_to_num[msg["sender"]]
+        j = name_to_num[msg["receiver"]]
+        gv_str += f"\t{i} -> {j} ["
+        gv_str += f"dir=forward,color={colorstr}"
+        gv_str += "]\n"
+        message_edges_added[i][j] += 1
+
+    # Add default edges to graph
     for i in range(nvertices):
         for j in range(i+1, nvertices):
             if which_edges[i][j] + which_edges[j][i] == 1: # exclusive or
                 print("warning: unimplemented one-directional edge in graphing")
                 continue
+            elif message_edges_added[i][j] > 0 or message_edges_added[j][i] > 0:
+                pass # do not repeat the default edge if a message is already there
             elif which_edges[i][j] and which_edges[j][i]:
                 gv_str += f"\t{i} -> {j} ["
-                # now add special names or anything that is needed or added
-                # special edges
-                sender_receiver_nums = [[name_to_num[msg["sender"]],name_to_num[msg["receiver"]]] for msg in just_sent]
-                if [i,j] in sender_receiver_nums and [j,i] in sender_receiver_nums:
-                    gv_str += "dir=both,color=red"
-                elif [i,j] in sender_receiver_nums:
-                    gv_str += "dir=forward,color=red"
-                elif [j,i] in sender_receiver_nums:
-                    gv_str += "dir=back,color=red"
-                else:
-                    gv_str += "dir=none"
+                gv_str += "dir=none"
                 gv_str += "]\n"
             else:
                 pass # no edge
-
-
 
 
     gv_str += "}"
@@ -100,7 +110,7 @@ def all_timeslice_to_files(node_states, tdir="EBA_graphviz/testrun/"):
 def dot_to_png(fname):
     if fname[-4:] == ".dot":
         fbase = fname[:-4]
-    os.system(f"dot -Tsvg {fname} > {fbase}.svg")
+    os.system(f"neato -Tsvg {fname} > {fbase}.svg")
     os.system(f"convert {fbase}.svg {fbase}.png")
 
 def all_dot_to_png(tdir="EBA_graphviz/testrun/"):
