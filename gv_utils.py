@@ -47,9 +47,6 @@ def state_to_gv(state_slice):
         gv_str += f"label=\"{v}:{nprocs}\""
         if nprocs > 0:
             gv_str += f",style=filled,fillcolor=turquoise"
-        if nodes[v]["pos"] is not None:
-            pos = nodes[v]["pos"]
-            gv_str += f",pos=\"{pos[0]},{pos[1]}\""
         gv_str += "]\n"
 
     # now add special names or anything that is needed or added

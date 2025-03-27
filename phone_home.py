@@ -37,7 +37,10 @@ elif proc_state == "MSG":
             request_name="PROCVAR_n2_to_n1_bufreq_2")
         EBA.set_proc_state("TERM")
 elif proc_state == "TERM":
-    EBA.set_terminate_flag(True)
+    if EBA.waiting_for_response("PROCVAR_n2_to_n1_bufreq_2"):
+        pass
+    else:
+        EBA.set_terminate_flag(True)
 else:
     print(f"error, unknown proc state {proc_state}")
 EBA.prep_dropoff_and_pickup_files()

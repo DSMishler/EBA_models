@@ -8,6 +8,67 @@ bufname_this_code = "next_dfs_host"
 EBA.init_PYAPI(sys.argv)
 proc_state = EBA.get_proc_state()
 
+################################################################################
+# BEGIN
+# calls all of the bulitins, prepares the process to read itself
+# next state: DFS_READ_SELF
+# 
+# DFS_READ_SELF
+# Reads its own code and checks if another node has given us information yet.
+# If not, we can know that we must be the ROOT node of the DFS and we'll
+# have to do this ourself
+# next state: DFS_PREP or DFS_I_AM_ROOT
+# 
+# DFS_I_AM_ROOT
+# Writes parent information and code buffer to self
+# next state: DFS_PREP
+# 
+# DFS_PREP
+# checks whether we need to go up or down
+# if we need to go down, preps response buffers on-node and sends a bufreq to
+# all future (possible) children
+# if we need to go up, goes to the next state
+#
+# next state: DFS_REPORT_UP or DFS_WAIT_FOR_CHILDREN_RESPONSES
+#
+# DFS_REPORT_UP
+# goes and grabs all the info from the buffers we expect to hear from
+# e.g. this node has 3 children in the DFS. It reads that info.
+# next state: DFS_REPORT_UP_SECURE_LOCK
+#
+# DFS_REPORT_UP_SECURE_LOCK
+# if it is determined that we don't have all the info back yet, then terminate
+# otherwise, try to secure a lock from self
+# next state: DFS_REPORT_UP_SEND or END
+#
+# DFS_REPORT_UP_SEND
+# if we didn't get the lock from self, then we are done. Assume someone
+# else beat us here, and they are running the same program, so they have all
+# the info they need. We can terminate.
+# Or, if we are the root node, then we are also done and can terminate.
+# If not, we send our invoke to the parent node and load it up with
+# the data we found
+# next state: DFS_ALL_IS_WELL or END
+#
+# DFS_WAIT_FOR_CHILDREN_RESPONSES
+# we wait to hear back from all the child nodes fro DFS_PREP
+# It might be possible here that for all children we reached out to, someone
+# beat us there. If that's the case, then we go back to report up. If not,
+# we have at least one child we have got a lock for, so it's time to propagate
+# next state: DFS_REPORT_UP or DFS_PROPAGATE_DOWN
+#
+# DFS_PROPAGATE_DOWN
+# for every neighbor, we write our code down, let the neighbor know we are
+# its parent, and let it know the path we followed to get there
+# We then invoke and move on
+# next state: DFS_ALL_IS_WELL
+#
+# DFS_ALL_IS_WELL
+# From either path we entered, remain in this state until we heard back from
+# all our invokes (variable name is the same). Once we've heard back, terminate
+# next state: END
+################################################################################
+
 if proc_state == "BEGIN": # Call all of the builtins then wait on process queue
     EBA.id("PROCVAR_idreq")
     EBA.neighbors("PROCVAR_nreq")

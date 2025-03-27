@@ -1,9 +1,3 @@
-# TODO
-# - I realized that unique node names and also unique buffer names does not
-#   guaranee unique node-buffer pairs. Example: nodes A and AAAA and buffers
-#   AAAAA and AA. You can have node-buffer pairs A.AAAAA and AAAA.AA
-#   (dots added). This means more logic (like dots) might be needed
-
 # As processes are implemented, I currently have them running until termination.
 # This is why on the code writing side, I have the code written to take frequent
 # breaks. Since a process will run until termination, it also won't get any API
@@ -15,6 +9,7 @@ SELF_BUFNAME = "me.EBA"
 BUFREQ_COLOR = "blue"
 WRITE_COLOR = "green"
 INVOKE_COLOR = "red"
+PYTHON_INVOCATION = "python3"
 
 import enum
 import random
@@ -138,7 +133,6 @@ class EBA_Node:
         self.process_dict = {}
         self.next_PID = 0
         self.buf_counter = 0
-        self.pos = None # pos is only for visualization
         # Process dict info:
         # Process name (key, unique per node)
         #    name: just a copy of the process name, used for printing later
@@ -161,7 +155,6 @@ class EBA_Node:
     def all_state(self):
         return {
                 "name": self.name,
-                "pos": self.pos,
                 "interrupt_state": self.interrupt_state,
                 "neighbors": self.neighbors,
                 "buffers": self.buffers,
@@ -445,7 +438,11 @@ class EBA_Node:
             else:
                 proc_name = requesting_process_info["name"]
                 which_pickup = requesting_process_info["which_pickup"]
-                self.manager.inform_process(
+                if proc_name not in self.process_dict:
+                    print(f"resolve message warning: proc {proc_name}", end=" ")
+                    print(f"not in process dict for node {self.name}")
+                else:
+                    self.manager.inform_process(
                         self,
                         self.process_dict[proc_name],
                         which_pickup,
@@ -760,28 +757,6 @@ class EBA_Node:
                 self.request_invoke_to_buffer(neighbor, mode, mode_args, process_pass, color)
         else:
             assert False, f"unknown EBA PYAPI request {req['request']}. Possibly it is not implemented yet?"
-        """
-        elif req["request"] == "ID":
-            response = self.syscall_id()
-        elif req["request"] == "NEIGHBORS":
-            response = self.syscall_neighbors()
-        elif req["request"] == "MYBUF":
-            response = self.syscall_mybuf()
-        elif req["request"] == "READ":
-            target = req["target"]
-            extra_keys = req["extra_keys"]
-            if extra_keys is None:
-                extra_keys = []
-            proc_keys = process_pass["keys"]
-            # TODO: should we allow system calls from non-processes?
-            response = self.syscall_read(target, proc_keys + extra_keys)
-        elif req["request"] == "LS":
-            extra_keys = req["extra_keys"]
-            if extra_keys is None:
-                extra_keys = []
-            proc_keys = process_pass["keys"]
-            response = self.syscall_ls(proc_keys + extra_keys)
-        """
 
         if response is not None: # If the call is on-node
             proc_name = process_pass["name"]
@@ -1048,10 +1023,10 @@ class EBA_Manager:
 
 
     def init_process(self, host_node, process_info):
-        node_dir = self.nodebufdirs_fname + "/" + host_node.name
-        full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
-        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
-        full_dropoff_fname = node_dir + "/" + process_info["name"] + ".EBADROPOFF.pkl"
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name + "/"
+        full_process_fname = node_dir + process_info["bufname"] + ".py"
+        full_pickup_fname = node_dir + process_info["name"] + ".EBAPICKUP.pkl"
+        full_dropoff_fname = node_dir + process_info["name"] + ".EBADROPOFF.pkl"
 
         init_pickup_dict = {}
         init_pickup_dict["dropoff"] = full_dropoff_fname
@@ -1064,12 +1039,12 @@ class EBA_Manager:
         pf.close()
 
     def run_process(self, host_node, process_info):
-        node_dir = self.nodebufdirs_fname + "/" + host_node.name
-        full_process_fname = node_dir + "/" + process_info["bufname"] + ".py"
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name + "/"
+        full_process_fname = node_dir + process_info["bufname"] + ".py"
         # Possible TODO: pickup and dropoff fnames become obsolete fields
         # if we just always append something to them here.
-        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
-        full_dropoff_fname = node_dir + "/" + process_info["name"] + ".EBADROPOFF.pkl"
+        full_pickup_fname = node_dir + process_info["name"] + ".EBAPICKUP.pkl"
+        full_dropoff_fname = node_dir + process_info["name"] + ".EBADROPOFF.pkl"
 
         # If the file's code doesn't already exist, write it in
         # TODO: Does this need done *now* or in the init?
@@ -1077,9 +1052,8 @@ class EBA_Manager:
         f.write(host_node.buffers[process_info['bufname']]['contents'])
         f.close()
 
-        # TODO: possibly different invocation on different systems
-        ### print(f"running {full_process_fname}")
-        subprocess.run([f"python3", f"{full_process_fname}", f"{full_pickup_fname}"])
+        run_args = [PYTHON_INVOCATION, full_process_fname, full_pickup_fname]
+        subprocess.run(run_args)
 
 
         pf = open(full_dropoff_fname, "rb")
@@ -1088,8 +1062,8 @@ class EBA_Manager:
         return dropoff_dict
 
     def inform_process(self, host_node, process_info, which_response, info):
-        node_dir = self.nodebufdirs_fname + "/" + host_node.name
-        full_pickup_fname = node_dir + "/" + process_info["name"] + ".EBAPICKUP.pkl"
+        node_dir = self.nodebufdirs_fname + "/" + host_node.name + "/"
+        full_pickup_fname = node_dir + process_info["name"] + ".EBAPICKUP.pkl"
 
         pf = open(full_pickup_fname, "rb")
         pickup_dict = pickle.load(pf)
