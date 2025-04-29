@@ -1,0 +1,4 @@
+sys init
+newnode node1
+ssh node1
+show
