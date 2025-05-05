@@ -1,6 +1,8 @@
 # Daniel Mishler
 # EBA_Node for PYEBA3
 
+import time as pytime# calculating expiry time of buffers
+
 # EBA node state is loaded in via a dictionary in a reserved file
 
 # The node_state dictionary:
@@ -13,7 +15,7 @@
 # buffers: a dict of all active buffers, keyed by buffer name
     # name: a repeat of the buffer name
     # size: size of buffer (-1 is infinite size)
-    # exp: wall time the buffer will expire (None is never)
+    # exp: epoch time the buffer will expire (None is never)
 
 
 ################################################################################
@@ -22,9 +24,8 @@
 # send_buf.EBA: buffer for staging messages to be sent. One message per line.
 # call_queue.EBA: buffer for staging other buffers which are to be invoked
 #                 One buffer per line.
-# message_queue.EBA: buffer for staging messages received.
-#                    One message per line.
-#                    There is only one for now.
+# message_queue.EBA: buffer for staging messages received. One message per line.
+#                    There is only one for now. Perhaps one per neighbor later.
 ################################################################################
 
 # helper function
@@ -78,12 +79,44 @@ class EBA_Node:
 
         if mode == "show":
             self.show(contents=contents)
+        else:
+            # then run some of the jobs
+            self.run()
+
+
+            # write the new node state
+            f = open("node_info.EBA", "w")
+            f.write(repr(self.node_state))
+            f.close()
+
+    def run(self):
+        # first, resolve the entire message queue
+        # NOTE: this is a critical region and the code should not be interrupted
+        # while here
+        while True:
+            message = pop_first_line_from("message_queue.EBA")
+            if message is not None:
+                self.resolve_message(eval(message))
+            else:
+                break
+        f = open("message_queue.EBA", "w")
+        f.close()
+
+        # Now run the call queue
+        print("Not implemented: NOT RUNNING THE CALL QUEUE RIGHT NOW")
+        f = open("call_queue.EBA", "r")
+        print(f.read())
+        f.close()
+
 
     def show(self, contents=False):
         for buf in self.node_state["buffers"].values():
             print(f"buffer {buf['name']}:")
             print(f"    size: {buf['size']}")
-            print(f"    expires: {buf['exp']}")
+            if buf['exp'] is None:
+                print(f"    expires: never")
+            else:
+                print(f"    expires: {buf['exp']-pytime.time()} seconds")
             print(f"    contents:")
             if contents == True:
                 f = open(buf["name"], "r")
@@ -95,13 +128,18 @@ class EBA_Node:
         assert request == "READ"
         if target not in self.node_state["buffers"]:
             return {"response": None}
+        else:
+            f = open(target, "r")
+            text = f.read()
+            f.close()
+            return {"response": text}
 
     def resolve_prim_BUFREQ(self, request, mode, size, time):
         assert request == "BUFREQ"
         assert mode == "ALLOC" # this will be changed later
-        buf_num = buf_range[1]
+        buf_num = self.node_state["buf_range"][1]
         buf_name = f"BUF_{buf_num}"
-        buf_range[1] += 1
+        self.node_state["buf_range"][1] += 1
 
         # check that the file does not already exist
         try:
@@ -118,7 +156,7 @@ class EBA_Node:
         self.node_state["buffers"][buf_name] = {
                 "name": buf_name,
                 "size": size,
-                "time": time}
+                "exp": pytime.time() + float(time)}
 
         return {"response": True, **self.node_state["buffers"][buf_name]}
 
@@ -157,9 +195,9 @@ class EBA_Node:
         if mode == "PYEXEC":
             if target not in self.node_state["buffers"]:
                 return {"response": False}
-            if target in self.node_state["call_queue"]:
+            if target in self.node_state["call_queue.EBA"]:
                 return {"response": False}
-            self.node_state["call_queue"].append(target)
+            self.node_state["call_queue.EBA"].append(target)
             return {"response": True}
 
         elif mode == "SYSCALL":

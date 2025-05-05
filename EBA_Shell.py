@@ -1,6 +1,10 @@
 # Daniel Mishler
 import EBA_Manager
 
+import threading
+
+Shell_Lock = threading.Lock()
+
 class Input_Queue:
     def __init__(self):
         self.inputs = []
@@ -70,6 +74,18 @@ def shell_check_current_node():
     else:
         return True
 
+
+
+
+def ship_message_to_manager(API):
+    message = {
+        "recipient": current_node,
+        "sender": "ROOT",
+        "API": API,
+        "response_buffer": None}
+    manager.deliver_shell_message(repr(message))
+
+
 shell_dict = {}
 
 
@@ -111,7 +127,10 @@ def shell_sys(usrin):
     allowed_whats = ["init", "load", "save"]
     if what == "init":
         # gv_utils.refresh_directory(tdir="EBA_graphviz/testrun/")
-        manager = EBA_Manager.EBA_Manager(mode="init")
+        manager = EBA_Manager.EBA_Manager(mode="init", threading_lock=Shell_Lock)
+        t = threading.Thread(target=manager.run_continuously, args=[])
+        t.daemon = True # dies if I exit or CTRL+C
+        t.start()
     elif what == "load":
         print("sys load not implemented")
     elif what == "save":
@@ -170,6 +189,75 @@ shell_dict["show"] = {
     "required_nargs": 1,
     "comment": "show contents of node to shell. " +
                "If no args, show current node"}
+
+def shell_bufreq(usrin):
+    if shell_check_manager() == False:
+        return
+    if shell_check_current_node() == False:
+        return
+    size = get_arg_if_exists(usrin, 1)
+    time = get_arg_if_exists(usrin, 2)
+
+    API = {
+        "request": "BUFREQ",
+        "mode": "ALLOC",
+        "size": size,
+        "time": time}
+
+    ship_message_to_manager(API)
+
+shell_dict["bufreq"] = {
+    "function": shell_bufreq,
+    "usage": "bufreq <size> <time>",
+    "required_nargs": 3,
+    "comment": "call the primitive BUFREQ on the ssh-ed node"}
+
+def shell_write(usrin):
+    if shell_check_manager() == False:
+        return
+    if shell_check_current_node() == False:
+        return
+    mode = get_arg_if_exists(usrin, 1)
+    target = get_arg_if_exists(usrin, 2)
+    length = get_arg_if_exists(usrin, 3)
+    payload = get_arg_if_exists(usrin, 4)
+
+    API = {
+        "request": "WRITE",
+        "mode": mode,
+        "target": target,
+        "length": length,
+        "payload": payload}
+
+    ship_message_to_manager(API)
+
+shell_dict["write"] = {
+    "function": shell_write,
+    "usage": "write <mode> <target> <length> <payload>",
+    "required_nargs": 5,
+    "comment": "call the primitive WRITE on the ssh-ed node on buffer `target`"}
+
+def shell_invoke(usrin):
+    if shell_check_manager() == False:
+        return
+    if shell_check_current_node() == False:
+        return
+    mode = get_arg_if_exists(usrin, 1)
+    target = get_arg_if_exists(usrin, 2)
+
+    API = {
+        "request": "INVOKE",
+        "mode": mode,
+        "target": target}
+
+    ship_message_to_manager(API)
+
+shell_dict["invoke"] = {
+    "function": shell_invoke,
+    "usage": "invoke <mode> <target>",
+    "required_nargs": 3,
+    "comment": "call the primitive INVOKE on the ssh-ed node"}
+
 
 while True:
     if current_node is not None:
