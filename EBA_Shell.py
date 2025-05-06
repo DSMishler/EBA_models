@@ -77,12 +77,17 @@ def shell_check_current_node():
 
 
 
-def ship_message_to_manager(API):
+def ship_message_to_manager(API, print_response=False):
+    assert type(print_response) is bool
+    if print_response == False:
+        response_buffer = None
+    elif print_response == True:
+        response_buffer = "terminal"
     message = {
         "recipient": current_node,
         "sender": "ROOT",
         "API": API,
-        "response_buffer": None}
+        "response_buffer": response_buffer}
     manager.deliver_shell_message(repr(message))
 
 
@@ -175,20 +180,20 @@ shell_dict["newnode"] = {
 def shell_show(usrin):
     if shell_check_manager() == False:
         return
-    nodename = get_arg_if_exists(usrin, 1)
-    if nodename is not None:
-        print("showing non-ssh-ed nodes is not implemented (yet)")
+    mode = get_arg_if_exists(usrin, 1)
+    if mode == "contents":
+        show_contents = True
     else:
-        if shell_check_current_node() == False:
-            return
-        manager.show_node(current_node)
+        show_contents = False
+    if shell_check_current_node() == False:
+        return
+    manager.show_node(current_node, show_contents)
 
 shell_dict["show"] = {
     "function": shell_show,
-    "usage": "show <opt:nodename> <opt:nodename2> ...",
+    "usage": "show <opt:mode>",
     "required_nargs": 1,
-    "comment": "show contents of node to shell. " +
-               "If no args, show current node"}
+    "comment": "show contents of current node to shell."}
 
 def shell_bufreq(usrin):
     if shell_check_manager() == False:
@@ -219,8 +224,11 @@ def shell_write(usrin):
         return
     mode = get_arg_if_exists(usrin, 1)
     target = get_arg_if_exists(usrin, 2)
-    length = get_arg_if_exists(usrin, 3)
-    payload = get_arg_if_exists(usrin, 4)
+    file = get_arg_if_exists(usrin, 3)
+    f = open(file, "r")
+    payload = f.read()
+    length = len(payload)
+    f.close()
 
     API = {
         "request": "WRITE",
@@ -233,8 +241,8 @@ def shell_write(usrin):
 
 shell_dict["write"] = {
     "function": shell_write,
-    "usage": "write <mode> <target> <length> <payload>",
-    "required_nargs": 5,
+    "usage": "write <mode> <target> <file>",
+    "required_nargs": 4,
     "comment": "call the primitive WRITE on the ssh-ed node on buffer `target`"}
 
 def shell_invoke(usrin):
@@ -248,7 +256,8 @@ def shell_invoke(usrin):
     API = {
         "request": "INVOKE",
         "mode": mode,
-        "target": target}
+        "target": target,
+        "call_args": {}}
 
     ship_message_to_manager(API)
 

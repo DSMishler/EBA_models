@@ -3,3 +3,5 @@ newnode node1
 ssh node1
 show
 bufreq 50 50
+write START BUF_0 textbuf.txt
+invoke PYEXEC BUF_0

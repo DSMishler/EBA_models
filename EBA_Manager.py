@@ -149,10 +149,10 @@ class EBA_Manager:
     def load_node(self, node_name):
         self.nodes.append(node_name)
 
-    def show_node(self, node_name):
+    def show_node(self, node_name, contents=False):
         node_dir_name = NODEBUFDIRS_FNAME + "/" + node_name
         os.chdir(node_dir_name)
-        subprocess.run(["python3", "EBA_Node.py", "mode=show"])
+        subprocess.run(["python3", "EBA_Node.py", "mode=show", f"contents={contents}"])
         os.chdir("../../")
 
     def node_has_work(self, node_name):
@@ -197,12 +197,11 @@ class EBA_Manager:
     def run_continuously(self, sleep_time=2):
         while True:
             if self.running:
-                # TODO: consider cleaning up this loop code
-                run_again = True
-                while run_again == True:
+                while True:
                     with self.threading_lock:
                         nodes_ran = self.run_all()
-                        run_again = True if nodes_ran > 0 else False
+                        if nodes_ran == 0:
+                            break
             # print(f"going to sleep for {sleep_time}s")
             time.sleep(sleep_time)
 

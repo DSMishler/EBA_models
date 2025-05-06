@@ -78,7 +78,8 @@ class EBA_Node:
         f.close()
 
         if mode == "show":
-            self.show(contents=contents)
+            assert contents in ["True", "False"]
+            self.show(contents=eval(contents))
         else:
             # then run some of the jobs
             self.run()
@@ -103,10 +104,20 @@ class EBA_Node:
         f.close()
 
         # Now run the call queue
-        print("Not implemented: NOT RUNNING THE CALL QUEUE RIGHT NOW")
         f = open("call_queue.EBA", "r")
-        print(f.read())
+        call_queue_slice = f.read()
         f.close()
+        # TODO: make this a function
+        f = open("call_queue.EBA", "w")
+        f.close()
+
+        for buf in call_queue_slice.split('\n'):
+            if buf == "":
+                continue
+            f = open(buf, "r")
+            buftext = f.read()
+            f.close()
+            exec(buftext)
 
 
     def show(self, contents=False):
@@ -117,8 +128,8 @@ class EBA_Node:
                 print(f"    expires: never")
             else:
                 print(f"    expires: {buf['exp']-pytime.time()} seconds")
-            print(f"    contents:")
             if contents == True:
+                print(f"    contents:")
                 f = open(buf["name"], "r")
                 print(f.read())
                 f.close()
@@ -164,14 +175,19 @@ class EBA_Node:
         assert request == "WRITE"
         assert mode in ["START", "APPEND"]
 
-        if target[-4:] == ".EBA":
-            # not allowed to write to reserved buffers
-            return {"response": 0}
+        # Think about whether or not the users should be allowed to write to
+        # reserved buffers. It seems like an extra step, but this is how
+        # it would be done.
+        # if target[-4:] == ".EBA":
+            # # not allowed to write to reserved buffers
+            # return {"response": 0}
 
         if target not in self.node_state["buffers"]:
+            print(f"error! write {target} not in {self.node_state['buffers']}")
             return {"response": 0}
 
         if len(payload) != length:
+            print(f"error! payload of len {len(payload)} (expected {length})")
             return {"response": 0}
 
         mode_to_pychar = {"START": "w", "APPEND": "a"}
@@ -186,18 +202,16 @@ class EBA_Node:
         assert request == "INVOKE"
         assert mode in ["SYSCALL", "PYEXEC"]
 
-        if target[-4:] == ".EBA":
-            # PYEXEC reason: not allowed to invoke reserved buffers
-            # SYSCALL reason: no system calls end i ".EBA"
-            return {"response": False}
-
-
         if mode == "PYEXEC":
+            # NOTE: we don't check if the element is already in the queue.
             if target not in self.node_state["buffers"]:
+                print(f"error! Cannot invoke {target} - it is not a buffer")
+                print(f"buffers: {self.node_state['buffers']}")
                 return {"response": False}
-            if target in self.node_state["call_queue.EBA"]:
-                return {"response": False}
-            self.node_state["call_queue.EBA"].append(target)
+            f = open("call_queue.EBA", "a")
+            f.write(target)
+            f.write('\n')
+            f.close()
             return {"response": True}
 
         elif mode == "SYSCALL":
