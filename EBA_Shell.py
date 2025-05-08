@@ -1,7 +1,9 @@
 # Daniel Mishler
 import EBA_Manager
+import gv_utils
 
 import threading
+
 
 Shell_Lock = threading.Lock()
 
@@ -129,17 +131,32 @@ shell_dict["loadcmds"] = {
 def shell_sys(usrin):
     global manager
     what = get_arg_if_exists(usrin, 1)
-    allowed_whats = ["init", "load", "save"]
+    allowed_whats = ["init", "load", "save", "pause", "resume", "exit"]
     if what == "init":
         # gv_utils.refresh_directory(tdir="EBA_graphviz/testrun/")
         manager = EBA_Manager.EBA_Manager(mode="init", threading_lock=Shell_Lock)
         t = threading.Thread(target=manager.run_continuously, args=[])
-        t.daemon = True # dies if I exit or CTRL+C
+        t.daemon = True # thread dies if I exit or CTRL+C
         t.start()
     elif what == "load":
         print("sys load not implemented")
     elif what == "save":
         print("sys save not implemented")
+    elif what == "pause":
+        if shell_check_manager() == False:
+            return
+        manager.pause()
+    elif what == "resume":
+        if shell_check_manager() == False:
+            return
+        manager.resume()
+    elif what == "exit":
+        if shell_check_manager() == False:
+            return
+        manager.set_exit()
+        manager = None
+        global current_node
+        current_node = None
     else:
         print(f"error: <what> must be one of: {allowed_whats}")
 
@@ -147,7 +164,9 @@ shell_dict["sys"] = {
     "function": shell_sys,
     "usage": "sys <function>",
     "required_nargs": 2,
-    "comment": "load, init, or save a system"}
+    "comment": "load, init, or save a system.\n" +
+               "'pause' and 'resume' stop operation.\n" +
+               "'exit' to stop the thread gracefully"}
 
 def shell_ssh(usrin):
     global current_node
@@ -176,6 +195,47 @@ shell_dict["newnode"] = {
     "usage": "newnode <nodename>",
     "required_nargs": 2,
     "comment": "add a new node to the EBA system"}
+
+def shell_connect(usrin):
+    if shell_check_manager() == False:
+        return
+    nodename1 = get_arg_if_exists(usrin, 1)
+    nodename2 = get_arg_if_exists(usrin, 2)
+    manager.connect(nodename1, nodename2)
+
+shell_dict["connect"] = {
+    "function": shell_connect,
+    "usage": "connect <nodename1> <nodename2>",
+    "required_nargs": 3,
+    "comment": "connects two nodes in the system"}
+
+def shell_disconnect(usrin):
+    if shell_check_manager() == False:
+        return
+    nodename1 = get_arg_if_exists(usrin, 1)
+    nodename2 = get_arg_if_exists(usrin, 2)
+    manager.disconnect(nodename1, nodename2)
+
+shell_dict["disconnect"] = {
+    "function": shell_disconnect,
+    "usage": "disconnect <nodename1> <nodename2>",
+    "required_nargs": 3,
+    "comment": "disconnects two nodes in the system"}
+
+def shell_adj_matrix(usrin):
+    if shell_check_manager() == False:
+        return
+    print(f"in order: {manager.nodes}")
+    adj = manager.adj_matrix()
+    for row in adj:
+        print(row)
+
+shell_dict["adj_matrix"] = {
+    "function": shell_adj_matrix,
+    "usage": "adj_matrix",
+    "required_nargs": 1,
+    "comment": "shows an adjacency matrix of the whole network"}
+
 
 def shell_show(usrin):
     if shell_check_manager() == False:
@@ -267,6 +327,64 @@ shell_dict["invoke"] = {
     "required_nargs": 3,
     "comment": "call the primitive INVOKE on the ssh-ed node"}
 
+# TODO: Allow for different directory selection in all of the below
+def shell_export_dot(usrin=None):
+    if shell_check_manager() == False:
+        return
+    gv_utils.all_to_gv(manager)
+
+shell_dict["export_dot"] = {
+    "function": shell_export_dot,
+    "usage": "export_dot",
+    "required_nargs": 1,
+    "comment": "export the manager's recorded state to graphviz dot files"}
+
+def shell_dot_to_png(usrin=None):
+    # TODO: check that there are files? Or trust?
+    gv_utils.all_dot_to_png()
+
+shell_dict["dot_to_png"] = {
+    "function": shell_dot_to_png,
+    "usage": "dot_to_png",
+    "required_nargs": 1,
+    "comment": "turn all graphviz dot files to pngs in default directory"}
+
+def shell_png_to_gif(usrin=None):
+    # TODO: check that there are files? Or trust?
+    gv_utils.all_png_to_gif()
+
+shell_dict["png_to_gif"] = {
+    "function": shell_png_to_gif,
+    "usage": "png_to_gif",
+    "required_nargs": 1,
+    "comment": "turn all graphviz pngs in default directory into a gif"}
+
+def shell_export_to_gif(usrin):
+    if shell_check_manager() == False:
+        return
+    shell_export_dot()
+    shell_dot_to_png()
+    shell_png_to_gif()
+
+shell_dict["export_to_gif"] = {
+    "function": shell_export_to_gif,
+    "usage": "export_to_gif",
+    "required_nargs": 1,
+    "comment": "runs `export_to_dot`, then `dot_to_png`, then `png_to_gif`"}
+
+def shell_echo(usrin):
+    next_arg = get_arg_if_exists(usrin, 1)
+    if next_arg is None:
+        return
+    
+    next_arg_idx = usrin.find(next_arg)
+    print(usrin[next_arg_idx:])
+
+shell_dict["echo"] = {
+    "function": shell_echo,
+    "usage": "echo ...",
+    "required_nargs": 1,
+    "comment": "repeats everything you say after 'echo'"}
 
 while True:
     if current_node is not None:

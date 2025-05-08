@@ -14,7 +14,10 @@ class EBA_Manager:
         self.adj = None
         self.nodes = []
         self.running = True
+        self.exit = False
         self.all_messages = []
+        self.major_iteration = 0
+        self.minor_iteration = 0
         self.threading_lock = threading_lock
         if mode == "init":
             try:
@@ -26,6 +29,18 @@ class EBA_Manager:
             for n in os.listdir(NODEBUFDIRS_FNAME):
                 self.load_node(n)
 
+    def pause(self):
+        with self.threading_lock:
+            self.running = False
+
+    def resume(self):
+        with self.threading_lock:
+            self.running = True
+
+    def set_exit(self):
+        with self.threading_lock:
+            self.exit = True
+        
     # returns True is new_neighbor belongs to node write_to
     def read_neighbor(self, write_to, new_neighbor):
         node_dir_name = NODEBUFDIRS_FNAME + "/" + write_to
@@ -52,7 +67,24 @@ class EBA_Manager:
         info = eval(f.read())
         f.close()
 
-        info["neighbors"].append(new_neigbhor)
+        info["neighbors"].append(new_neighbor)
+
+        f = open("node_info.EBA", "w")
+        f.write(repr(info))
+        f.close()
+
+        os.chdir("../../")
+
+    # ensures rm_neighbor is removes from node write_to's neighbors
+    def unwrite_neighbor(self, write_to, rm_neighbor):
+        node_dir_name = NODEBUFDIRS_FNAME + "/" + write_to
+        os.chdir(node_dir_name)
+
+        f = open("node_info.EBA", "r")
+        info = eval(f.read())
+        f.close()
+
+        info["neighbors"].remove(rm_neighbor)
 
         f = open("node_info.EBA", "w")
         f.write(repr(info))
@@ -78,6 +110,24 @@ class EBA_Manager:
             self.write_neighbor(node1, node2)
             self.write_neighbor(node2, node1)
 
+    def disconnect(self, node1, node2):
+        with self.threading_lock:
+            if not self.connected(node1, node2):
+                print(f"warning: nodes {node1} and {node2} not connected")
+                print(f"ignoring.")
+                return
+            if node1 not in self.nodes:
+                print(f"refusing to connect {node1} and {node2}.")
+                print(f"{node1} not in {self.nodes}")
+                return
+            if node2 not in self.nodes:
+                print(f"refusing to connect {node1} and {node2}.")
+                print(f"{node2} not in {self.nodes}")
+                return
+
+            self.unwrite_neighbor(node1, node2)
+            self.unwrite_neighbor(node2, node1)
+
     def connected(self, node1, node2):
         a_to_b = self.read_neighbor(node1, node2)
         b_to_a = self.read_neighbor(node2, node1)
@@ -95,12 +145,25 @@ class EBA_Manager:
             print("unknown error")
             assert False
 
+    def adj_matrix(self):
+        # create an adjacency matrix of nodes
+        adj_size = len(self.nodes)
+        adj = [[0 for i in self.nodes] for j in self.nodes]
+        for i in range(len(self.nodes)):
+            for j in range(i, len(self.nodes)):
+                if i == j:
+                    adj[i][j] = 1
+                elif self.connected(self.nodes[i], self.nodes[j]):
+                    adj[i][j] = 1
+                    adj[j][i] = 1
+        return adj
+
     def deliver_message(self, message_txt):
         message = eval(message_txt)
         sender = message["sender"]
         recipient = message["recipient"]
         if sender == "ROOT" or recipient == "ROOT":
-            # no need to check if they are neigbhors, ROOT is involved.
+            # no need to check if they are neighbors, ROOT is involved.
             pass
         elif self.connected(sender, recipient):
             # all good here, nodes connected
@@ -122,6 +185,8 @@ class EBA_Manager:
             os.chdir("../../")
 
         message["time"] = time.perf_counter()
+        message["major"] = self.major_iteration
+        message["minor"] = self.minor_iteration
         self.all_messages.append(message)
 
     def empty_queue(self, queue_text):
@@ -150,10 +215,11 @@ class EBA_Manager:
         self.nodes.append(node_name)
 
     def show_node(self, node_name, contents=False):
-        node_dir_name = NODEBUFDIRS_FNAME + "/" + node_name
-        os.chdir(node_dir_name)
-        subprocess.run(["python3", "EBA_Node.py", "mode=show", f"contents={contents}"])
-        os.chdir("../../")
+        with self.threading_lock:
+            node_dir_name = NODEBUFDIRS_FNAME + "/" + node_name
+            os.chdir(node_dir_name)
+            subprocess.run(["python3", "EBA_Node.py", "mode=show", f"contents={contents}"])
+            os.chdir("../../")
 
     def node_has_work(self, node_name):
         node_dir_name = NODEBUFDIRS_FNAME + "/" + node_name
@@ -175,11 +241,13 @@ class EBA_Manager:
         os.chdir(node_dir_name)
         subprocess.run(["python3", "EBA_Node.py", "mode=load"])
         f = open("send_buf.EBA", "r")
-        self.empty_queue(f.read())
+        queue_text = f.read()
         f.close()
         f = open("send_buf.EBA", "w")
         f.close()
         os.chdir("../../")
+        self.empty_queue(queue_text)
+        self.minor_iteration += 1
 
     def run_all(self):
         work_nodes = []
@@ -192,6 +260,7 @@ class EBA_Manager:
         for node in work_nodes:
             self.run_node(node)
 
+        self.major_iteration += 1
         return len(work_nodes)
 
     def run_continuously(self, sleep_time=2):
@@ -204,6 +273,9 @@ class EBA_Manager:
                             break
             # print(f"going to sleep for {sleep_time}s")
             time.sleep(sleep_time)
+            if self.exit == True:
+                print("exiting")
+                return
 
     def deliver_shell_message(self, message):
         with self.threading_lock:

@@ -288,13 +288,18 @@ class EBA_Node:
         self.to_sendbuf(message)
 
     def to_sendbuf(self, message):
-            API_for_send_buffer = {
-                    "request": "WRITE",
-                    "mode": "APPEND",
-                    "target": "send_buf.EBA",
-                    "length": len(repr(message)+"\n"),
-                    "payload": repr(message)+"\n"}
-            self.resolve_prim_WRITE(**API_for_send_buffer)
+        # Make sure the recipient is legal first.
+        if message["recipient"] not in self.node_state["neighbors"] + ["ROOT"]:
+            print(f"node {self.node_state['name']} cannot send message.")
+            print(f"{message['reipient']} is not a neighbor.")
+            return
+        API_for_send_buffer = {
+                "request": "WRITE",
+                "mode": "APPEND",
+                "target": "send_buf.EBA",
+                "length": len(repr(message)+"\n"),
+                "payload": repr(message)+"\n"}
+        self.resolve_prim_WRITE(**API_for_send_buffer)
 
 
 if __name__ == "__main__":
