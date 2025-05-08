@@ -28,8 +28,13 @@ def state_slice_to_gv(vertices, messages, adj):
     for message in messages:
         s = message["sender"]
         r = message["recipient"]
-        if r == "ROOT" or s == "ROOT":
-            continue # ignore messages to and from ROOT
+        if s == "ROOT":
+            continue # ignore messages from ROOT
+        if r == "ROOT":
+            # a message *to* root might ask us to change a vertex color
+            if message["API"]["request"] == "NODEVIS":
+                vertices[s] = message["API"]["args"]
+            continue
         sn = name_to_num(s)
         rn = name_to_num(r)
 
@@ -72,7 +77,9 @@ def state_slice_to_gv(vertices, messages, adj):
     for v in vertices:
         gv_str += f"\t{v} [label={v}"
 
-        # this is where we'd check for other things in the dict to put here
+        # check for special instructions in the vertex dict
+        for key in vertices[v]:
+            gv_str += f",{key}={vertices[v][key]}"
 
         gv_str += "]\n"
 
@@ -97,7 +104,7 @@ def string_to_file(gv_str, fname=None):
     f.close()
 
 def all_to_gv(manager, tdir="EBA_graphviz/testrun/"):
-    vertices = {node: None for node in manager.nodes}
+    vertices = {node: {} for node in manager.nodes}
     # vertices is mutable and might be changed by future functions:
     # this is intentional
     adj = manager.adj_matrix()

@@ -174,7 +174,8 @@ class EBA_Manager:
             return
 
         if recipient == "ROOT":
-            print(message_txt)
+            if message["API"]["request"] != "NODEVIS":
+                print(message_txt)
         else:
             node_dir_name = NODEBUFDIRS_FNAME + "/" + recipient
             os.chdir(node_dir_name)
