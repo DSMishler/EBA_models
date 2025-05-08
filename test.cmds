@@ -2,6 +2,6 @@ sys init
 newnode node1
 ssh node1
 show
-bufreq 50 50
-write START BUF_0 textbuf.txt
+bufreq 500 500
+write START BUF_0 testcode.py
 invoke PYEXEC BUF_0

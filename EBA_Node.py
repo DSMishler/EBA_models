@@ -1,7 +1,7 @@
 # Daniel Mishler
 # EBA_Node for PYEBA3
 
-import time as pytime# calculating expiry time of buffers
+import time as pytime # calculating expiry time of buffers
 
 # EBA node state is loaded in via a dictionary in a reserved file
 
@@ -255,6 +255,37 @@ class EBA_Node:
 
             # Now put this message in our send buffer
             self.to_sendbuf(new_message)
+
+    # These are the only allowed functions that can be called when interfacing
+    # the node. It requires crafting a message via the standard message protocol
+    # and helper functions are allowed for that. The message will be sent if
+    # it is to someone else, and it will be immediately resolved if it is
+    # on-node
+    def node_interface(self, API):
+        # TODO: combine somehow with code above for resolve_message?
+        which_prim_call = {
+                "BUFREQ": self.resolve_prim_BUFREQ,
+                "WRITE":  self.resolve_prim_WRITE,
+                "INVOKE": self.resolve_prim_INVOKE}
+
+        assert API["request"] in which_prim_call
+
+        # Now do the call to the primitive
+        response = which_prim_call[API["request"]](**API)
+        return response
+
+    def send_message(self, API, recipient, response_buffer=None, color=None):
+        message = {}
+        message["recipient"] = recipient
+        message["sender"] = self.node_state["name"]
+        message["API"] = API
+        message["response_buffer"] = response_buffer
+        message["color"] = color
+
+        if message["recipient"] == message["sender"]:
+            print("error, no sending messages to yourself. Stop.")
+            return
+        self.to_sendbuf(message)
 
     def to_sendbuf(self, message):
             API_for_send_buffer = {
