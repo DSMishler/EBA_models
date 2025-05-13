@@ -174,8 +174,12 @@ class EBA_Manager:
             return
 
         if recipient == "ROOT":
-            if message["API"]["request"] != "NODEVIS":
-                print(message_txt)
+            # write it to the shell pipe
+            # no need to lock, since this is only called in `run_all` which
+            # is already protected by the threading_lock.
+            f = open("manager_shell_pipe.txt", "a")
+            f.write(message_txt)
+            f.close()
         else:
             node_dir_name = NODEBUFDIRS_FNAME + "/" + recipient
             os.chdir(node_dir_name)

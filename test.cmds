@@ -7,7 +7,6 @@ connect node1 node2
 connect node2 node3
 connect node3 node4
 ssh node1
-show
-bufreq 500 500
-write START BUF_0 testsend.py
+# show
+load_file testcode.py
 invoke PYEXEC BUF_0

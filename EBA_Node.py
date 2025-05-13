@@ -46,7 +46,7 @@ def pop_first_line_from(fname):
     return first_line
 
 class EBA_Node:
-    def __init__(self, mode="load", name=None, contents=False):
+    def __init__(self, mode="load", name=None, contents=None):
         assert mode in ["load", "init", "show"]
 
         if mode == "init":
@@ -56,18 +56,22 @@ class EBA_Node:
                     "neighbors": [],
                     "buf_range": [0,0],
                     "buffers": {}}
-            def add_system_buf(bufname):
+            def add_system_buf(bufname, init_val=None):
                 bufdict = {
                     "name": bufname,
                     "size": -1,
                     "exp": None}
                 self.node_state["buffers"][bufname] = bufdict
                 f = open(bufname, "w")
+                if init_val is not None:
+                    f.write(repr(init_val))
                 f.close()
             add_system_buf("node_info.EBA")
             add_system_buf("send_buf.EBA")
             add_system_buf("message_queue.EBA")
             add_system_buf("call_queue.EBA")
+            for syncbuf in [f"SYNC_{i}.sys" for i in range(3)]:
+                add_system_buf(syncbuf, 1)
             f = open("node_info.EBA", "w")
             f.write(repr(self.node_state))
             f.close()
@@ -112,6 +116,7 @@ class EBA_Node:
         f.close()
 
         for buf in call_queue_slice.split('\n'):
+            self.invoking_buffer = buf
             if buf == "":
                 continue
             f = open(buf, "r")
@@ -188,6 +193,8 @@ class EBA_Node:
 
         if len(payload) != length:
             print(f"error! payload of len {len(payload)} (expected {length})")
+            print(f"refusing write to {target}")
+            print(payload)
             return {"response": 0}
 
         mode_to_pychar = {"START": "w", "APPEND": "a"}
@@ -200,7 +207,7 @@ class EBA_Node:
 
     def resolve_prim_INVOKE(self, request, mode, target, call_args):
         assert request == "INVOKE"
-        assert mode in ["SYSCALL", "PYEXEC"]
+        assert mode in ["SYSCALL", "PYEXEC", "TESTANDSET"]
 
         if mode == "PYEXEC":
             # NOTE: we don't check if the element is already in the queue.
@@ -215,8 +222,34 @@ class EBA_Node:
             return {"response": True}
 
         elif mode == "SYSCALL":
-            print("Not implemented yet")
-            return {"response": False}
+            rd = {"response": None}
+            if target == "ID":
+                rd["response"] = self.node_state["name"]
+            elif target == "NEIGHBORS":
+                rd["response"] = self.node_state["neighbors"]
+            elif target == "MYBUF":
+                rd["response"] = self.invoking_buffer
+            else:
+                print(f"unknown systcall '{target}'")
+            return rd
+
+        elif mode == "TESTANDSET":
+            # TODO: if parallelized, add a lock here
+            if target[-4:] != ".sys":
+                print("EBA error, TESTANDSET on non-system buf")
+                response = {"response": "ERROR"}
+
+            else:
+                f = open(target, "r")
+                val = eval(f.read())
+                f.close()
+                f = open(target, "w")
+                f.write(repr(0))
+                f.close()
+                response = {"response": val}
+
+            return response
+
 
     def resolve_message(self, message):
         which_prim_call = {

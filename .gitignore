@@ -3,6 +3,7 @@ __pycache__/*
 
 # EBA temp files
 nodebufdirs/*
+manager_shell_pipe.txt
 
 # temporary files for a run (commonly)
 EBA_graphviz/testrun/*

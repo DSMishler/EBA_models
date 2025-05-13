@@ -3,6 +3,7 @@ import EBA_Manager
 import gv_utils
 
 import threading
+import time
 
 
 Shell_Lock = threading.Lock()
@@ -79,11 +80,11 @@ def shell_check_current_node():
 
 
 
-def ship_message_to_manager(API, print_response=False):
-    assert type(print_response) is bool
-    if print_response == False:
+def ship_message_to_manager(API, show_response=True):
+    assert type(show_response) is bool
+    if show_response == False:
         response_buffer = None
-    elif print_response == True:
+    elif show_response == True:
         response_buffer = "terminal"
     message = {
         "recipient": current_node,
@@ -284,11 +285,11 @@ def shell_write(usrin):
         return
     mode = get_arg_if_exists(usrin, 1)
     target = get_arg_if_exists(usrin, 2)
-    file = get_arg_if_exists(usrin, 3)
-    f = open(file, "r")
+    fname = get_arg_if_exists(usrin, 3)
+    f = open(fname, "r")
     payload = f.read()
-    length = len(payload)
     f.close()
+    length = len(payload)
 
     API = {
         "request": "WRITE",
@@ -301,8 +302,8 @@ def shell_write(usrin):
 
 shell_dict["write"] = {
     "function": shell_write,
-    "usage": "write <mode> <target> <file>",
-    "required_nargs": 4,
+    "usage": "write <mode> <target> <fname>",
+    "required_nargs": 3,
     "comment": "call the primitive WRITE on the ssh-ed node on buffer `target`"}
 
 def shell_invoke(usrin):
@@ -326,6 +327,53 @@ shell_dict["invoke"] = {
     "usage": "invoke <mode> <target>",
     "required_nargs": 3,
     "comment": "call the primitive INVOKE on the ssh-ed node"}
+
+def shell_load_file(usrin):
+    if shell_check_manager() == False:
+        return
+    if shell_check_current_node() == False:
+        return
+
+    with Shell_Lock:
+        f = open("manager_shell_pipe.txt", "w") # flush the pipe
+        f.close()
+
+    fname = get_arg_if_exists(usrin, 1)
+    tellme = get_arg_if_exists(usrin, 2)
+    if tellme is None:
+        tellme = False
+    else:
+        tellme = eval(tellme)
+
+    f = open(fname, "r")
+    ftext = f.read()
+    f.close()
+
+    shell_bufreq(f"SHELL {len(ftext)} 600")
+
+    while True:
+        with Shell_Lock:
+            f = open("manager_shell_pipe.txt", "r")
+            rtext = f.read()
+            f.close()
+        if len(rtext) == 0:
+            time.sleep(1)
+        else:
+            msg = eval(rtext)
+            bufname = eval(msg["API"]["payload"])["name"]
+            break
+
+    shell_write(f"SHELL START {bufname} {fname}")
+
+    if tellme:
+        print(f"file {fname} written to {bufname}")
+
+shell_dict["load_file"] = {
+    "function": shell_load_file,
+    "usage": "load_file <file> <opt:tellme>",
+    "required_nargs": 2,
+    "comment": "using BUFREQ and WRITE, load file <file> onto the node"}
+
 
 # TODO: Allow for different directory selection in all of the below
 def shell_export_dot(usrin=None):
