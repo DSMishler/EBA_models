@@ -313,18 +313,27 @@ def shell_invoke(usrin):
         return
     mode = get_arg_if_exists(usrin, 1)
     target = get_arg_if_exists(usrin, 2)
+    call_args = []
+    cur_idx = 3
+    while True:
+        next_arg = get_arg_if_exists(usrin, cur_idx)
+        cur_idx += 1
+        if next_arg is None:
+            break
+        else:
+            call_args.append(next_arg)
 
     API = {
         "request": "INVOKE",
         "mode": mode,
         "target": target,
-        "call_args": {}}
+        "call_args": call_args}
 
     ship_message_to_manager(API)
 
 shell_dict["invoke"] = {
     "function": shell_invoke,
-    "usage": "invoke <mode> <target>",
+    "usage": "invoke <mode> <target> ...",
     "required_nargs": 3,
     "comment": "call the primitive INVOKE on the ssh-ed node"}
 
@@ -339,11 +348,9 @@ def shell_load_file(usrin):
         f.close()
 
     fname = get_arg_if_exists(usrin, 1)
-    tellme = get_arg_if_exists(usrin, 2)
-    if tellme is None:
-        tellme = False
-    else:
-        tellme = eval(tellme)
+    invoke = get_arg_if_exists(usrin, 2)
+    if invoke is None:
+        invoke = False
 
     f = open(fname, "r")
     ftext = f.read()
@@ -365,14 +372,17 @@ def shell_load_file(usrin):
 
     shell_write(f"SHELL START {bufname} {fname}")
 
-    if tellme:
-        print(f"file {fname} written to {bufname}")
+    if invoke:
+        shell_invoke(f"SHELL PYEXEC {bufname}")
+
+    return bufname
 
 shell_dict["load_file"] = {
     "function": shell_load_file,
-    "usage": "load_file <file> <opt:tellme>",
+    "usage": "load_file <file> <opt:invoke (true if any)>",
     "required_nargs": 2,
-    "comment": "using BUFREQ and WRITE, load file <file> onto the node"}
+    "comment": "using BUFREQ and WRITE, load file <file> onto the node. " +
+               "Possibly also runs INVOKE"}
 
 
 # TODO: Allow for different directory selection in all of the below
@@ -434,6 +444,23 @@ shell_dict["echo"] = {
     "required_nargs": 1,
     "comment": "repeats everything you say after 'echo'"}
 
+def shell_exec(usrin):
+    fname = get_arg_if_exists(usrin, 1)
+    if fname is None:
+        print("no file to exec")
+        return
+    
+    f = open(fname, "r")
+    ftext = f.read()
+    f.close()
+    exec(ftext)
+
+shell_dict["exec"] = {
+    "function": shell_exec,
+    "usage": "exec <file>",
+    "required_nargs": 2,
+    "comment": "calls python's `exec` on the file passed"}
+
 while True:
     if current_node is not None:
         current_node_str = f" (on node {current_node})"
@@ -455,7 +482,6 @@ while True:
     elif check_nargs(usrin, shell_dict[first_arg]["required_nargs"]) == False:
         print(shell_dict[first_arg]["usage"])
     else:
-        error_msg = shell_dict[first_arg]["function"](usrin)
-        # allowed functionality to print function-specific error messages
-        if error_msg is not None:
-            print(shell_dict[first_arg][error_msg])
+        return_msg = shell_dict[first_arg]["function"](usrin)
+        if return_msg is not None:
+            print(return_msg)

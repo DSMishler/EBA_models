@@ -1,12 +1,21 @@
 sys init
+newnode node0
 newnode node1
 newnode node2
 newnode node3
 newnode node4
+newnode node5
+newnode node6
+newnode node7
+connect node0 node1
 connect node1 node2
 connect node2 node3
 connect node3 node4
-ssh node1
+connect node4 node5
+connect node5 node6
+connect node6 node1
+connect node5 node7
+
+ssh node0
 # show
-load_file testcode.py
-invoke PYEXEC BUF_0
+exec shell_load_dfs.py

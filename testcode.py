@@ -19,6 +19,6 @@ API={
     "request": "INVOKE",
     "mode": "PYEXEC",
     "target": newvar["name"],
-    "call_args": {}}
+    "call_args": []}
 
 newvar3 = self.node_interface(API)

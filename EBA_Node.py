@@ -111,17 +111,20 @@ class EBA_Node:
         f = open("call_queue.EBA", "r")
         call_queue_slice = f.read()
         f.close()
-        # TODO: make this a function
+        # TODO: make this file resetting a function
         f = open("call_queue.EBA", "w")
         f.close()
 
-        for buf in call_queue_slice.split('\n'):
-            self.invoking_buffer = buf
-            if buf == "":
+        for line in call_queue_slice.split('\n'):
+            if line == "":
                 continue
+            words = line.split()
+            buf = words[0]
+            self.invoking_buffer = buf
             f = open(buf, "r")
             buftext = f.read()
             f.close()
+            self.call_args=words[1:]
             exec(buftext)
 
 
@@ -217,6 +220,8 @@ class EBA_Node:
                 return {"response": False}
             f = open("call_queue.EBA", "a")
             f.write(target)
+            for arg in call_args:
+                f.write(f" {arg}")
             f.write('\n')
             f.close()
             return {"response": True}
