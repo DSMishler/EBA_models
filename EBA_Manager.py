@@ -179,6 +179,7 @@ class EBA_Manager:
             # is already protected by the threading_lock.
             f = open("manager_shell_pipe.txt", "a")
             f.write(message_txt)
+            f.write('\n')
             f.close()
         else:
             node_dir_name = NODEBUFDIRS_FNAME + "/" + recipient
@@ -268,7 +269,7 @@ class EBA_Manager:
         self.major_iteration += 1
         return len(work_nodes)
 
-    def run_continuously(self, sleep_time=2):
+    def run_continuously(self, sleep_time=0.2):
         while True:
             if self.running:
                 while True:

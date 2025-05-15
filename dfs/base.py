@@ -1,6 +1,9 @@
 # DFS base/root
 # This code is root-unique. It simply claims the lock
 # on root
+# ARGS: 2
+# 0: bufname (always)
+# 1: bufname of inventory buffer
 
 API = {
     "request": "INVOKE",
@@ -15,3 +18,24 @@ if val == 1:
         "request": "NODEVIS",
         "args": {"style": "filled","fillcolor":"turquoise"}}
     self.send_message(API, "ROOT", None, None)
+
+    # now call the next stage
+    # first, find the buffer
+    API = {
+        "request": "READ",
+        "target": self.call_args[1]}
+
+    inventory = self.node_interface(API)["response"]
+    dfs_buf_dict = eval(inventory)
+    next_buf = dfs_buf_dict["dfs0_ping.py"]
+
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": next_buf,
+        "call_args": [self.call_args[1]]}
+
+    self.node_interface(API)
+
+else:
+    print("error: the lock was not available. Aborting DFS.")

@@ -120,11 +120,10 @@ class EBA_Node:
                 continue
             words = line.split()
             buf = words[0]
-            self.invoking_buffer = buf
             f = open(buf, "r")
             buftext = f.read()
             f.close()
-            self.call_args=words[1:]
+            self.call_args=words
             exec(buftext)
 
 
@@ -146,6 +145,7 @@ class EBA_Node:
     def resolve_prim_READ(self, request, target):
         assert request == "READ"
         if target not in self.node_state["buffers"]:
+            print(f"READ error: {target} not in my buffers.")
             return {"response": None}
         else:
             f = open(target, "r")
@@ -156,6 +156,7 @@ class EBA_Node:
     def resolve_prim_BUFREQ(self, request, mode, size, time):
         assert request == "BUFREQ"
         assert mode == "ALLOC" # this will be changed later
+        assert type(size) is int
         buf_num = self.node_state["buf_range"][1]
         buf_name = f"BUF_{buf_num}"
         self.node_state["buf_range"][1] += 1
@@ -200,6 +201,20 @@ class EBA_Node:
             print(payload)
             return {"response": 0}
 
+        # now check if writing is possible:
+        if self.node_state["buffers"][target]["size"] != -1:
+            # if not infinite length
+            if mode == "START":
+                extrlen = 0
+            elif mode == "APPEND":
+                f = open(target, "r")
+                extrlen = len(f.read())
+                f.close()
+            if length + extrlen > self.node_state["buffers"][target]["size"]:
+                print(f"WRITE error: payload too large for buffer {target}")
+                print(f"payload {payload}")
+                return {"response": 0}
+
         mode_to_pychar = {"START": "w", "APPEND": "a"}
 
         f = open(target, mode_to_pychar[mode])
@@ -232,8 +247,6 @@ class EBA_Node:
                 rd["response"] = self.node_state["name"]
             elif target == "NEIGHBORS":
                 rd["response"] = self.node_state["neighbors"]
-            elif target == "MYBUF":
-                rd["response"] = self.invoking_buffer
             else:
                 print(f"unknown systcall '{target}'")
             return rd
@@ -304,7 +317,8 @@ class EBA_Node:
         which_prim_call = {
                 "BUFREQ": self.resolve_prim_BUFREQ,
                 "WRITE":  self.resolve_prim_WRITE,
-                "INVOKE": self.resolve_prim_INVOKE}
+                "INVOKE": self.resolve_prim_INVOKE,
+                "READ": self.resolve_prim_READ}
 
         assert API["request"] in which_prim_call
 

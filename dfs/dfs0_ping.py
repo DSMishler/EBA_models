@@ -1,0 +1,66 @@
+# DFS ping
+# the first stage of DFS when on a new node
+# gets neighbors and pings each with TESTANDSET
+# Will pass that information to next stage
+# ARGS: 2
+# 0: bufname (always)
+# 1: bufname of inventory buffer
+
+
+API = {
+    "request": "INVOKE",
+    "mode": "SYSCALL",
+    "target": "NEIGHBORS",
+    "call_args": []}
+
+neighbors = self.node_interface(API)["response"]
+
+for neighbor in neighbors:
+    # for each neighbor, set up a buffer for whether
+    # or not you got the lock and then ping that neighbor
+    # to write to our buffer
+    API = {
+        "request": "BUFREQ",
+        "mode": "ALLOC",
+        "size": 15,
+        "time": 50}
+
+    lockbuf = self.node_interface(API)["name"]
+
+    # write the reserved value of "2" in there for "waiting"
+    API = {
+        "request": "WRITE",
+        "mode": "START",
+        "target": lockbuf,
+        "length": len(repr({"response":2})),
+        "payload": repr({"response":2})}
+
+    self.node_interface(API)
+
+    # now we invoke a testandset
+    API = {
+        "request": "INVOKE",
+        "mode": "TESTANDSET",
+        "target": "SYNC_0.sys",
+        "call_args": []}
+
+    self.send_message(API, neighbor, lockbuf, None)
+
+    # and we invoke a program that will spinlock and wait
+    # for the message
+    # first, find the buffer
+    API = {
+        "request": "READ",
+        "target": self.call_args[1]}
+
+    inventory = self.node_interface(API)["response"]
+    dfs_buf_dict = eval(inventory)
+    next_buf = dfs_buf_dict["dfs1_spinlock.py"]
+
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": next_buf,
+        "call_args": [self.call_args[1], lockbuf]}
+
+    self.node_interface(API)

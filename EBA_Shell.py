@@ -267,7 +267,7 @@ def shell_bufreq(usrin):
     API = {
         "request": "BUFREQ",
         "mode": "ALLOC",
-        "size": size,
+        "size": int(size),
         "time": time}
 
     ship_message_to_manager(API)
@@ -358,17 +358,37 @@ def shell_load_file(usrin):
 
     shell_bufreq(f"SHELL {len(ftext)} 600")
 
+    def pop_first_line_from(fname):
+        f = open(fname, "r")
+        ftext = f.read()
+        f.close()
+        if len(ftext) == 0:
+            first_line = None
+        else:
+            first_line = ftext.split('\n')[0]
+            new_text = "\n".join(ftext.split('\n')[1:])
+            f = open(fname, "w")
+            f.write(new_text)
+            f.close()
+        return first_line
+
     while True:
         with Shell_Lock:
-            f = open("manager_shell_pipe.txt", "r")
-            rtext = f.read()
-            f.close()
-        if len(rtext) == 0:
-            time.sleep(1)
+            rtext = pop_first_line_from("manager_shell_pipe.txt")
+        if rtext is None:
+            time.sleep(0.2)
         else:
             msg = eval(rtext)
-            bufname = eval(msg["API"]["payload"])["name"]
-            break
+            payload = eval(msg["API"]["payload"])
+            # it's a write request as a response, so the payload is the response
+            # to our earlier request. But we have to make sure we didn't get
+            # responses from earlier shell loads' writes or invokes. Easy.
+            # just make sure we get a bufreq."
+            if "name" not in payload:
+                pass
+            else:
+                bufname = payload["name"]
+                break
 
     shell_write(f"SHELL START {bufname} {fname}")
 
