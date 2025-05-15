@@ -6,6 +6,12 @@
 # 0: bufname (always)
 # 1: bufname of inventory buffer
 
+# First, mark this node as taken
+API = {
+    "request": "NODEVIS",
+    "args": {"style": "filled","fillcolor":"turquoise"}}
+self.send_message(API, "ROOT", None, None)
+
 
 API = {
     "request": "INVOKE",
@@ -44,7 +50,7 @@ for neighbor in neighbors:
         "target": "SYNC_0.sys",
         "call_args": []}
 
-    self.send_message(API, neighbor, lockbuf, None)
+    self.send_message(API, neighbor, lockbuf, "red")
 
     # and we invoke a program that will spinlock and wait
     # for the message
@@ -61,6 +67,6 @@ for neighbor in neighbors:
         "request": "INVOKE",
         "mode": "PYEXEC",
         "target": next_buf,
-        "call_args": [self.call_args[1], lockbuf]}
+        "call_args": [self.call_args[1], lockbuf, neighbor]}
 
     self.node_interface(API)

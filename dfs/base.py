@@ -14,11 +14,6 @@ API = {
 val = self.node_interface(API)["response"]
 
 if val == 1:
-    API = {
-        "request": "NODEVIS",
-        "args": {"style": "filled","fillcolor":"turquoise"}}
-    self.send_message(API, "ROOT", None, None)
-
     # now call the next stage
     # first, find the buffer
     API = {
@@ -39,3 +34,5 @@ if val == 1:
 
 else:
     print("error: the lock was not available. Aborting DFS.")
+
+# TODO: set up the next_invoke for this node itself

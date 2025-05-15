@@ -1,10 +1,9 @@
 # DFS spinlock
-# ARGS: 3
+# ARGS: 4
 # 0: bufname (always)
 # 1: bufname of inventory buffer
 # 2: bufname of buffer I spinlock on
-
-print(f"SPINLOCK script with args {self.call_args}")
+# 3: neighbor I am waiting on
 
 lockbuf = self.call_args[2]
 
@@ -23,6 +22,7 @@ if code == 2:
         "mode": "PYEXEC",
         "target": self.call_args[0],
         "call_args": self.call_args[1:]}
+    self.node_interface(API)
 elif code == 0:
     # then we aren't waiting, but didn't get the lock.
     # No further invokes, let it die
@@ -42,7 +42,7 @@ elif code == 1:
         "request": "INVOKE",
         "mode": "PYEXEC",
         "target": next_buf,
-        "call_args": [self.call_args[1]]}
+        "call_args": [self.call_args[1], self.call_args[3]]}
 
     self.node_interface(API)
 else:

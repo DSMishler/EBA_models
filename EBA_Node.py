@@ -193,6 +193,7 @@ class EBA_Node:
 
         if target not in self.node_state["buffers"]:
             print(f"error! write {target} not in {self.node_state['buffers']}")
+            print(payload)
             return {"response": 0}
 
         if len(payload) != length:

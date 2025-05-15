@@ -409,7 +409,8 @@ shell_dict["load_file"] = {
 def shell_export_dot(usrin=None):
     if shell_check_manager() == False:
         return
-    gv_utils.all_to_gv(manager)
+    with Shell_Lock:
+        gv_utils.all_to_gv(manager)
 
 shell_dict["export_dot"] = {
     "function": shell_export_dot,
@@ -419,7 +420,8 @@ shell_dict["export_dot"] = {
 
 def shell_dot_to_png(usrin=None):
     # TODO: check that there are files? Or trust?
-    gv_utils.all_dot_to_png()
+    with Shell_Lock:
+        gv_utils.all_dot_to_png()
 
 shell_dict["dot_to_png"] = {
     "function": shell_dot_to_png,
@@ -429,13 +431,14 @@ shell_dict["dot_to_png"] = {
 
 def shell_png_to_gif(usrin=None):
     # TODO: check that there are files? Or trust?
-    gv_utils.all_png_to_gif()
+    with Shell_Lock:
+        gv_utils.all_png_to_gif()
 
 shell_dict["png_to_gif"] = {
     "function": shell_png_to_gif,
     "usage": "png_to_gif",
     "required_nargs": 1,
-    "comment": "turn all graphviz pngs in default directory into a gif"}
+    "comment": "turn all graphviz pngs in default directory into a single gif"}
 
 def shell_export_to_gif(usrin):
     if shell_check_manager() == False:
