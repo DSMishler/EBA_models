@@ -227,6 +227,7 @@ class EBA_Node:
     def resolve_prim_INVOKE(self, request, mode, target, call_args):
         assert request == "INVOKE"
         assert mode in ["SYSCALL", "PYEXEC", "TESTANDSET"]
+        assert type(call_args) is list
 
         if mode == "PYEXEC":
             # NOTE: we don't check if the element is already in the queue.
@@ -237,6 +238,7 @@ class EBA_Node:
             f = open("call_queue.EBA", "a")
             f.write(target)
             for arg in call_args:
+                assert type(arg) is str
                 f.write(f" {arg}")
             f.write('\n')
             f.close()

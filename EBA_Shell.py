@@ -348,15 +348,38 @@ def shell_load_file(usrin):
         f.close()
 
     fname = get_arg_if_exists(usrin, 1)
-    invoke = get_arg_if_exists(usrin, 2)
-    if invoke is None:
-        invoke = False
 
     f = open(fname, "r")
     ftext = f.read()
     f.close()
 
-    shell_bufreq(f"SHELL {len(ftext)} 600")
+    invoke = False
+    size = len(ftext)
+
+    get_arg = 2
+    while True:
+        arg = get_arg_if_exists(usrin, get_arg)
+        if arg is None:
+            break
+        arg_pair = arg.split("=")
+        if len(arg_pair) != 2:
+            print(f"I don't understand arg {arg}. Usage: no spaces (like a=1)")
+            continue
+        if arg_pair[0] == "invoke":
+            invoke = eval(arg_pair[1])
+        elif arg_pair[0] == "size":
+            if "x" in arg_pair[1]:
+                mstr = arg_pair[1].replace("x","")
+                mul = int(mstr)
+                size *= mul
+            else:
+                size = int(arg_pair[1])
+        else:
+            print(f"I don't understand keyword {arg_pair[0]}")
+
+        get_arg += 1
+
+    shell_bufreq(f"SHELL {size} 600")
 
     def pop_first_line_from(fname):
         f = open(fname, "r")
@@ -399,13 +422,23 @@ def shell_load_file(usrin):
 
 shell_dict["load_file"] = {
     "function": shell_load_file,
-    "usage": "load_file <file> <opt:invoke (true if any)>",
+    "usage": "load_file <file> <optargs (invoke=??, size=??)>",
     "required_nargs": 2,
     "comment": "using BUFREQ and WRITE, load file <file> onto the node. " +
                "Possibly also runs INVOKE"}
 
 
 # TODO: Allow for different directory selection in all of the below
+def shell_refresh_directory(usrin=None):
+    with Shell_Lock:
+        gv_utils.refresh_directory()
+
+shell_dict["refresh_visdir"] = {
+    "function": shell_refresh_directory,
+    "usage": "refresh_directory",
+    "required_nargs": 1,
+    "comment": "refresh (delete/clean) the default graphvis directory"}
+
 def shell_export_dot(usrin=None):
     if shell_check_manager() == False:
         return

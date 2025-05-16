@@ -21,6 +21,30 @@ API = {
 
 neighbors = self.node_interface(API)["response"]
 
+# For later, we'll need a buffer to check whether or not all
+# neighbors have been accessed. To do this, we make a
+# dictionary of responses and we'll pass that info to
+# the spinlock
+
+n_resp_dict = {n: 2 for n in neighbors}
+API = {
+    "request": "READ",
+    "target": self.call_args[1]}
+
+inventory = self.node_interface(API)["response"]
+inventory_dict = eval(inventory)
+
+inventory_dict["data"]["neighbor_locks_and_bufs"] = n_resp_dict
+API = {
+    "request": "WRITE",
+    "mode": "START",
+    "target": self.call_args[1],
+    "length": len(repr(inventory_dict)),
+    "payload": repr(inventory_dict)}
+self.node_interface(API)
+
+
+
 for neighbor in neighbors:
     # for each neighbor, set up a buffer for whether
     # or not you got the lock and then ping that neighbor
@@ -55,13 +79,7 @@ for neighbor in neighbors:
     # and we invoke a program that will spinlock and wait
     # for the message
     # first, find the buffer
-    API = {
-        "request": "READ",
-        "target": self.call_args[1]}
-
-    inventory = self.node_interface(API)["response"]
-    dfs_buf_dict = eval(inventory)
-    next_buf = dfs_buf_dict["dfs1_spinlock.py"]
+    next_buf = inventory_dict["code"]["dfs1_spinlock.py"]
 
     API = {
         "request": "INVOKE",

@@ -12,23 +12,21 @@ API = {
     "request": "READ",
     "target": new_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
-new_dfs_buf_dict = eval(inventory)
+new_inventory_dict = eval(inventory)
 
 # go through the bfs dict and instead of the entries
 # being the buffers which contain the responses to earlier
 # requests, make the entries simply those buffers on the
 # target system.
 
-for key in new_dfs_buf_dict:
-    if key == "parent_invoke":
-        continue
-    buf = new_dfs_buf_dict[key]
+for key in new_inventory_dict["code"]:
+    buf = new_inventory_dict["code"][key]
     API = {
         "request": "READ",
         "target": buf}
     response = self.node_interface(API)["response"]
     child_buf_name = eval(response)["name"]
-    new_dfs_buf_dict[key] = child_buf_name
+    new_inventory_dict["code"][key] = child_buf_name
 
 iin = self.call_args[4]
 API = {
@@ -43,8 +41,8 @@ API = {
     "request": "WRITE",
     "mode": "START",
     "target": new_buf_dict_buf,
-    "length": len(repr(new_dfs_buf_dict)),
-    "payload": repr(new_dfs_buf_dict)}
+    "length": len(repr(new_inventory_dict)),
+    "payload": repr(new_inventory_dict)}
 self.node_interface(API)
 
 
@@ -52,10 +50,10 @@ API = {
     "request": "READ",
     "target": self.call_args[1]}
 inventory = self.node_interface(API)["response"]
-dfs_buf_dict = eval(inventory)
+inventory_dict = eval(inventory)
 API = {
     "request": "INVOKE",
     "mode": "PYEXEC",
-    "target": dfs_buf_dict["dfs5_prop_write.py"],
+    "target": inventory_dict["code"]["dfs5_prop_write.py"],
     "call_args": self.call_args[1:4] + [child_inventory_bufname]}
 self.node_interface(API)

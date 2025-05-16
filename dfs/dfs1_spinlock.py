@@ -1,5 +1,5 @@
 # DFS spinlock
-# ARGS: 4
+# ARGS: 5
 # 0: bufname (always)
 # 1: bufname of inventory buffer
 # 2: bufname of buffer I spinlock on
@@ -25,8 +25,23 @@ if code == 2:
     self.node_interface(API)
 elif code == 0:
     # then we aren't waiting, but didn't get the lock.
-    # No further invokes, let it die
-    pass
+    # Check whether or not we are a leaf: invoke the code
+    # that checks
+    API = {
+        "request": "READ",
+        "target": self.call_args[1]}
+
+    inventory = self.node_interface(API)["response"]
+    dfs_buf_dict = eval(inventory)
+    next_buf = dfs_buf_dict["code"]["dfs6_am_i_leaf.py"]
+
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": next_buf,
+        "call_args": [self.call_args[1], self.call_args[3]]}
+
+    self.node_interface(API)
 elif code == 1:
     # then we indeed got our lock. We pass the buck
     # to dfs2_propagate
@@ -36,7 +51,7 @@ elif code == 1:
 
     inventory = self.node_interface(API)["response"]
     dfs_buf_dict = eval(inventory)
-    next_buf = dfs_buf_dict["dfs2_propagate.py"]
+    next_buf = dfs_buf_dict["code"]["dfs2_propagate.py"]
 
     API = {
         "request": "INVOKE",

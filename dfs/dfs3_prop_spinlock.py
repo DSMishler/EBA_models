@@ -12,15 +12,13 @@ API = {
     "request": "READ",
     "target": new_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
-new_dfs_buf_dict = eval(inventory)
+new_inventory_dict = eval(inventory)
 
 
 still_waiting = False
 
-for key in new_dfs_buf_dict:
-    if key == "parent_invoke":
-        continue
-    buf = new_dfs_buf_dict[key]
+for key in new_inventory_dict["code"]:
+    buf = new_inventory_dict["code"][key]
     API = {
         "request": "READ",
         "target": buf}
@@ -62,10 +60,10 @@ else:
         "request": "READ",
         "target": self.call_args[1]}
     inventory = self.node_interface(API)["response"]
-    dfs_buf_dict = eval(inventory)
+    inventory_dict = eval(inventory)
     API = {
         "request": "INVOKE",
         "mode": "PYEXEC",
-        "target": dfs_buf_dict["dfs4_prop_prep_write.py"],
+        "target": inventory_dict["code"]["dfs4_prop_prep_write.py"],
         "call_args": self.call_args[1:]}
     self.node_interface(API)

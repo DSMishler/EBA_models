@@ -21,8 +21,8 @@ if val == 1:
         "target": self.call_args[1]}
 
     inventory = self.node_interface(API)["response"]
-    dfs_buf_dict = eval(inventory)
-    next_buf = dfs_buf_dict["dfs0_ping.py"]
+    inventory_dict = eval(inventory)
+    next_buf = inventory_dict["code"]["dfs0_ping.py"]
 
     API = {
         "request": "INVOKE",
@@ -35,4 +35,4 @@ if val == 1:
 else:
     print("error: the lock was not available. Aborting DFS.")
 
-# TODO: set up the next_invoke for this node itself
+# TODO: set up the parent_invoke for this node itself
