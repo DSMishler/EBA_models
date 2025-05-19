@@ -38,7 +38,13 @@ new_inventory_dict["data"]["parent_invoke"] = {
         # their dropoff
     }
 
+msg_iter = 0
 for key in inventory_dict["code"]:
+    msg_iter += 1
+    if msg_iter < 3:
+        col = "blue"
+    else:
+        col = "quiet"
     buf = inventory_dict["code"][key]
     API = {
         "request": "BUFREQ",
@@ -58,7 +64,7 @@ for key in inventory_dict["code"]:
         "mode": "ALLOC",
         "size": buflen,
         "time": 50}
-    self.send_message(API, neighbor, intermediate_name, "blue")
+    self.send_message(API, neighbor, intermediate_name, col)
 
 # make a home for the new inventory_dict
 # for us AND our neighbor

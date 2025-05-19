@@ -35,6 +35,8 @@ def state_slice_to_gv(vertices, messages, adj):
             if message["API"]["request"] == "NODEVIS":
                 vertices[s] = message["API"]["args"]
             continue
+        if message["color"] is not None and "quiet" in message["color"]:
+            continue # visualization request not to show this message
         sn = name_to_num(s)
         rn = name_to_num(r)
 
@@ -55,6 +57,7 @@ def state_slice_to_gv(vertices, messages, adj):
 
         if message["color"] is not None:
             edge_str += f",color={message['color']}"
+
 
         edges_dict[smaller_n][larger_n].append(edge_str)
 
@@ -134,4 +137,4 @@ def all_dot_to_png(tdir="EBA_graphviz/testrun/"):
             dot_to_png(tdir+"/"+fname)
 
 def all_png_to_gif(tdir="EBA_graphviz/testrun/", output_name="out.gif"):
-    os.system(f"convert -size 1080x1080 -delay 0 -loop 0 {tdir}/*.png {tdir}/{output_name}")
+    os.system(f"convert -size 1080x1080 -delay 40 -loop 0 {tdir}/*.png {tdir}/{output_name}")

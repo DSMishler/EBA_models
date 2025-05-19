@@ -26,7 +26,13 @@ old_inventory_dict = eval(inventory)
 # copy all of our code from our bufs to the bufs
 # in the child node
 
+msg_iter = 0
 for key in old_inventory_dict["code"]:
+    msg_iter += 1
+    if msg_iter < 3:
+        col = "green"
+    else:
+        col = "quiet"
     oldbuf = old_inventory_dict["code"][key]
     newbuf = new_inventory_dict["code"][key]
 
@@ -41,7 +47,7 @@ for key in old_inventory_dict["code"]:
         "target": newbuf,
         "length": len(payload),
         "payload": payload}
-    self.send_message(API, neighbor, None, "green")
+    self.send_message(API, neighbor, None, col)
 
 # write the new dfs buf dict over as well
 payload = repr(new_inventory_dict)

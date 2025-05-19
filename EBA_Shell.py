@@ -90,7 +90,8 @@ def ship_message_to_manager(API, show_response=True):
         "recipient": current_node,
         "sender": "ROOT",
         "API": API,
-        "response_buffer": response_buffer}
+        "response_buffer": response_buffer,
+        "color": None}
     manager.deliver_shell_message(repr(message))
 
 
