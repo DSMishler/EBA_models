@@ -13,10 +13,10 @@ connect node1 node2
 connect node2 node3
 connect node3 node4
 connect node4 node5
-# connect node5 node6
-# connect node6 node1
+connect node5 node6
+connect node6 node1
 connect node5 node7
 
-ssh node0
+ssh node6
 # show
 exec shell_load_dfs.py

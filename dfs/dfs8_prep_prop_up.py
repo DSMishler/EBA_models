@@ -16,11 +16,18 @@ inventory_dict = eval(inventory_txt)
 
 
 
+# build personal_info here (we will store it and grab it later)
 locks_and_bufs = inventory_dict["data"]["neighbor_locks_and_bufs"]
 
-# TODO: should this really be built twice? Or should we
-# store this here and grab it later
+API = {
+    "request": "INVOKE",
+    "mode": "SYSCALL",
+    "target": "ID",
+    "call_args": []}
+nodename = self.node_interface(API)["response"]
+
 personal_info = {
+    "me": nodename,
     "neighbors": list(locks_and_bufs.keys()),
     "children": {}}
 
@@ -58,7 +65,6 @@ if pi_info["am_root"]:
     # we are done. execute final code
     pi_info["API"]["call_args"].append(personal_info_buf)
     self.node_interface(pi_info["API"])
-
 else:
     # we have to keep going and prepare to propagate upward
     # now request a buffer from the parent

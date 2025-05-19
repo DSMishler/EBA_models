@@ -19,4 +19,11 @@ final_info = self.node_interface(API)["response"]
 children_of_dfs = eval(final_info)
 
 print("dfs complete!")
-print(children_of_dfs)
+global print_dict
+def print_dict(d, indent):
+    spaces = " " * indent
+    print(f"{spaces}{d['me']}")
+    for c in d["children"]:
+        print_dict(d["children"][c], indent+4)
+
+print_dict(children_of_dfs, 0)

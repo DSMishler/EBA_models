@@ -19,28 +19,19 @@ inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
 
 # we just had our lock refused
-n = self.call_args[2]
-inventory_dict["data"]["neighbor_locks_and_bufs"][n] = 0
-
-# Technically, we can we-write the buf only if we need
-# to wait for someone else. But for bookkeeping and code
-# clarity, let's always write
-API = {
-    "request": "WRITE",
-    "mode": "START",
-    "target": self.call_args[1],
-    "length": len(repr(inventory_dict)),
-    "payload": repr(inventory_dict)}
-self.node_interface(API)
-
-all_locks_refused = True
 
 n_resp_dict = inventory_dict["data"]["neighbor_locks_and_bufs"]
-for n in n_resp_dict:
-    if n_resp_dict[n] != 0:
-        all_locks_refused = False
+all_locks_refused = True
+already_propped = False
 
-if all_locks_refused:
+for n in n_resp_dict:
+    resp = n_resp_dict[n]
+    if resp != 0:
+        all_locks_refused = False
+    if resp == -1:
+        already_propped = True
+
+if all_locks_refused and not already_propped:
     # we need to invoke the code which starts propagation upward.
     next_buf = inventory_dict["code"]["dfs8_prep_prop_up.py"]
     API = {
@@ -48,6 +39,27 @@ if all_locks_refused:
         "mode": "PYEXEC",
         "target": next_buf,
         "call_args": self.call_args[1:2]}
+    self.node_interface(API)
+    
+    # Now, to make sure no other node arrives here
+    # and double invokes, we leave a flag.
+    # It is possible that, without this flag, a node
+    # may have multiple neighbors that it pinged and then
+    # it got zero locks. Each time a lock is read,
+    # it enters this region of code.
+    # Surely the last lock which is written will yield all
+    # locks showing they were not acquired. But it is possible
+    # that earlier locks will see the same state by the time
+    # they read!
+    n_resp_dict = inventory_dict["data"]["neighbor_locks_and_bufs"]
+    for n in n_resp_dict:
+        n_resp_dict[n] = -1
+    API = {
+        "request": "WRITE",
+        "mode": "START",
+        "target": self.call_args[1],
+        "length": len(repr(inventory_dict)),
+        "payload": repr(inventory_dict)}
     self.node_interface(API)
 else:
     # Then this node needs to wait on more resposnes.
