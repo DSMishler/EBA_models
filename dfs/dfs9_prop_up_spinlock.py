@@ -3,6 +3,7 @@
 # 0: bufname (always)
 # 1: bufname of inventory buffer
 # 2: buffer we spinlock waiting for a response from
+# 3: buffer that has our personal info dict from last step
 
 
 API = {
@@ -27,4 +28,9 @@ if len(buf_resp) == 0:
     self.node_interface(API)
 else:
     # then propagate forward
-    print("would be propagating forward. Pick up here later")
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": inventory_dict["code"]["dfs10_prop_up_write.py"],
+        "call_args": self.call_args[1:]}
+    self.node_interface(API)

@@ -192,12 +192,13 @@ class EBA_Node:
             # return {"response": 0}
 
         if target not in self.node_state["buffers"]:
-            print(f"error! write {target} not in {self.node_state['buffers']}")
+            bufs_list = list(self.node_state["buffers"].keys())
+            print(f"WRITE error! write {target} not in {bufs_list}")
             print(payload)
             return {"response": 0}
 
         if len(payload) != length:
-            print(f"error! payload of len {len(payload)} (expected {length})")
+            print(f"WRITE error! payload of len {len(payload)} (expected {length})")
             print(f"refusing write to {target}")
             print(payload)
             return {"response": 0}
@@ -211,8 +212,10 @@ class EBA_Node:
                 f = open(target, "r")
                 extrlen = len(f.read())
                 f.close()
-            if length + extrlen > self.node_state["buffers"][target]["size"]:
+            bufsize = self.node_state["buffers"][target]["size"]
+            if length + extrlen > bufsize:
                 print(f"WRITE error: payload too large for buffer {target}")
+                print(f"length of {length+extrlen} vs size of {bufsize}")
                 print(f"payload {payload}")
                 return {"response": 0}
 
@@ -346,7 +349,7 @@ class EBA_Node:
         # Make sure the recipient is legal first.
         if message["recipient"] not in self.node_state["neighbors"] + ["ROOT"]:
             print(f"node {self.node_state['name']} cannot send message.")
-            print(f"{message['reipient']} is not a neighbor.")
+            print(f"{message['recipient']} is not a neighbor.")
             return
         API_for_send_buffer = {
                 "request": "WRITE",

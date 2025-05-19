@@ -19,13 +19,21 @@ new_inventory_dict = {}
 new_inventory_dict["code"] = inventory_dict["code"].copy()
 new_inventory_dict["data"] = {} # no data yet, first data here
 
+API = {
+    "request": "INVOKE",
+    "mode": "SYSCALL",
+    "target": "ID",
+    "call_args": []}
+nodename = self.node_interface(API)["response"]
+
 new_inventory_dict["data"]["parent_invoke"] = {
-    "who": self.call_args[0],
+    "who": nodename,
+    "am_root": False,
     "API": {
         "request": "INVOKE",
         "mode": "PYEXEC",
         "target": inventory_dict["code"]["dfs7_update_parent.py"],
-        "call_args": [self.call_args[1]]}
+        "call_args": [self.call_args[1], self.call_args[2]]}
         # later, the child will add as an arg where to find
         # their dropoff
     }

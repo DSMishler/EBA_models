@@ -41,6 +41,6 @@ if all_done:
     API = {
         "request": "INVOKE",
         "mode": "PYEXEC",
-        "target": inventory_dict["code"]["dfs8_prep_prop_up"],
+        "target": inventory_dict["code"]["dfs8_prep_prop_up.py"],
         "call_args": [self.call_args[1]]}
     self.node_interface(API)

@@ -486,6 +486,18 @@ shell_dict["export_to_gif"] = {
     "required_nargs": 1,
     "comment": "runs `export_to_dot`, then `dot_to_png`, then `png_to_gif`"}
 
+def shell_major(usrin):
+    if shell_check_manager() == False:
+        return
+    with Shell_Lock:
+        print(f"major iteration: {manager.major_iteration}")
+
+shell_dict["major"] = {
+    "function": shell_major,
+    "usage": "major",
+    "required_nargs": 1,
+    "comment": "(debugging:) tells what major iteration the manager is on"}
+
 def shell_echo(usrin):
     next_arg = get_arg_if_exists(usrin, 1)
     if next_arg is None:
