@@ -28,7 +28,7 @@ neighbors = self.node_interface(API)["response"]
 
 n_resp_dict = {n: 2 for n in neighbors}
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 
 inventory = self.node_interface(API)["response"]
@@ -36,8 +36,7 @@ inventory_dict = eval(inventory)
 
 inventory_dict["data"]["neighbor_locks_and_bufs"] = n_resp_dict
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": self.call_args[1],
     "length": len(repr(inventory_dict)),
     "payload": repr(inventory_dict)}
@@ -59,8 +58,7 @@ for neighbor in neighbors:
 
     # write the reserved value of "2" in there for "waiting"
     API = {
-        "request": "WRITE",
-        "mode": "START",
+        "request": "OVERWRITE",
         "target": lockbuf,
         "length": len(repr({"response":2})),
         "payload": repr({"response":2})}

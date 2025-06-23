@@ -9,7 +9,7 @@
 
 new_buf_dict_buf = self.call_args[3]
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": new_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
 new_inventory_dict = eval(inventory)
@@ -20,7 +20,7 @@ still_waiting = False
 for key in new_inventory_dict["code"]:
     buf = new_inventory_dict["code"][key]
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": buf}
     response = self.node_interface(API)["response"]
     # now response is either nothing, or the response
@@ -36,7 +36,7 @@ if not still_waiting:
     # iin = intermediate inventory name
     iin = self.call_args[4]
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": iin}
     response = self.node_interface(API)["response"]
     # now response is either nothing, or the response
@@ -57,7 +57,7 @@ if still_waiting:
 else:
     # pass the buck to code which writes to the child node
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": self.call_args[1]}
     inventory = self.node_interface(API)["response"]
     inventory_dict = eval(inventory)

@@ -9,7 +9,7 @@
 neighbor = self.call_args[2]
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 
 inventory = self.node_interface(API)["response"]
@@ -55,7 +55,7 @@ for key in inventory_dict["code"]:
     new_inventory_dict["code"][key] = intermediate_name
 
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": buf}
     buflen = len(self.node_interface(API)["response"])
 
@@ -84,8 +84,7 @@ new_inventory_dict_buf = self.node_interface(API)["name"]
 self.send_message(API, neighbor, iin, "blue")
 
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": new_inventory_dict_buf,
     "length": len(repr(new_inventory_dict)),
     "payload": repr(new_inventory_dict)}

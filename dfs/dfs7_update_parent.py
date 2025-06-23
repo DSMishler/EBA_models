@@ -6,7 +6,7 @@
 # 3: name of buffer to find their update in
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
@@ -18,8 +18,7 @@ b = self.call_args[3]
 locks_and_buffers[n] = b
 
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": self.call_args[1],
     "length": len(repr(inventory_dict)),
     "payload": repr(inventory_dict)}

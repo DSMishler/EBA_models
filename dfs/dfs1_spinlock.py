@@ -8,7 +8,7 @@
 lockbuf = self.call_args[2]
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": lockbuf}
 
 resp = self.node_interface(API)["response"]
@@ -25,7 +25,7 @@ if code == 2:
     self.node_interface(API)
 else:
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": self.call_args[1]}
 
     inventory = self.node_interface(API)["response"]
@@ -35,8 +35,7 @@ else:
     n = self.call_args[3]
     inventory_dict["data"]["neighbor_locks_and_bufs"][n] = code
     API = {
-        "request": "WRITE",
-        "mode": "START",
+        "request": "OVERWRITE",
         "target": self.call_args[1],
         "length": len(repr(inventory_dict)),
         "payload": repr(inventory_dict)}

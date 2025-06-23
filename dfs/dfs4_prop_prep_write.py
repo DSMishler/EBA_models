@@ -9,7 +9,7 @@
 
 new_buf_dict_buf = self.call_args[3]
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": new_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
 new_inventory_dict = eval(inventory)
@@ -22,7 +22,7 @@ new_inventory_dict = eval(inventory)
 for key in new_inventory_dict["code"]:
     buf = new_inventory_dict["code"][key]
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": buf}
     response = self.node_interface(API)["response"]
     child_buf_name = eval(response)["name"]
@@ -30,7 +30,7 @@ for key in new_inventory_dict["code"]:
 
 iin = self.call_args[4]
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": iin}
 response = self.node_interface(API)["response"]
 child_inventory_bufname = eval(response)["name"]
@@ -38,8 +38,7 @@ child_inventory_bufname = eval(response)["name"]
 
 
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": new_buf_dict_buf,
     "length": len(repr(new_inventory_dict)),
     "payload": repr(new_inventory_dict)}
@@ -47,7 +46,7 @@ self.node_interface(API)
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory = self.node_interface(API)["response"]
 inventory_dict = eval(inventory)

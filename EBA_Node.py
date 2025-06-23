@@ -142,14 +142,20 @@ class EBA_Node:
                 f.close()
             print()
 
-    def resolve_prim_READ(self, request, target):
+    def resolve_prim_READ(self, request, target, length, offset):
         assert request == "READ"
         if target not in self.node_state["buffers"]:
             print(f"READ error: {target} not in my buffers.")
             return {"response": None}
         else:
+            # TODO: python automatically handles it for you if you read
+            # from a file past its endpoint. This is technically undefined
+            # behavior if buffers are not zeroed and Python doesn't check.
+            # Should this be allowed? Other implementations should keep this
+            # in mind.
             f = open(target, "r")
-            text = f.read()
+            f.seek(offset)
+            text = f.read(length)
             f.close()
             return {"response": text}
 
@@ -180,9 +186,8 @@ class EBA_Node:
 
         return {"response": True, **self.node_state["buffers"][buf_name]}
 
-    def resolve_prim_WRITE(self, request, mode, target, length, payload):
+    def resolve_prim_WRITE(self, request, target, length, payload, offset):
         assert request == "WRITE"
-        assert mode in ["START", "APPEND"]
 
         # Think about whether or not the users should be allowed to write to
         # reserved buffers. It seems like an extra step, but this is how
@@ -206,22 +211,15 @@ class EBA_Node:
         # now check if writing is possible:
         if self.node_state["buffers"][target]["size"] != -1:
             # if not infinite length
-            if mode == "START":
-                extrlen = 0
-            elif mode == "APPEND":
-                f = open(target, "r")
-                extrlen = len(f.read())
-                f.close()
             bufsize = self.node_state["buffers"][target]["size"]
-            if length + extrlen > bufsize:
+            if length + offset > bufsize:
                 print(f"WRITE error: payload too large for buffer {target}")
-                print(f"length of {length+extrlen} vs size of {bufsize}")
+                print(f"length of {length+offset} vs size of {bufsize}")
                 print(f"payload {payload}")
                 return {"response": 0}
 
-        mode_to_pychar = {"START": "w", "APPEND": "a"}
-
-        f = open(target, mode_to_pychar[mode])
+        f = open(target, "r+")
+        f.seek(offset)
         f.write(payload)
         f.close()
 
@@ -274,12 +272,61 @@ class EBA_Node:
 
             return response
 
+    # Operation APPEND finds the length of the buffer and then writes to it
+    # NOTE: this really "cheats" EBA with Python. It uses the fact that
+    # Python will have an end of the file and thus provide the length.
+    # A non-Python implementation would have to have some sort of "end"
+    # character reserved for a buffer, or perhaps simply disallow appending
+    # to buffers
+    def resolve_op_APPEND(self, request, target, length, payload):
+        assert request == "APPEND"
+
+        if target not in self.node_state["buffers"]:
+            bufs_list = list(self.node_state["buffers"].keys())
+            print(f"APPEND error! write {target} not in {bufs_list}")
+            print(payload)
+            return {"response": 0}
+
+        bufsize = self.node_state["buffers"][target]["size"]
+        readresp = self.resolve_prim_READ("READ", target, bufsize, 0)
+        text = readresp["response"]
+
+        offset = len(text)
+        return self.resolve_prim_WRITE("WRITE", target, length, payload, len(text))
+
+    # See note about append
+    def resolve_op_READALL(self, request, target):
+        assert request == "READALL"
+        if target not in self.node_state["buffers"]:
+            bufs_list = list(self.node_state["buffers"].keys())
+            print(f"READALL error! {target} not in {bufs_list}")
+            return {"response": 0}
+
+        bufsize = self.node_state["buffers"][target]["size"]
+        return self.resolve_prim_READ("READ", target, bufsize, 0)
+
+    def resolve_op_OVERWRITE(self, request, target, length, payload):
+        assert request == "OVERWRITE"
+
+        if target not in self.node_state["buffers"]:
+            bufs_list = list(self.node_state["buffers"].keys())
+            print(f"OVERWRITE error! write {target} not in {bufs_list}")
+            print(payload)
+            return {"response": 0}
+
+        f = open(target, "w")
+        f.close()
+        return self.resolve_prim_WRITE("WRITE", target, length, payload, 0)
+
+
 
     def resolve_message(self, message):
         which_prim_call = {
                 "BUFREQ": self.resolve_prim_BUFREQ,
                 "WRITE":  self.resolve_prim_WRITE,
-                "INVOKE": self.resolve_prim_INVOKE}
+                "INVOKE": self.resolve_prim_INVOKE,
+                "OVERWRITE":  self.resolve_op_OVERWRITE,
+                "APPEND":  self.resolve_op_APPEND}
 
         assert message["recipient"] == self.node_state["name"]
         assert message["API"]["request"] in which_prim_call
@@ -292,10 +339,10 @@ class EBA_Node:
         else:
             API_for_new_message = {
                     "request": "WRITE",
-                    "mode": "START",
                     "target": message["response_buffer"],
                     "length": len(repr(response)),
-                    "payload": repr(response)}
+                    "payload": repr(response),
+                    "offset": 0}
 
             new_message = {}
             new_message["recipient"] = message["sender"]
@@ -324,9 +371,12 @@ class EBA_Node:
                 "BUFREQ": self.resolve_prim_BUFREQ,
                 "WRITE":  self.resolve_prim_WRITE,
                 "INVOKE": self.resolve_prim_INVOKE,
-                "READ": self.resolve_prim_READ}
+                "READ": self.resolve_prim_READ,
+                "READALL": self.resolve_op_READALL,
+                "OVERWRITE":  self.resolve_op_OVERWRITE,
+                "APPEND":  self.resolve_op_APPEND}
 
-        assert API["request"] in which_prim_call
+        assert API["request"] in which_prim_call, f"{API['request']} not found"
 
         # Now do the call to the primitive
         response = which_prim_call[API["request"]](**API)
@@ -352,12 +402,11 @@ class EBA_Node:
             print(f"{message['recipient']} is not a neighbor.")
             return
         API_for_send_buffer = {
-                "request": "WRITE",
-                "mode": "APPEND",
+                "request": "APPEND",
                 "target": "send_buf.EBA",
                 "length": len(repr(message)+"\n"),
                 "payload": repr(message)+"\n"}
-        self.resolve_prim_WRITE(**API_for_send_buffer)
+        self.resolve_op_APPEND(**API_for_send_buffer)
 
 
 if __name__ == "__main__":

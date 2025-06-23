@@ -7,14 +7,14 @@
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[2]}
 buf_resp = self.node_interface(API)["response"]
 

@@ -8,10 +8,10 @@ newvar = self.node_interface(API)
 
 API={
     "request": "WRITE",
-    "mode": "START",
     "target": newvar["name"],
     "length": len("print('hello world')"),
-    "payload": "print('hello world')"}
+    "payload": "print('hello world')",
+    "offset": 0}
 
 newvar2 = self.node_interface(API)
 

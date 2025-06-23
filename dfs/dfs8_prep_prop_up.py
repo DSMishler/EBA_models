@@ -9,7 +9,7 @@ API = {
 self.send_message(API, "ROOT", None, None)
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
@@ -35,7 +35,7 @@ for n in locks_and_bufs:
     val = locks_and_bufs[n]
     if type(val) is str:
         API = {
-            "request": "READ",
+            "request": "READALL",
             "target": val}
         child_dict_txt = self.node_interface(API)["response"]
         personal_info["children"][n] = eval(child_dict_txt)
@@ -52,8 +52,7 @@ API = {
     "time": 50}
 personal_info_buf = self.node_interface(API)["name"]
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": personal_info_buf,
     "length": len(repr(personal_info)),
     "payload": repr(personal_info)}

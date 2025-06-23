@@ -284,9 +284,8 @@ def shell_write(usrin):
         return
     if shell_check_current_node() == False:
         return
-    mode = get_arg_if_exists(usrin, 1)
-    target = get_arg_if_exists(usrin, 2)
-    fname = get_arg_if_exists(usrin, 3)
+    target = get_arg_if_exists(usrin, 1)
+    fname = get_arg_if_exists(usrin, 2)
     f = open(fname, "r")
     payload = f.read()
     f.close()
@@ -294,16 +293,16 @@ def shell_write(usrin):
 
     API = {
         "request": "WRITE",
-        "mode": mode,
         "target": target,
         "length": length,
-        "payload": payload}
+        "payload": payload,
+        "offset": 0}
 
     ship_message_to_manager(API)
 
 shell_dict["write"] = {
     "function": shell_write,
-    "usage": "write <mode> <target> <fname>",
+    "usage": "write <target> <fname>",
     "required_nargs": 3,
     "comment": "call the primitive WRITE on the ssh-ed node on buffer `target`"}
 
@@ -414,7 +413,7 @@ def shell_load_file(usrin):
                 bufname = payload["name"]
                 break
 
-    shell_write(f"SHELL START {bufname} {fname}")
+    shell_write(f"SHELL {bufname} {fname}")
 
     if invoke:
         shell_invoke(f"SHELL PYEXEC {bufname}")

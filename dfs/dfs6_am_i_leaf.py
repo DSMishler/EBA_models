@@ -13,7 +13,7 @@
 #       buffer between when this code reads it and then writes
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
@@ -55,8 +55,7 @@ if all_locks_refused and not already_propped:
     for n in n_resp_dict:
         n_resp_dict[n] = -1
     API = {
-        "request": "WRITE",
-        "mode": "START",
+        "request": "OVERWRITE",
         "target": self.call_args[1],
         "length": len(repr(inventory_dict)),
         "payload": repr(inventory_dict)}

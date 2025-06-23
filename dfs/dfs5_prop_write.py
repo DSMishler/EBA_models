@@ -11,14 +11,14 @@ neighbor = self.call_args[2]
 
 new_buf_dict_buf = self.call_args[3]
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": new_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
 new_inventory_dict = eval(inventory)
 
 old_buf_dict_buf = self.call_args[1]
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": old_buf_dict_buf}
 inventory = self.node_interface(API)["response"]
 old_inventory_dict = eval(inventory)
@@ -37,13 +37,12 @@ for key in old_inventory_dict["code"]:
     newbuf = new_inventory_dict["code"][key]
 
     API = {
-        "request": "READ",
+        "request": "READALL",
         "target": oldbuf}
     payload = self.node_interface(API)["response"]
 
     API = {
-        "request": "WRITE",
-        "mode": "START",
+        "request": "OVERWRITE",
         "target": newbuf,
         "length": len(payload),
         "payload": payload}
@@ -52,8 +51,7 @@ for key in old_inventory_dict["code"]:
 # write the new dfs buf dict over as well
 payload = repr(new_inventory_dict)
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": self.call_args[4],
     "length": len(payload),
     "payload": payload}

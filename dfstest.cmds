@@ -1,0 +1,53 @@
+refresh_visdir
+sys init
+newnode node0
+newnode node1
+newnode node2
+newnode node3
+newnode node4
+newnode node5
+newnode node6
+newnode node7
+newnode node8
+newnode node9
+newnode node10
+newnode node11
+newnode node12
+newnode node13
+newnode node14
+newnode node15
+newnode node16
+newnode node17
+newnode node18
+newnode node19
+connect node0 node1
+connect node1 node2
+connect node2 node3
+connect node3 node4
+connect node4 node5
+connect node5 node6
+connect node6 node7
+connect node7 node8
+connect node8 node9
+connect node9 node10
+connect node10 node11
+connect node11 node12
+connect node12 node13
+connect node13 node14
+connect node14 node15
+connect node15 node16
+connect node16 node17
+connect node17 node18
+connect node18 node19
+connect node19 node0
+
+connect node0 node5
+connect node0 node10
+connect node0 node15
+connect node5 node10
+connect node5 node15
+connect node10 node15
+
+ssh node18
+# show
+exec shell_load_dfs.py

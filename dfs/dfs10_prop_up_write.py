@@ -7,21 +7,21 @@
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[1]}
 inventory_txt = self.node_interface(API)["response"]
 inventory_dict = eval(inventory_txt)
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[2]}
 buf_resp = self.node_interface(API)["response"]
 target_buf = eval(buf_resp)["name"]
 
 
 API = {
-    "request": "READ",
+    "request": "READALL",
     "target": self.call_args[3]}
 personal_info_txt = self.node_interface(API)["response"]
 personal_info = eval(personal_info_txt)
@@ -30,8 +30,7 @@ personal_info = eval(personal_info_txt)
 pi_info = inventory_dict["data"]["parent_invoke"]
 pi_info["API"]["call_args"].append(target_buf)
 API = {
-    "request": "WRITE",
-    "mode": "START",
+    "request": "OVERWRITE",
     "target": target_buf,
     "length": len(repr(personal_info)),
     "payload": repr(personal_info)}
