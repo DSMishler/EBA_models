@@ -337,6 +337,59 @@ shell_dict["invoke"] = {
     "required_nargs": 3,
     "comment": "call the primitive INVOKE on the ssh-ed node"}
 
+def shell_return_bufreq(usrin):
+    if shell_check_manager() == False:
+        return
+    if shell_check_current_node() == False:
+        return
+
+    with Shell_Lock:
+        f = open("manager_shell_pipe.txt", "w") # flush the pipe
+        f.close()
+
+    size = get_arg_if_exists(usrin, 1)
+
+    shell_bufreq(f"SHELL {size} 600")
+
+    def pop_first_line_from(fname):
+        f = open(fname, "r")
+        ftext = f.read()
+        f.close()
+        if len(ftext) == 0:
+            first_line = None
+        else:
+            first_line = ftext.split('\n')[0]
+            new_text = "\n".join(ftext.split('\n')[1:])
+            f = open(fname, "w")
+            f.write(new_text)
+            f.close()
+        return first_line
+
+    while True:
+        with Shell_Lock:
+            rtext = pop_first_line_from("manager_shell_pipe.txt")
+        if rtext is None:
+            time.sleep(0.2)
+        else:
+            msg = eval(rtext)
+            payload = eval(msg["API"]["payload"])
+            # it's a write request as a response, so the payload is the response
+            # to our earlier request. But we have to make sure we didn't get
+            # responses from earlier shell loads' writes or invokes. Easy.
+            # just make sure we get a bufreq."
+            if "name" not in payload:
+                pass
+            else:
+                bufname = payload["name"]
+                break
+    return bufname
+
+shell_dict["return_bufreq"] = {
+    "function": shell_return_bufreq,
+    "usage": "return_bufreq <size>",
+    "required_nargs": 2,
+    "comment": "use BUFREQ and return answer to the shell"}
+
 def shell_load_file(usrin):
     if shell_check_manager() == False:
         return
