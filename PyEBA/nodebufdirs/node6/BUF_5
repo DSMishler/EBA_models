@@ -1,0 +1,18 @@
+nd of where data is allocated
+# full: buffer containing "1" ze a circular buffer
+# Args: 3
+# 0: self# Initialize a circular buffer
+# Args: 3
+# 0: self (always)
+# 1: size of buffer (bytes)
+# 2: name of buffer to put name of return buffer
+
+
+return_bufname = self.call_args[2]
+
+
+# structure of the circular buffer
+# Data: the true buffer which holds the data
+# size: buffer containing the size of said buffer
+# head: buffer containing the start of where data is allocated
+# tail: buffer containing the e
