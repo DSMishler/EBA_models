@@ -4,13 +4,22 @@
 #include <stdlib.h>
 #include <assert.h>
 
-void print_buf_list(buf_t *head)
+void print_buf_list(buf_t *head, char contents)
 {
    buf_t *b;
    for(b = head; b != NULL; b = b->next)
    {
       printf("buffer %lu of size %u with expiry %u\n",
          (long unsigned int)b->allocation, b->size, b->exp);
+      if (contents == 'c')
+      {
+         int i;
+         for(i = 0; i < b->size; i++)
+         {
+            printf("%c", ((char*)b->allocation)[i]);
+         }
+         printf("\n");
+      }
    }
 }
 

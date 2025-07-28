@@ -13,3 +13,6 @@ EBA_graphviz/testrun/*
 
 # intermediate files
 *.svg
+
+# executable test files
+test
