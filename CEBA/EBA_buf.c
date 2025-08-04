@@ -3,20 +3,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdint.h>
 
 void print_buf_list(buf_t *head, char contents)
 {
    buf_t *b;
    for(b = head; b != NULL; b = b->next)
    {
-      printf("buffer %lu of size %u with expiry %u\n",
-         (long unsigned int)b->allocation, b->size, b->exp);
+      printf("buffer at 0x%lx allocation 0x%lx of size %u with expiry %u\n",
+         (uint64_t) b, (uint64_t)b->allocation, b->size, b->exp);
       if (contents == 'c')
       {
          int i;
          for(i = 0; i < b->size; i++)
          {
             printf("%c", ((char*)b->allocation)[i]);
+         }
+         printf("\n");
+      }
+      else if (contents == 'b')
+      {
+         int i;
+         for(i = 0; i < b->size; i++)
+         {
+            int j;
+            unsigned char c = ((unsigned char*)b->allocation)[i];
+            for(j = 7; j >= 0; j--)
+            {
+               int which_bit = 1 << j;
+               int bit = (c & which_bit) >> j;
+               printf("%d", bit);
+            }
+            if (i % 8 == 7)
+            {
+               printf("\n");
+            }
+            else
+            {
+               printf(" ");
+            }
          }
          printf("\n");
       }
@@ -31,7 +56,9 @@ buf_t * alloc_buf(int size, int exp)
    newbuf->next = NULL;
    newbuf->size = size;
    newbuf->exp = exp;
-   newbuf->allocation = malloc(size);
+   newbuf->allocation = calloc(size, 1);
+   // this calloc is a courtesy - EBA need not guarantee you get
+   // data initialized to zero
 
    return newbuf;
 }
