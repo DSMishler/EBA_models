@@ -28,7 +28,6 @@ void CEBA_INVOKE_OFFCOPY(
 {
    void *mdest = dest->allocation;
    void *msrc = src->allocation;
-   printf("old ptrs: 0x%lx 0x%lx\n", (uint64_t)mdest, (uint64_t)msrc);
    if (doffset != NULL)
    {
       mdest = (void*)((uint64_t) mdest + *(uint32_t*) doffset->allocation);
@@ -38,8 +37,6 @@ void CEBA_INVOKE_OFFCOPY(
       msrc = (void*)((uint64_t) msrc + *(uint32_t*) soffset->allocation);
    }
    int l = *(uint32_t*)(len->allocation);
-   printf("new ptrs: 0x%lx 0x%lx\n", (uint64_t)mdest, (uint64_t)msrc);
-   printf("and len: %d\n", l);
    memcpy(mdest, msrc, l);
 }
 

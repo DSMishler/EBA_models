@@ -11,13 +11,10 @@ struct CEBA_buf
 };
 typedef struct CEBA_buf buf_t;
 
-void print_buf_list(buf_t *head, char contents);
+void print_buf(buf_t *b, char contents);
 
-buf_t * alloc_buf(int size, int exp);
-void free_buf(buf_t *b);
-
-buf_t * add_buf_to_list(buf_t *head, buf_t *addme);
-buf_t * remove_buf_from_list(buf_t *head, buf_t *rmvme);
-void dealloc_list(buf_t *head);
-
+void CEBA_PRINT_BUFS(char contents);
+buf_t * CEBA_BUFREQ(int size, int exp);
+void CEBA_BUF_DEALLOC(buf_t *b);
+void CEBA_BUF_FREE_ALL(void);
 #endif
