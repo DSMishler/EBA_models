@@ -1,12 +1,13 @@
 .ipynb_checkpoints/
+PyEBA/__pycache__/*
 __pycache__/*
 
-# EBA temp files
-nodebufdirs/*
-manager_shell_pipe.txt
+# PyEBA temp files
+PyEBA/nodebufdirs/*
+PyEBA/manager_shell_pipe.txt
 
 # temporary files for a run (commonly)
-EBA_graphviz/testrun/*
+PyEBA/EBA_graphviz/testrun/*
 
 # vim files
 *.swp
@@ -15,4 +16,4 @@ EBA_graphviz/testrun/*
 *.svg
 
 # executable test files
-test
+EBA_IR/test
