@@ -1,18 +1,68 @@
-nd of where data is allocated
-# full: buffer containing "1" ze a circular buffer
-# Args: 3
-# 0: self# Initialize a circular buffer
-# Args: 3
-# 0: self (always)
-# 1: size of buffer (bytes)
-# 2: name of buffer to put name of return buffer
+# DFS propagate write (and invoke)
+# ARGS: 5
+# 0: bufname (always)
+# 1: bufname of inventory buffer
+# 2: neighbor I will propagate to
+# 3: bufname of now-complete inventory buffer for child (parent's copy
+# 4: bufname of inventory buffer to give to child
 
 
-return_bufname = self.call_args[2]
+neighbor = self.call_args[2]
+
+new_buf_dict_buf = self.call_args[3]
+API = {
+    "request": "READALL",
+    "target": new_buf_dict_buf}
+inventory = self.node_interface(API)["response"]
+new_inventory_dict = eval(inventory)
+
+old_buf_dict_buf = self.call_args[1]
+API = {
+    "request": "READALL",
+    "target": old_buf_dict_buf}
+inventory = self.node_interface(API)["response"]
+old_inventory_dict = eval(inventory)
+
+# copy all of our code from our bufs to the bufs
+# in the child node
+
+msg_iter = 0
+for key in old_inventory_dict["code"]:
+    msg_iter += 1
+    if msg_iter < 3:
+        col = "green"
+    else:
+        col = "quiet"
+    oldbuf = old_inventory_dict["code"][key]
+    newbuf = new_inventory_dict["code"][key]
+
+    API = {
+        "request": "READALL",
+        "target": oldbuf}
+    payload = self.node_interface(API)["response"]
+
+    API = {
+        "request": "OVERWRITE",
+        "target": newbuf,
+        "length": len(payload),
+        "payload": payload}
+    self.send_message(API, neighbor, None, col)
+
+# write the new dfs buf dict over as well
+payload = repr(new_inventory_dict)
+API = {
+    "request": "OVERWRITE",
+    "target": self.call_args[4],
+    "length": len(payload),
+    "payload": payload}
+self.send_message(API, neighbor, None, "green")
 
 
-# structure of the circular buffer
-# Data: the true buffer which holds the data
-# size: buffer containing the size of said buffer
-# head: buffer containing the start of where data is allocated
-# tail: buffer containing the e
+# finally, send an invoke request to the child node to get
+# started
+API = {
+    "request": "INVOKE",
+    "mode": "PYEXEC",
+    "target": new_inventory_dict["code"]["dfs0_ping.py"],
+    "call_args": [self.call_args[4]]}
+self.send_message(API, neighbor, None, "red")

@@ -1,0 +1,35 @@
+// args buffer (always given as V0) contains
+// 0: the address of own buffer this code is resident in
+// 1: the address of the pre-allocated buffer the circular
+//    buffer should end up in
+// 2: the size of the circular buffer
+
+LITERAL READ V13, V0, @8 // V13 is our circ buf
+LITERAL READ V14, V0, @8 // V14 is size
+
+
+// V1 will need allocated once the size is set
+BUFREQ ALLOC_LITERAL V2, @8
+BUFREQ ALLOC_LITERAL V3, @8
+BUFREQ ALLOC_LITERAL V4, @8
+BUFREQ ALLOC_LITERAL V5, @8
+// V1 <- data_buf
+// V2 <- size_buf
+// V3 <- head_buf
+// V4 <- tail_buf
+// V5 <- full_buf
+
+LITERAL WRITE V2, @0, V14
+// now we can allocate V1
+BUFREQ ALLOC V1, V2
+
+LITERAL LOAD V3, @0 // head = 0
+LITERAL LOAD V4, @0 // tail = 0
+LITERAL LOAD V5, @0 // full = 0
+
+// now write all the pointers into the requested buffer
+LITERAL WRITE V13, @00, V1
+LITERAL WRITE V13, @08, V2
+LITERAL WRITE V13, @16, V3
+LITERAL WRITE V13, @24, V4
+LITERAL WRITE V13, @32, V5

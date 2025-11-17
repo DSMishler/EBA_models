@@ -19,4 +19,5 @@ connect node5 node7
 
 ssh node6
 # show
-exec shell_load_circ.py
+# exec shell_load_circ.py
+exec shell_load_dfs.py

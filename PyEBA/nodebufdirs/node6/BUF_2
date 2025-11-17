@@ -1,93 +1,99 @@
-# Write to a circular buffer
-# Args: 4
-# 0: self (always)
-# 1: circular buffer to write to
-# 2: buffer that we will write from
-# 3: length of our write
-# perhaps an offset will be added later
+# DFS propagate
+# ARGS: 3 # 0: bufname (always)
+# 1: bufname of inventory buffer
+# 2: neighbor I will propagate to
 
+# This script will only allocate all the needed buffers
+# and the parent invoke
+
+neighbor = self.call_args[2]
 
 API = {
-    "request": "READ",
-    "target": self.call_args[1],
-    "length": 100,
-    "offset": 0}
-buf_desc = self.node_interface(API)["response"]
+    "request": "READALL",
+    "target": self.call_args[1]}
 
+inventory = self.node_interface(API)["response"]
+inventory_dict = eval(inventory)
 
-API["target"] = buf_desc.split('\n')[1] # size
-buf_size = int(self.node_interface(API)["response"])
-API["target"] = buf_desc.split('\n')[2] # head
-buf_head = int(self.node_interface(API)["response"])
-API["target"] = buf_desc.split('\n')[3] # tail
-buf_tail = int(self.node_interface(API)["response"])
-API["target"] = buf_desc.split('\n')[4] # full
-buf_full = int(self.node_interface(API)["response"])
+new_inventory_dict = {}
+new_inventory_dict["code"] = inventory_dict["code"].copy()
+new_inventory_dict["data"] = {} # no data yet, first data here
 
+API = {
+    "request": "INVOKE",
+    "mode": "SYSCALL",
+    "target": "ID",
+    "call_args": []}
+nodename = self.node_interface(API)["response"]
 
-occupied_space = buf_tail - buf_head + buf_size * buf_full
-if buf_tail < buf_head:
-    # then we had a wrap-around
-    occupied_space += buf_size
-available_space = buf_size - occupied_space
+new_inventory_dict["data"]["parent_invoke"] = {
+    "who": nodename,
+    "am_root": False,
+    "API": {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": inventory_dict["code"]["dfs7_update_parent.py"],
+        "call_args": [self.call_args[1], self.call_args[2]]}
+        # later, the child will add as an arg where to find
+        # their dropoff
+    }
 
-write_size = int(self.call_args[3])
-if available_space >= write_size:
-    # then we write
-    if buf_tail + write_size > buf_size:
-        # then write only enough to wrap around
-        init_write_size = buf_size - buf_tail
+msg_iter = 0
+for key in inventory_dict["code"]:
+    msg_iter += 1
+    if msg_iter < 3:
+        col = "blue"
     else:
-        # then write all
-        init_write_size = write_size
+        col = "quiet"
+    buf = inventory_dict["code"][key]
+    API = {
+        "request": "BUFREQ",
+        "mode": "ALLOC",
+        "size": 100,
+        "time": 50}
+    intermediate_name = self.node_interface(API)["name"]
+    new_inventory_dict["code"][key] = intermediate_name
 
     API = {
-        "request": "READ",
-        "target": self.call_args[2],
-        "length": write_size,
-        "offset": 0}
-    write_payload = self.node_interface(API)["response"]
+        "request": "READALL",
+        "target": buf}
+    buflen = len(self.node_interface(API)["response"])
 
     API = {
-        "request": "WRITE",
-        "target": buf_desc.split('\n')[0],
-        "length": init_write_size,
-        "payload": write_payload[:init_write_size],
-        "offset": buf_tail}
-    self.node_interface(API)
+        "request": "BUFREQ",
+        "mode": "ALLOC",
+        "size": buflen,
+        "time": 50}
+    self.send_message(API, neighbor, intermediate_name, col)
 
-    write_size -= init_write_size
-    buf_tail += init_write_size
-    buf_tail %= buf_size
+# make a home for the new inventory_dict
+# for us AND our neighbor
+API = {
+    "request": "BUFREQ",
+    "mode": "ALLOC",
+    "size": 100,
+    "time": 50}
+# iin = intermediate_inventory_name
+iin = self.node_interface(API)["name"]
+API = {
+    "request": "BUFREQ",
+    "mode": "ALLOC",
+    "size": len(repr(new_inventory_dict))*2,
+    "time": 50}
+new_inventory_dict_buf = self.node_interface(API)["name"]
+self.send_message(API, neighbor, iin, "blue")
 
-    API = {
-        "request": "WRITE",
-        "target": buf_desc.split('\n')[0],
-        "length": write_size,
-        "payload": write_payload[init_write_size:],
-        "offset": buf_tail}
-    self.node_interface(API)
+API = {
+    "request": "OVERWRITE",
+    "target": new_inventory_dict_buf,
+    "length": len(repr(new_inventory_dict)),
+    "payload": repr(new_inventory_dict)}
+self.node_interface(API)
 
-    buf_tail += write_size
-    buf_tail %= buf_size
-
-    if buf_tail == buf_head:
-        buf_full = 1
-
-
-    API = {
-        "request": "OVERWRITE",
-        "target": buf_desc.split('\n')[3],
-        "length": len(repr(buf_tail)),
-        "payload": repr(buf_tail)}
-    self.node_interface(API)
-    API = {
-        "request": "OVERWRITE",
-        "target": buf_desc.split('\n')[4],
-        "length": len(repr(buf_full)),
-        "payload": repr(buf_full)}
-    self.node_interface(API)
-
-
-else:
-    print("refusing write. Not enough space")
+next_buf = inventory_dict["code"]["dfs3_prop_spinlock.py"]
+API = {
+    "request": "INVOKE",
+    "mode": "PYEXEC",
+    "target": next_buf,
+    "call_args": self.call_args[1:] + [new_inventory_dict_buf, iin]}
+self.node_interface(API)

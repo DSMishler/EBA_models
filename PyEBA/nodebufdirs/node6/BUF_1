@@ -1,67 +1,64 @@
-# Initialize a circular buffer
-# Args: 3
-# 0: self (always)
-# 1: size of buffer (bytes)
-# 2: name of buffer to put name of return buffer
+# DFS spinlock
+# ARGS: 5
+# 0: bufname (always)
+# 1: bufname of inventory buffer
+# 2: bufname of buffer I spinlock on
+# 3: neighbor I am waiting on
 
-
-return_bufname = self.call_args[2]
-
-
-# structure of the circular buffer
-# Data: the true buffer which holds the data
-# size: buffer containing the size of said buffer
-# head: buffer containing the start of where data is allocated
-# tail: buffer containing the end of where data is allocated
-# full: buffer containing "1" if the circular buffer is full
-
-intbuflen = len(str(self.call_args[1]))
-databufsize = int(self.call_args[1])
+lockbuf = self.call_args[2]
 
 API = {
-    "request": "BUFREQ",
-    "mode": "ALLOC",
-    "size": databufsize,
-    "time": 3600}
-databuf = self.node_interface(API)["name"]
-API = {
-    "request": "BUFREQ",
-    "mode": "ALLOC",
-    "size": intbuflen,
-    "time": 3600}
-sizebuf = self.node_interface(API)["name"]
-headbuf = self.node_interface(API)["name"]
-tailbuf = self.node_interface(API)["name"]
-API = {
-    "request": "BUFREQ",
-    "mode": "ALLOC",
-    "size": 1, # 1 or 0
-    "time": 3600}
-fullbuf = self.node_interface(API)["name"]
+    "request": "READALL",
+    "target": lockbuf}
 
-API = {
-    "request": "WRITE",
-    "target": sizebuf,
-    "length": len(str(databufsize)),
-    "payload": str(databufsize),
-    "offset": 0}
-self.node_interface(API)
-API["length"] = 1
-API["payload"] = "0"
-API["target"] = headbuf
-self.node_interface(API)
-API["target"] = tailbuf
-self.node_interface(API)
-API["target"] = fullbuf
-self.node_interface(API)
+resp = self.node_interface(API)["response"]
+
+code = eval(resp)["response"]
+
+if code == 2:
+    # then we are still waiting. Invoke self.
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": self.call_args[0],
+        "call_args": self.call_args[1:]}
+    self.node_interface(API)
+else:
+    API = {
+        "request": "READALL",
+        "target": self.call_args[1]}
+
+    inventory = self.node_interface(API)["response"]
+    inventory_dict = eval(inventory)
+
+    # update the inventory dict with our response
+    n = self.call_args[3]
+    inventory_dict["data"]["neighbor_locks_and_bufs"][n] = code
+    API = {
+        "request": "OVERWRITE",
+        "target": self.call_args[1],
+        "length": len(repr(inventory_dict)),
+        "payload": repr(inventory_dict)}
+    self.node_interface(API)
+
+    if code == 0:
+        # then we aren't waiting, but didn't get the lock.
+        # Check whether or not we are a leaf: invoke the code
+        # that checks
+        next_buf = inventory_dict["code"]["dfs6_am_i_leaf.py"]
+    elif code == 1:
+        # then we indeed got our lock. We pass the buck
+        # to dfs2_propagate
+        next_buf = inventory_dict["code"]["dfs2_propagate.py"]
+    else:
+        print(f"uhhh, what? code={code}")
+    API = {
+        "request": "INVOKE",
+        "mode": "PYEXEC",
+        "target": next_buf,
+        "call_args": [self.call_args[1], self.call_args[3]]}
+    self.node_interface(API)
 
 
-circ_buffer_desc = "\n".join([databuf, sizebuf, headbuf, tailbuf, fullbuf])
 
-API = {
-    "request": "WRITE",
-    "target": self.call_args[2],
-    "length": len(circ_buffer_desc),
-    "payload": circ_buffer_desc,
-    "offset": 0}
-self.node_interface(API)
+
