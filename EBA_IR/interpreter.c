@@ -116,22 +116,34 @@ void run_bufreq(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "BUFREQ"));
 
-   if (match_second_word(line, "ALLOC_LITERAL"))
+   if (match_second_word(line, "ALLOC"))
    {
-      int var = parse_variable(line[2]);
-      assert(var >= 0 && var < IR_STATE_SIZE);
-      int lit = parse_literal(line[3]);
-      assert(lit >= 0);
+      int var_dest = parse_variable(line[2]);
+      assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
+      int var_allocation_len_buf = parse_variable(line[3]);
+      assert(var_allocation_len_buf >= 0 && var_allocation_len_buf < IR_STATE_SIZE);
 
-      void* newbuf = malloc(lit);
-      IRstate->vars[var] = (int64_t) newbuf;
+      int64_t allocation_len = *((int64_t *)IRstate->vars[var_allocation_len_buf]);
+
+      void* newbuf = malloc(allocation_len);
+      IRstate->vars[var_dest] = (int64_t) newbuf;
+   }
+   else if (match_second_word(line, "ALLOC_LITERAL"))
+   {
+      int var_dest = parse_variable(line[2]);
+      assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
+      int lit_allocation_len = parse_literal(line[3]);
+      assert(lit_allocation_len >= 0);
+
+      void* newbuf = malloc(lit_allocation_len);
+      IRstate->vars[var_dest] = (int64_t) newbuf;
    }
    else if (match_second_word(line, "RELEASE"))
    {
-      int var = parse_variable(line[2]);
-      assert(var >= 0 && var < IR_STATE_SIZE);
+      int var_target = parse_variable(line[2]);
+      assert(var_target >= 0 && var_target < IR_STATE_SIZE);
 
-      free((void*)(IRstate->vars[var]));
+      free((void*)(IRstate->vars[var_target]));
    }
    else
    {
@@ -147,13 +159,44 @@ void run_literal(IR_state_t *IRstate, char **line)
 
    if (match_second_word(line, "LOAD"))
    {
-      int var = parse_variable(line[2]);
-      assert(var >= 0 && var < IR_STATE_SIZE);
-      int lit = parse_literal(line[3]);
-      assert(lit >= 0);
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int lit_value = parse_literal(line[3]);
+      assert(lit_value >= 0);
 
-      int64_t* adr = (int64_t*) (IRstate->vars[var]);
-      *adr = lit;
+      int64_t* adr = (int64_t*) (IRstate->vars[var_dest_buf]);
+      *adr = lit_value;
+   }
+   else if (match_second_word(line, "READ"))
+   {
+      int var_dest = parse_variable(line[2]);
+      assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
+      int var_src_buf = parse_variable(line[3]);
+      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
+      int lit_offset = parse_literal(line[4]);
+      assert(lit_offset >= 0);
+
+      // adding the offest of the literal before cast
+      // to avoid having to wrestle with pointer artithmetic later
+      int64_t* src_addr = (int64_t*) ((IRstate->vars[var_src_buf]) + lit_offset);
+
+      IRstate->vars[var_dest] = *src_addr;
+      
+   }
+   else if (match_second_word(line, "WRITE"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int lit_offset = parse_literal(line[3]);
+      assert(lit_offset >= 0);
+      int var_src = parse_variable(line[4]);
+      assert(var_src >= 0 && var_src < IR_STATE_SIZE);
+
+      int64_t value = IRstate->vars[var_src];
+
+      int64_t *dest_addr = (int64_t*) ((IRstate->vars[var_dest_buf]) + lit_offset);
+
+      *dest_addr = value;
    }
    else
    {
@@ -171,12 +214,12 @@ void run_print(IR_state_t *IRstate, char **line)
    {
       int var = parse_variable(line[2]);
       assert(var >= 0 && var < IR_STATE_SIZE);
-      int lit = parse_literal(line[3]);
-      assert(lit >= 0);
+      int lit_len = parse_literal(line[3]);
+      assert(lit_len >= 0);
 
       int64_t* adr = (int64_t*) (IRstate->vars[var]);
       int i;
-      for(i = 0; i < lit; i++)
+      for(i = 0; i < lit_len; i++)
       {
          uint8_t byte = ((uint8_t*) adr)[i];
          printf("byte %03d: 0x%02X\n", i, byte);
@@ -234,6 +277,7 @@ void run_code(INVOKE_request_t *current_invoke)
 
       // printf("now running line %d\n", IRstate->next_line);
       run_line(IRstate, IRcode[IRstate->next_line]);
+      // print_IR_state(IRstate);
    }
 
    while(IRstate->next_invoke != NULL)
@@ -242,6 +286,7 @@ void run_code(INVOKE_request_t *current_invoke)
       // TODO: this recursion will eventually crash the program because of
       //       call depth. Can leave it until the demo but then will need
       //       to do something better
+      // TODO ALSO: the code_buf may be redundant because it should be in arg buf.
       run_code(current_invoke);
 
       IRstate->next_invoke = current_invoke->next;
@@ -261,9 +306,20 @@ IR_state_t * init_IR_state(void)
    IRstate = malloc(sizeof(IR_state_t));
    IRstate->vars = calloc(IR_STATE_SIZE, sizeof(int64_t));
    IRstate->next_line = 0;
+   IRstate->next_invoke = NULL;
 
 
    return IRstate;
+}
+
+void print_IR_state(IR_state_t *IRstate)
+{
+   printf("printing IR state:\n");
+   int i;
+   for(i = 0; i < IR_STATE_SIZE; i++)
+   {
+      printf("V%02d: %lx\n", i, IRstate->vars[i]);
+   }
 }
 
 void free_IR_state(IR_state_t *IRstate)

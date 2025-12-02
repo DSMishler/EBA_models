@@ -23,6 +23,7 @@ typedef struct IR_state IR_state_t;
 
 void run_code(INVOKE_request_t *current_invoke);
 IR_state_t * init_IR_state(void);
+void print_IR_state(IR_state_t *IRstate);
 void free_IR_state(IR_state_t *IRstate);
 
 #endif

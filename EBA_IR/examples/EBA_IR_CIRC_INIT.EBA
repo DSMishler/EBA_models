@@ -5,7 +5,7 @@
 // 2: the size of the circular buffer
 
 LITERAL READ V13, V0, @8 // V13 is our circ buf
-LITERAL READ V14, V0, @8 // V14 is size
+LITERAL READ V14, V0, @16 // V14 is size
 
 
 // V1 will need allocated once the size is set
@@ -19,8 +19,11 @@ BUFREQ ALLOC_LITERAL V5, @8
 // V4 <- tail_buf
 // V5 <- full_buf
 
-LITERAL WRITE V2, @0, V14
+// TODO: make this into a transfer instead
+LITERAL READ V15, V14, @0 // get size into V15
+LITERAL WRITE V2, @0, V15
 // now we can allocate V1
+PRINT BYTES V2, @8
 BUFREQ ALLOC V1, V2
 
 LITERAL LOAD V3, @0 // head = 0
