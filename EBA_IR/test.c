@@ -44,11 +44,11 @@ void test_circ_init(void)
    starter_invoke->code_buf = malloc(sizeof(void*));
    ((char****)starter_invoke->code_buf)[0] = IRcode;
    starter_invoke->arg_buf = malloc(3*sizeof(void*));
-   ((char**)starter_invoke->arg_buf)[0] = NULL;
-   ((char**)starter_invoke->arg_buf)[1] = malloc(5*sizeof(void*));
+   ((void**)starter_invoke->arg_buf)[0] = NULL;
+   ((void**)starter_invoke->arg_buf)[1] = malloc(5*sizeof(void*));
    // can hold the five  buffers
-   ((char**)starter_invoke->arg_buf)[2] = malloc(sizeof(int64_t));
-   *(((char**)starter_invoke->arg_buf)[2]) = 40; // size = 40
+   ((int64_t**)starter_invoke->arg_buf)[2] = malloc(sizeof(int64_t));
+   *(((int64_t**)starter_invoke->arg_buf)[2]) = 400; // size = 40
    starter_invoke->next = NULL;
 
    run_code(starter_invoke);

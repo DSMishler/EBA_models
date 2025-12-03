@@ -206,6 +206,41 @@ void run_literal(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
+void run_transfer(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "TRANSFER"));
+
+   if (match_second_word(line, "OFFSET"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_dest_offset_buf = parse_variable(line[3]);
+      assert(var_dest_offset_buf >= 0 && var_dest_offset_buf < IR_STATE_SIZE);
+      int var_src_buf = parse_variable(line[4]);
+      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
+      int var_src_offset_buf = parse_variable(line[5]);
+      assert(var_src_offset_buf >= 0 && var_src_offset_buf < IR_STATE_SIZE);
+      int var_len_buf = parse_variable(line[6]);
+      assert(var_len_buf >= 0 && var_len_buf < IR_STATE_SIZE);
+
+      int64_t dest_offset = *((int64_t*) (IRstate->vars[var_dest_offset_buf]));
+      int64_t src_offset = *((int64_t*) (IRstate->vars[var_src_offset_buf]));
+      int64_t len = *((int64_t*) (IRstate->vars[var_len_buf]));
+      // TODO: double check how this is written and if we really want
+      //       these pointers stored just as normal int64_t's
+      int64_t dest_addr = ((int64_t) (IRstate->vars[var_dest_buf]));
+      int64_t src_addr = ((int64_t) (IRstate->vars[var_src_buf]));
+
+      memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
+   }
+   else
+   {
+      printf("error: option %s does not exist for TRANSFER\n", line[1]);
+   }
+
+   IRstate->next_line += 1;
+}
+
 void run_print(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "PRINT"));
@@ -221,13 +256,16 @@ void run_print(IR_state_t *IRstate, char **line)
       int i;
       for(i = 0; i < lit_len; i++)
       {
-         uint8_t byte = ((uint8_t*) adr)[i];
+         uint8_t byte;
+         // uint64_t word = ((uint64_t*) adr)[i / 8];
+         // byte = (uint8_t) (word >> ((7 - (i % 8)) * 8) & ((uint8_t) 0xff));
+         byte = ((uint8_t*)adr)[i];
          printf("byte %03d: 0x%02X\n", i, byte);
       }
    }
    else
    {
-      printf("error: option %s does not exist for LITERAL\n", line[1]);
+      printf("error: option %s does not exist for PRINT\n", line[1]);
    }
 
    IRstate->next_line += 1;
