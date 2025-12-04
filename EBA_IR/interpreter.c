@@ -233,6 +233,29 @@ void run_transfer(IR_state_t *IRstate, char **line)
 
       memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
    }
+   else if (match_second_word(line, "OFFSET_LITERAL"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int lit_dest_offset = parse_literal(line[3]);
+      assert(lit_dest_offset >= 0);
+      int var_src_buf = parse_variable(line[4]);
+      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
+      int lit_src_offset = parse_literal(line[5]);
+      assert(lit_src_offset >= 0);
+      int lit_len = parse_literal(line[6]);
+      assert(lit_len >= 0);
+
+      int64_t dest_offset = (int64_t) lit_dest_offset;
+      int64_t src_offset = (int64_t) lit_src_offset;
+      int64_t len = (int64_t) lit_len;
+      // TODO: double check how this is written and if we really want
+      //       these pointers stored just as normal int64_t's
+      int64_t dest_addr = ((int64_t) (IRstate->vars[var_dest_buf]));
+      int64_t src_addr = ((int64_t) (IRstate->vars[var_src_buf]));
+
+      memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
+   }
    else
    {
       printf("error: option %s does not exist for TRANSFER\n", line[1]);
@@ -292,9 +315,14 @@ void run_line(IR_state_t *IRstate, char **line)
    {
       run_literal(IRstate, line);
    }
+   else if (samestr(line[0], "TRANSFER"))
+   {
+      run_transfer(IRstate, line);
+   }
    else
    {
-      printf("unknown command '%s'\n", line[0]);
+      printf("unknown command '%s' on line %d\n", line[0], IRstate->next_line);
+      exit(1);
    }
 }
 
