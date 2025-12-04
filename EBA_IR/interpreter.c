@@ -264,6 +264,32 @@ void run_transfer(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
+void run_invoke(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "INVOKE"));
+
+   if (match_second_word(line, "ADD_U64"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_opa_buf = parse_variable(line[3]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[4]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      *dest_adr = *opa_adr+*opb_adr;
+   }
+   else
+   {
+      printf("error: option %s does not exist for INVOKE\n", line[1]);
+   }
+   IRstate->next_line += 1;
+}
+
 void run_print(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "PRINT"));
@@ -318,6 +344,10 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (samestr(line[0], "TRANSFER"))
    {
       run_transfer(IRstate, line);
+   }
+   else if (samestr(line[0], "INVOKE"))
+   {
+      run_invoke(IRstate, line);
    }
    else
    {

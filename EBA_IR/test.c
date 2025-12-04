@@ -4,20 +4,21 @@
 #include "interpreter.h"
 
 
-void test_short(void);
+void test_solofile(char *);
 void test_circ_init(void);
 
 int main(void)
 {
    printf("EBA tester\n");
-   test_circ_init();
+   test_solofile("examples/TEST_INVOKE.EBA");
+   // test_circ_init();
 }
 
-void test_short(void)
+void test_solofile(char *fname)
 {
    char ***IRcode;
    INVOKE_request_t *starter_invoke;
-   IRcode = full_read("examples/SHORT.EBA");
+   IRcode = full_read(fname);
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->code_buf = malloc(sizeof(void*));

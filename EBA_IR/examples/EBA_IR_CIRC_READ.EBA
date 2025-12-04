@@ -1,4 +1,5 @@
 // Copy for working on Oct 27, 2025
+// modified for full use Dec 4, 2025
 // args buffer contains:
 // 0: name of own buffer code is resident in
 // 1: name of circular buffer
@@ -6,14 +7,14 @@
 // 3: buffer containing number of bytes to read
 
 // V0 is always the arg buffer
-LITERAL READ V13, V0, @1
-LITERAL READ V14, V0, @2
-LITERAL READ V15, V0, @3
-LITERAL READ V1, V13, @0
-LITERAL READ V2, V13, @1
-LITERAL READ V3, V13, @2
-LITERAL READ V4, V13, @3
-LITERAL READ V5, V13, @4
+LITERAL READ V13, V0, @08 // V13 is the circular buffer
+LITERAL READ V14, V0, @16 // V14 is the destination buffer
+LITERAL READ V15, V0, @24 // V15 is the size buffer
+LITERAL READ V1, V13, @00
+LITERAL READ V2, V13, @08
+LITERAL READ V3, V13, @16
+LITERAL READ V4, V13, @24
+LITERAL READ V5, V13, @32
 // V1 <- data_buf
 // V2 <- size_buf
 // V3 <- head_buf
@@ -21,14 +22,14 @@ LITERAL READ V5, V13, @4
 // V5 <- full_buf
 
 // working buffers
-BUFREQ ALLOC_LITERAL V6, @8, @16
-BUFREQ ALLOC_LITERAL V7, @8, @16
-BUFREQ ALLOC_LITERAL V8, @8, @16
+BUFREQ ALLOC_LITERAL V6, @8
+BUFREQ ALLOC_LITERAL V7, @8
+BUFREQ ALLOC_LITERAL V8, @8
 
 // V6 will be the occupied space buffer
-INVOKE MUL_U64 V6, V5, V2
-INVOKE ADD_U64 V6, V6, V4
-INVOKE SUB_U64 V6, V6, V3
+INVOKE MUL_U64 V6, V5, V2 // occ_space = full*size
+INVOKE ADD_U64 V6, V6, V4 // occ_space += tail
+INVOKE SUB_U64 V6, V6, V3 // occ_space -= head
 CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
 // if tail_buf < head_buf, add size_buff
 INVOKE ADD_U64 V6, V6, V2
@@ -91,5 +92,9 @@ CMP EQ         V14, V8, NOWRITE // was anything read?
 // if something was read, the buffer is certainly
 // not full
 LITERAL LOAD V5, @0
+
+BUFREQ RELEASE V6
+BUFREQ RELEASE V7
+BUFREQ RELEASE V8
 
 NOWRITE:
