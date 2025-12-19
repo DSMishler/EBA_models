@@ -281,7 +281,67 @@ void run_invoke(IR_state_t *IRstate, char **line)
       uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
       uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
 
-      *dest_adr = *opa_adr+*opb_adr;
+      *dest_adr = *opa_adr + *opb_adr;
+   }
+   else if (match_second_word(line, "MUL_U64"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_opa_buf = parse_variable(line[3]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[4]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      *dest_adr = *opa_adr * *opb_adr;
+   }
+   else if (match_second_word(line, "SUB_U64"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_opa_buf = parse_variable(line[3]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[4]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      *dest_adr = *opa_adr - *opb_adr;
+   }
+   else if (match_second_word(line, "DIV_U64"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_opa_buf = parse_variable(line[3]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[4]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      *dest_adr = *opa_adr / *opb_adr;
+   }
+   else if (match_second_word(line, "MOD_U64"))
+   {
+      int var_dest_buf = parse_variable(line[2]);
+      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_opa_buf = parse_variable(line[3]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[4]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      *dest_adr = *opa_adr % *opb_adr;
    }
    else
    {
