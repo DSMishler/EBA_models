@@ -62,6 +62,13 @@ char *** full_read(char *fname)
    }
 
    free(fbuf);
+
+   // TODO: it may be wise to not implement labels and jumping, but this
+   //       code will do this for now.
+
+   labels_to_lines(IRcode);
+
+
    return IRcode;
 }
 
@@ -236,5 +243,121 @@ void print_code(char ***IRcode)
          printf(" %s", IRcode[i][j]);
       }
       printf("\n");
+   }
+}
+
+int samestr(char *a, char *b)
+{
+   return !(strcmp(a,b));
+}
+
+int is_label(char *a)
+{
+   return ((a[strlen(a)-2]) == ':');
+}
+
+// basically itoa but I malloc as well and only do base 10.
+static char * get_numstr(int num, int colon)
+{
+   if (colon != 1 && colon != 0)
+   {
+      printf("invalid argument passed for boolean 'colon'\n");
+      return NULL;
+   }
+   int needed_space = 1+colon;
+   // to fix the corner case, we will (sloppily) shoehorn 0 into 1 for space
+   // calculation purposes
+   int tnum = num + (num == 0);
+   if (num < 0)
+   {
+      printf("invalid argument passed for 'num'. Must be nonnegative.\n");
+      return NULL;
+   }
+   while(tnum > 0)
+   {
+      tnum /= 10;
+      needed_space += 1;
+   }
+
+   char *newword = malloc(needed_space*sizeof(char));
+
+   newword[needed_space-1] = '\0';
+   int i;
+   int vnum = num;
+   for(i = needed_space-2-colon; i >= 0; i--)
+   {
+      int val = vnum % 10;
+      vnum /= 10;
+      newword[i] = ((char) val) + '0';
+   }
+
+   if (colon)
+   {
+      newword[needed_space-1-colon] = ':';
+   }
+   
+   // printf("just sent numstr with num=%d colon=%d to %s\n", num, colon, newword);
+
+   return newword;
+}
+
+void labels_to_lines(char ***IRcode)
+{
+   int i;
+   for(i = 0; IRcode[i] != NULL; i++)
+   {
+      char *first_word_i = IRcode[i][0];
+      if (first_word_i == NULL)
+      {
+         ;
+      }
+      else if (!(is_label(first_word_i)))
+      {
+         ;
+      }
+      else
+      {
+         // the line is not blank and the first word is a label
+         // we're about to change it anyway, so let's just go ahead and
+         // make them match
+         char *label = first_word_i;
+         int label_loc = i;
+         printf("label_loc = %d\n", label_loc);
+         label[strlen(label)-1] = '\0';
+         int j;
+         for(j = 0; IRcode[j] != NULL; j++)
+         {
+            char *first_word_j = IRcode[j][0];
+            if (first_word_j == NULL)
+            {
+               ; // ingore empty line
+            }
+            else if (!(samestr(first_word_j, "CMP")))
+            {
+               ; // ignore non-labels
+            }
+            else
+            {
+               // cmp line.
+               // then we've got to check if the label is a match
+               if(IRcode[j][1] && IRcode[j][2] && IRcode[j][3] && IRcode[j][4])
+               {
+                  if (samestr(IRcode[j][4], label))
+                  {
+                     free(IRcode[j][4]);
+                     IRcode[j][4] = get_numstr(label_loc, 0);
+                  }
+               }
+               else
+               {
+                  printf("warning: incorrect syntax on CMP line %d\n", j);
+                  printf("requires 5 arguments\n.");
+               }
+            }
+         }
+
+         free(IRcode[i][0]);
+         IRcode[i][0] = get_numstr(label_loc, 1);
+      }
    }
 }

@@ -10,7 +10,7 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   test_solofile("examples/TEST_INVOKE.EBA");
+   test_solofile("examples/CMP.EBA");
    // test_circ_init();
 }
 

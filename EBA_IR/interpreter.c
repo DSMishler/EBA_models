@@ -7,10 +7,6 @@
 #include "interpreter.h"
 #include "reader.h"
 
-int samestr(char *a, char *b)
-{
-   return !(strcmp(a,b));
-}
 
 int confirm_first_word(char **line, char *word)
 {
@@ -94,8 +90,6 @@ void add_invoke_request(IR_state_t *IRstate, void* target, void* args)
    l->next = z;
    return;
 }
-
-
 
 
 
@@ -387,6 +381,11 @@ void run_line(IR_state_t *IRstate, char **line)
       // it's a no-op
       run_noop(IRstate);
    }
+   else if (is_label(line[0]))
+   {
+      run_noop(IRstate);
+      printf("flag: detected a label (no-op) on line %d\n", IRstate->next_line);
+   }
 
    // now check against all known functions
    else if (samestr(line[0], "BUFREQ"))
@@ -418,8 +417,8 @@ void run_line(IR_state_t *IRstate, char **line)
 
 void run_code(INVOKE_request_t *current_invoke)
 {
-   // print_code(IRcode);
    char ***IRcode = (*(char****)current_invoke->code_buf);
+   // print_code(IRcode);
    IR_state_t *IRstate = init_IR_state();
    IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
 
