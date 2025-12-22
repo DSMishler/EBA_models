@@ -53,6 +53,7 @@ int parse_variable(char *word)
    return atoi(word+1);
 }
 
+// TODO: change all of this to int64s
 int parse_literal(char *word)
 {
    if (word == NULL)
@@ -344,6 +345,131 @@ void run_invoke(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
+void run_cmp(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "CMP"));
+   if (match_second_word(line, "LT"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr < *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else if (match_second_word(line, "LEQ"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr <= *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else if (match_second_word(line, "GT"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr > *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else if (match_second_word(line, "GEQ"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr >= *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else if (match_second_word(line, "EQ"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr == *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else if (match_second_word(line, "NEQ"))
+   {
+      int var_opa_buf = parse_variable(line[2]);
+      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
+      int var_opb_buf = parse_variable(line[3]);
+      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      int lit_target = parse_literal(line[4]);
+      assert(lit_target >= 0);
+
+      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
+      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+
+      if (*opa_adr != *opb_adr)
+      {
+         IRstate->next_line = lit_target;
+         // NOTE: at the end of this function, the PC will move one,
+         // so the effect of this op can be said to jump to the NEXT line.
+      }
+   }
+   else
+   {
+      printf("error: option %s does not exist for CMP\n", line[1]);
+   }
+
+   IRstate->next_line += 1;
+}
+
 void run_print(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "PRINT"));
@@ -407,6 +533,10 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (samestr(line[0], "INVOKE"))
    {
       run_invoke(IRstate, line);
+   }
+   else if (samestr(line[0], "CMP"))
+   {
+      run_cmp(IRstate, line);
    }
    else
    {

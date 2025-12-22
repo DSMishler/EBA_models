@@ -38,8 +38,8 @@ SKIP_WRAPAROUND_ADD:
 CMP GT         V15, V6, END
 // if the amount of bytes to read is more than
 // the occupied space in the buffer, end.
-LITERAL LOAD V8, @8
-TRANSFER FLAT  V7, V15, V8
+LITERAL LOAD V8, @0
+INVOKE ADD_U64 V7, V15, V8
 // V7 is working read size, starting with V15 (bytes) bytes
 INVOKE ADD_U64 V8, V15, V3
 CMP LEQ        V8, V2, SKIP_WR_WRAPAROUND
@@ -48,7 +48,7 @@ INVOKE SUB_U64 V7, V2, V3
 SKIP_WR_WRAPAROUND:
 LITERAL LOAD V8, @0
 // first read:
-TRANSFER VARIABLE_SRCOFFSET V14, V8, V1, V7, V3
+TRANSFER OFFSET V14, V8, V1, V3, V7
 // transfer to V14 (dest buf)
 // to the start of the buffer
 // from V1 (data buf of the circular buffer)
@@ -58,23 +58,22 @@ INVOKE ADD_U64 V3, V3, V7
 INVOKE MOD_U64 V3, V3, V2
 // head = (head + working_read_size) % size
 
-INVOKE SUB_U64 V7, V14, V7
+INVOKE SUB_U64 V7, V15, V7
 // working read size now holds the rest of what
 // needs read
 
 // should do a sanity check here: if V7 is
 // zero, then we are done. Otherwise, another read
 // is necessary
-LITERAL LOAD V8, @0
-CMP EQ         V7, V8, END
 
 LITERAL LOAD V6, @0
 // safe because we are done with V6 now: use it for a zero.
-INVOKE SUB_U64 V8, V14, V7
+INVOKE SUB_U64 V8, V15, V7
 // V8 contains what was read the first time
 // we know if we are here at this point, it is
 // because we looped around. We could add a sanity
 // check if desired.
+// sanity check would make sure V3 is in fact zero
 // second read
 TRANSFER OFFSET V14, V8, V1, V6, V7
 // transfer to V14 (dest buf)
@@ -86,15 +85,11 @@ INVOKE ADD_U64 V3, V3, V7
 INVOKE MOD_U64 V3, V3, V2
 // head = (head + working_read_size) % size
 
-END:
-LITERAL LOAD V8, @0
-CMP EQ         V14, V8, NOWRITE // was anything read?
+CMP EQ         V15, V6, END // was anything read?
 // if something was read, the buffer is certainly
-// not full
+// not full or not full anymore.
 LITERAL LOAD V5, @0
-
+END:
 BUFREQ RELEASE V6
 BUFREQ RELEASE V7
 BUFREQ RELEASE V8
-
-NOWRITE:

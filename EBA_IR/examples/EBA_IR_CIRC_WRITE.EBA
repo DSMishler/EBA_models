@@ -1,0 +1,103 @@
+// Dec 22, 2025
+// args buffer contains:
+// 0: name of own buffer code is resident in
+// 1: name of circular buffer
+// 2: name of source buffer
+// 3: buffer containing number of bytes to read
+
+// V0 is always the arg buffer
+LITERAL READ V13, V0, @08 // V13 is the circular buffer
+LITERAL READ V14, V0, @16 // V14 is the destination buffer
+LITERAL READ V15, V0, @24 // V15 is the size buffer
+LITERAL READ V1, V13, @00
+LITERAL READ V2, V13, @08
+LITERAL READ V3, V13, @16
+LITERAL READ V4, V13, @24
+LITERAL READ V5, V13, @32
+// V1 <- data_buf
+// V2 <- size_buf
+// V3 <- head_buf
+// V4 <- tail_buf
+// V5 <- full_buf
+
+// working buffers
+BUFREQ ALLOC_LITERAL V6, @8
+BUFREQ ALLOC_LITERAL V7, @8
+BUFREQ ALLOC_LITERAL V8, @8
+
+// V6 will be the occupied space buffer
+INVOKE MUL_U64 V6, V5, V2 // occ_space = full*size
+INVOKE ADD_U64 V6, V6, V4 // occ_space += tail
+INVOKE SUB_U64 V6, V6, V3 // occ_space -= head
+CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
+// if tail_buf < head_buf, add size_buff
+INVOKE ADD_U64 V6, V6, V2
+
+SKIP_WRAPAROUND_ADD:
+INVOKE SUB_U64 V7, V2, V6 // V7 is available space (size - occupied space)
+
+CMP GT         V15, V7, END
+// if the amount of bytes to write is more than
+// the available space in the buffer, end.
+LITERAL LOAD V8, @0
+INVOKE ADD_U64 V7, V15, V8
+// V7 is working write size, starting with V15 (bytes) bytes
+INVOKE ADD_U64 V8, V15, V4
+CMP LEQ        V8, V2, SKIP_WR_WRAPAROUND
+// if write size + tail > size, then we'll wrap around
+INVOKE SUB_U64 V7, V2, V4
+SKIP_WR_WRAPAROUND:
+LITERAL LOAD V8, @0
+// first write:
+TRANSFER OFFSET V1, V4, V14, V8, V7
+// transfer to V1 (data buf)
+// to the tail (V4)
+// from V14 (src buf)
+// offset 0 (V8)
+// length V7 (working write size)
+INVOKE ADD_U64 V4, V4, V7
+INVOKE MOD_U64 V4, V4, V2
+// tail = (tail + working_write_size) % size
+
+INVOKE SUB_U64 V7, V15, V7
+// working write size now holds the rest of what
+// needs written
+
+// could do a sanity check here: if V7 is
+// zero, then we are done. Otherwise, another write
+// is necessary
+
+LITERAL LOAD V6, @0
+// safe because we are done with V6 now: use it for a zero.
+INVOKE SUB_U64 V8, V15, V7
+// V8 contains what was written the first time
+// we know if we are here at this point (and V7 is nonzero), it is
+// because we looped around. We could add a sanity
+// check if desired.
+// sanity check would make sure V4 is in fact zero
+// second write
+TRANSFER OFFSET V1, V6, V14, V8, V7
+// transfer to V1 (data buf)
+// from offset V6 (0) (V4 should also be 0)
+// from V14 (src buf)
+// at offset V8 bytes (what we already wrote)
+// of len V7
+INVOKE ADD_U64 V4, V4, V7
+INVOKE MOD_U64 V4, V4, V2
+// tail = (tail + working_write_size) % size
+
+CMP EQ         V15, V6, END // was anything written?
+// if nothing was written, then the buffer was either
+// full and will stay that way or not full and will
+// also stay that way
+// now if we are here, we know that at least something was written
+// if the head and tail are the same, then we are in fact full.
+// so if they are not equal, skip it.
+CMP NEQ        V3, V4, END
+LITERAL LOAD V5, @1
+END:
+BUFREQ RELEASE V6
+BUFREQ RELEASE V7
+BUFREQ RELEASE V8
+
+PRINT BYTES V1, @8 // just a print to check stuff at the end for now.

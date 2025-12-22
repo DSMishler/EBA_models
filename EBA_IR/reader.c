@@ -68,6 +68,7 @@ char *** full_read(char *fname)
 
    labels_to_lines(IRcode);
 
+   // print_code(IRcode);
 
    return IRcode;
 }
@@ -253,18 +254,14 @@ int samestr(char *a, char *b)
 
 int is_label(char *a)
 {
-   return ((a[strlen(a)-2]) == ':');
+   return ((a[strlen(a)-1]) == ':');
 }
 
 // basically itoa but I malloc as well and only do base 10.
-static char * get_numstr(int num, int colon)
+// and give one extra byte of space
+static char * get_numstr(int num)
 {
-   if (colon != 1 && colon != 0)
-   {
-      printf("invalid argument passed for boolean 'colon'\n");
-      return NULL;
-   }
-   int needed_space = 1+colon;
+   int needed_space = 2; // start with the string terminator and extra byte.
    // to fix the corner case, we will (sloppily) shoehorn 0 into 1 for space
    // calculation purposes
    int tnum = num + (num == 0);
@@ -282,23 +279,43 @@ static char * get_numstr(int num, int colon)
    char *newword = malloc(needed_space*sizeof(char));
 
    newword[needed_space-1] = '\0';
+   newword[needed_space-2] = '\0';
    int i;
    int vnum = num;
-   for(i = needed_space-2-colon; i >= 0; i--)
+   // a colon is going to go here                      x
+   // ideal string is something like ['a', 'c', 'e', '\0', '\0', '?']
+   // now '?' would be unalloc-ed                                 ^
+   // we need -3 because `needed_space` points here               |
+   for(i = needed_space-3; i >= 0; i--)
    {
       int val = vnum % 10;
       vnum /= 10;
       newword[i] = ((char) val) + '0';
    }
 
-   if (colon)
-   {
-      newword[needed_space-1-colon] = ':';
-   }
-   
-   // printf("just sent numstr with num=%d colon=%d to %s\n", num, colon, newword);
+   // printf("just sent numstr with num=%d to %s\n", num, newword);
 
    return newword;
+}
+
+static char* get_literal(int num)
+{
+   char *numstr = get_numstr(num);
+   int i;
+   int numlen = strlen(numstr);
+   for(i = numlen; i > 0; i--)
+   {
+      numstr[i] = numstr[i-1]; // safe because there are two string terms
+   }
+   numstr[i] = '@';
+   return numstr;
+}
+
+static char* get_label(int num)
+{
+   char *numstr = get_numstr(num);
+   numstr[strlen(numstr)] = ':'; // safe because there are two string terms
+   return numstr;
 }
 
 void labels_to_lines(char ***IRcode)
@@ -307,6 +324,7 @@ void labels_to_lines(char ***IRcode)
    for(i = 0; IRcode[i] != NULL; i++)
    {
       char *first_word_i = IRcode[i][0];
+      // printf("processing line %d with first word %s\n", i, first_word_i);
       if (first_word_i == NULL)
       {
          ;
@@ -317,12 +335,12 @@ void labels_to_lines(char ***IRcode)
       }
       else
       {
+         // printf("label detected\n");
          // the line is not blank and the first word is a label
          // we're about to change it anyway, so let's just go ahead and
          // make them match
          char *label = first_word_i;
          int label_loc = i;
-         printf("label_loc = %d\n", label_loc);
          label[strlen(label)-1] = '\0';
          int j;
          for(j = 0; IRcode[j] != NULL; j++)
@@ -345,7 +363,7 @@ void labels_to_lines(char ***IRcode)
                   if (samestr(IRcode[j][4], label))
                   {
                      free(IRcode[j][4]);
-                     IRcode[j][4] = get_numstr(label_loc, 0);
+                     IRcode[j][4] = get_literal(label_loc);
                   }
                }
                else
@@ -357,7 +375,7 @@ void labels_to_lines(char ***IRcode)
          }
 
          free(IRcode[i][0]);
-         IRcode[i][0] = get_numstr(label_loc, 1);
+         IRcode[i][0] = get_label(label_loc);
       }
    }
 }
