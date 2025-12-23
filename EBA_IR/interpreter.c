@@ -70,10 +70,9 @@ int parse_literal(char *word)
 }
 
 
-void add_invoke_request(IR_state_t *IRstate, void* target, void* args)
+void add_invoke_request(IR_state_t *IRstate, void* args)
 {
    INVOKE_request_t *z = malloc(sizeof(INVOKE_request_t));
-   z->code_buf = target;
    z->arg_buf = args;
    z->next = NULL;
 
@@ -545,41 +544,37 @@ void run_line(IR_state_t *IRstate, char **line)
    }
 }
 
-void run_code(INVOKE_request_t *current_invoke)
+void run_code(INVOKE_request_t *starter_invoke)
 {
-   char ***IRcode = (*(char****)current_invoke->code_buf);
    // print_code(IRcode);
    IR_state_t *IRstate = init_IR_state();
-   IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
 
-
-   while (1)
+   IRstate->next_invoke = starter_invoke;
+   do
    {
-      if (IRcode[IRstate->next_line] == NULL)
+      INVOKE_request_t *current_invoke;
+      current_invoke = IRstate->next_invoke;
+      // Possible TODO: zero out all the other vars
+      IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
+      IRstate->next_line = 0;
+      char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
+
+      while (1)
       {
-         break;
+         if (IRcode[IRstate->next_line] == NULL)
+         {
+            break;
+         }
+
+         // printf("now running line %d\n", IRstate->next_line);
+         run_line(IRstate, IRcode[IRstate->next_line]);
+         // print_IR_state(IRstate);
       }
-
-      // printf("now running line %d\n", IRstate->next_line);
-      run_line(IRstate, IRcode[IRstate->next_line]);
-      // print_IR_state(IRstate);
-   }
-
-   while(IRstate->next_invoke != NULL)
-   {
-      INVOKE_request_t *current_invoke = IRstate->next_invoke;
-      // TODO: this recursion will eventually crash the program because of
-      //       call depth. Can leave it until the demo but then will need
-      //       to do something better
-      // TODO ALSO: the code_buf may be redundant because it should be in arg buf.
-      run_code(current_invoke);
 
       IRstate->next_invoke = current_invoke->next;
 
-
       free(current_invoke);
-
-   }
+   } while (IRstate->next_invoke != NULL);
 
    free_IR_state(IRstate);
 }

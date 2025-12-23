@@ -7,7 +7,6 @@
 
 struct INVOKE_request
 {
-   void* code_buf;
    void* arg_buf;
    struct INVOKE_request *next;
 };
@@ -21,7 +20,7 @@ struct IR_state
 };
 typedef struct IR_state IR_state_t;
 
-void run_code(INVOKE_request_t *current_invoke);
+void run_code(INVOKE_request_t *starter_invoke);
 IR_state_t * init_IR_state(void);
 void print_IR_state(IR_state_t *IRstate);
 void free_IR_state(IR_state_t *IRstate);
