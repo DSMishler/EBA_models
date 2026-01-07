@@ -3,6 +3,8 @@
 #include "reader.h"
 #include "interpreter.h"
 
+#include <string.h> // TODO: probably can remove once continuations are added
+
 
 void test_solofile(char *);
 void test_circ_init(void);
@@ -75,6 +77,28 @@ void test_circ_init(void)
 
    free(arg_buf);
    full_free(IRcode);
+
+   // read some of what was written back in.
+   IRcode = full_read("examples/EBA_IR_CIRC_READ.EBA");
+   starter_invoke = malloc(sizeof(INVOKE_request_t));
+   starter_invoke->arg_buf = malloc(4*sizeof(void*));
+   ((void**)starter_invoke->arg_buf)[0] = (void*)IRcode;
+   ((void**)starter_invoke->arg_buf)[1] = circ_buf;
+   char *dbuf = malloc(10*sizeof(char));
+   strcpy(dbuf, "zzzzzzzzz");
+   int64_t len_read = 5;
+   ((void**)starter_invoke->arg_buf)[2] = (void*) dbuf;
+   ((void**)starter_invoke->arg_buf)[3] = (void*) &len_read;
+   starter_invoke->next = NULL;
+   arg_buf = starter_invoke->arg_buf;
+
+   run_code(starter_invoke);
+
+   free(arg_buf);
+   full_free(IRcode);
+
+   printf("buf says %s\n", dbuf);
+   free(dbuf);
 
    // now free the cirular buffer
    IRcode = full_read("examples/EBA_IR_CIRC_FREE.EBA");

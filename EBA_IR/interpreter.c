@@ -546,7 +546,6 @@ void run_line(IR_state_t *IRstate, char **line)
 
 void run_code(INVOKE_request_t *starter_invoke)
 {
-   // print_code(IRcode);
    IR_state_t *IRstate = init_IR_state();
 
    IRstate->next_invoke = starter_invoke;
@@ -558,6 +557,7 @@ void run_code(INVOKE_request_t *starter_invoke)
       IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
       IRstate->next_line = 0;
       char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
+      // print_code(IRcode);
 
       while (1)
       {
