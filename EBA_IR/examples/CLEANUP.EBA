@@ -1,0 +1,38 @@
+// EBA cleanup
+// frees everything in its second arg, including the buffer itself
+// args
+// 0 - this buf (always)
+// 1 - the cleanup (in format num of following buffers, then following buffers)
+// e.g. (3, 0xaaaaaaaa, 0xabababab, 0xabcdabcd)
+
+LITERAL READ V10, V0, @8
+PRINT BYTES V10, @200
+// grab the cleanup buf
+
+BUFREQ ALLOC_LITERAL V8, @8
+BUFREQ ALLOC_LITERAL V9, @8
+BUFREQ ALLOC_LITERAL V11, @8
+LITERAL LOAD V8, @0
+LITERAL LOAD V9, @1
+LITERAL LOAD V11, @8
+
+BUFREQ ALLOC_LITERAL V7, @8
+BUFREQ ALLOC_LITERAL V6, @8
+
+CMP EQ V10, V8, END
+REPEAT:
+INVOKE MUL_U64 V7, V10, V11 // v8 = end of the list
+TRANSFER OFFSET V6, V8, V10, V7, V11
+// transfer V11 (8) bytes from V10 (buf of bufs to free) to V6 (open buf)
+// from offset V7 (num of bufs to free * 8) to offset V8 (0)
+LITERAL READ V12, V6, @0 // grab the buffer, put it in V12
+BUFREQ RELEASE V12
+INVOKE SUB_U64 V10, V10, V9 // num_to_free -= 1
+CMP NEQ V10, V8, REPEAT
+
+
+
+END:
+BUFREQ RELEASE V8
+BUFREQ RELEASE V9
+BUFREQ RELEASE V0 // even release our own arg buf

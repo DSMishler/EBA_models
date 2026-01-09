@@ -1,0 +1,95 @@
+// EBA SEQUENTIAL Circular buffer invoker
+// meant to test the circular buffer functions
+// Can print the contents when done
+// meant to invoke all needed circular buffer codes
+// args
+// 0 - this buf (always)
+// 1 - circ buf init code buf
+// 2 - circ buf free code buf
+// 3 - circ but write code buf
+// 4 - circ buf read code buf
+// 5 - circ buf print code buf
+// 6 - cleanup code buf
+
+LITERAL READ V1, V0, @08
+LITERAL READ V2, V0, @16
+LITERAL READ V3, V0, @24
+LITERAL READ V4, V0, @32
+LITERAL READ V5, V0, @40
+LITERAL READ V6, V0, @48
+// V1 <- circ_buf_init
+// V2 <- circ_buf_free
+// V3 <- circ_buf_write
+// V4 <- circ_buf_read
+// V5 <- circ_buf_print
+// V6 <- cleanup
+
+// V20 <- junk buffer
+// V21 <- stores "1"
+BUFREQ ALLOC_LITERAL V20, @200
+BUFREQ ALLOC_LITERAL V21, @8
+LITERAL LOAD V21, @1
+
+BUFREQ ALLOC_LITERAL V10, @40
+// V10 <- circ_buf
+BUFREQ ALLOC_LITERAL V11, @8
+LITERAL LOAD V11, @50
+// V11 <- size buffer that will need freed later
+
+
+
+// init
+// ---------------------------------
+// V12 <- args buf
+BUFREQ ALLOC_LITERAL V12, @24
+LITERAL WRITE V12, @0, V1
+LITERAL WRITE V12, @8, V10
+LITERAL WRITE V12, @16, V11
+// V13 <- return buf
+BUFREQ ALLOC_LITERAL V13, @8
+
+
+INVOKE EBA_INVOKE V13, V12
+
+LITERAL WRITE V20, @08, V12 // put it here for freeing later
+// TODO: Turn this into a variable offset and add to it every time
+INVOKE ADD_U64 V20, V20, V21
+LITERAL LOAD V13, @0
+
+
+
+// print
+// ---------------------------------
+BUFREQ ALLOC_LITERAL V12, @16
+LITERAL WRITE V12, @0, V5
+LITERAL WRITE V12, @8, V10
+
+// INVOKE EBA_INVOKE V13, V12
+
+LITERAL WRITE V20, @16, V12 // put it here for freeing later
+INVOKE ADD_U64 V20, V20, V21
+LITERAL LOAD V13, @0
+
+
+// free
+// ---------------------------------
+BUFREQ ALLOC_LITERAL V12, @16
+LITERAL WRITE V12, @0, V2
+LITERAL WRITE V12, @8, V10
+
+INVOKE EBA_INVOKE V13, V12
+
+LITERAL WRITE V20, @24, V12 // put it here for freeing later
+INVOKE ADD_U64 V20, V20, V21
+LITERAL LOAD V13, @0
+
+
+// cleanup
+// ---------------------------------
+BUFREQ ALLOC_LITERAL V12, @16
+LITERAL WRITE V12, @0, V6
+LITERAL WRITE V12, @8, V20
+
+INVOKE EBA_INVOKE V13, V12
+
+BUFREQ RELEASE V13

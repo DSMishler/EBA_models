@@ -495,6 +495,7 @@ void run_print(IR_state_t *IRstate, char **line)
 
       int64_t* adr = (int64_t*) (IRstate->vars[var]);
       int i;
+      // printf("boutta print starting at 0x%lx\n", (uint64_t)adr);
       for(i = 0; i < lit_len; i++)
       {
          uint8_t byte;
@@ -522,7 +523,7 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (is_label(line[0]))
    {
       run_noop(IRstate);
-      printf("flag: detected a label (no-op) on line %d\n", IRstate->next_line);
+      // printf("flag: detected a label (no-op) on line %d\n", IRstate->next_line);
    }
 
    // now check against all known functions
@@ -566,7 +567,9 @@ void run_code(INVOKE_request_t *starter_invoke)
    {
       INVOKE_request_t *current_invoke;
       current_invoke = IRstate->next_invoke;
-      // Possible TODO: zero out all the other vars
+      // Possible TODO: zero out all the other vars.
+      // Advocate for: not doing this may possibly add a vulnerability
+      // Advocate against: doing this makes things less minimal
       IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
       IRstate->next_line = 0;
       char ***IRcode = (((char****)current_invoke->arg_buf)[0]);

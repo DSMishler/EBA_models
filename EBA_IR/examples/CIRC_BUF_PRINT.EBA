@@ -1,0 +1,27 @@
+// circ buf print
+// prints some of the contents of the circular buffer
+// mainly for debugging now
+
+// args
+// 0 - this code (always)
+// 1 - the circular buffer
+
+
+LITERAL READ V13, V0, @08 // V13 is the circular buffer
+
+LITERAL READ V1, V13, @00
+LITERAL READ V2, V13, @08
+LITERAL READ V3, V13, @16
+LITERAL READ V4, V13, @24
+LITERAL READ V5, V13, @32
+// V1 <- data_buf
+// V2 <- size_buf
+// V3 <- head_buf
+// V4 <- tail_buf
+// V5 <- full_buf
+
+PRINT BYTES V1, @8 // first 8 data bytes
+PRINT BYTES V2, @8 // size
+PRINT BYTES V3, @8 // head
+PRINT BYTES V4, @8 // tail
+PRINT BYTES V5, @8 // full

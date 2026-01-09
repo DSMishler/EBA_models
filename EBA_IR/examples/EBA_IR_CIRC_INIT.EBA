@@ -7,7 +7,6 @@
 LITERAL READ V13, V0, @8 // V13 is our circ buf
 LITERAL READ V14, V0, @16 // V14 is size
 
-
 // V1 will need allocated once the size is set
 BUFREQ ALLOC_LITERAL V2, @8
 BUFREQ ALLOC_LITERAL V3, @8
@@ -37,3 +36,4 @@ LITERAL WRITE V13, @08, V2
 LITERAL WRITE V13, @16, V3
 LITERAL WRITE V13, @24, V4
 LITERAL WRITE V13, @32, V5
+

@@ -8,13 +8,15 @@
 
 void test_solofile(char *);
 void test_dualfile_invoke_test(void);
+void test_circ_invoke(void);
 void test_circ_init(void);
 
 int main(void)
 {
    printf("EBA tester\n");
    // test_solofile("examples/CMP.EBA");
-   test_dualfile_invoke_test();
+   // test_dualfile_invoke_test();
+   test_circ_invoke();
    // test_circ_init();
 }
 
@@ -57,6 +59,36 @@ void test_dualfile_invoke_test(void)
    free(arg_buf);
    full_free(IRcode1);
    full_free(IRcode2);
+}
+
+void test_circ_invoke(void)
+{
+   char ****IRcodes;
+   INVOKE_request_t *starter_invoke;
+
+   IRcodes = malloc(7*sizeof(void*));
+   IRcodes[0] = full_read("examples/SEQ_CIRC_INVOKER.EBA");
+   IRcodes[1] = full_read("examples/EBA_IR_CIRC_INIT.EBA");
+   IRcodes[2] = full_read("examples/EBA_IR_CIRC_FREE.EBA");
+   IRcodes[3] = full_read("examples/EBA_IR_CIRC_WRITE.EBA");
+   IRcodes[4] = full_read("examples/EBA_IR_CIRC_READ.EBA");
+   IRcodes[5] = full_read("examples/CIRC_BUF_PRINT.EBA");
+   IRcodes[6] = full_read("examples/CLEANUP.EBA");
+
+   starter_invoke = malloc(sizeof(INVOKE_request_t));
+   starter_invoke->arg_buf = (void*) (IRcodes);
+   starter_invoke->next = NULL;
+   
+   printf("running EBA circ buf invoke tester\n");
+
+   run_code(starter_invoke);
+
+   int i;
+   for(i = 0; i < 7; i++)
+   {
+      full_free(IRcodes[i]);
+   }
+   free(IRcodes);
 }
 
 void test_circ_init(void)
