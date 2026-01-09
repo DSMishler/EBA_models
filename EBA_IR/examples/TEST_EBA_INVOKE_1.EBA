@@ -1,0 +1,20 @@
+// test EBA invoke (1)
+// will call EBA invoke 2
+// args
+// 0 - this buf (always)
+// 1 - the other buf
+
+LITERAL READ V13, V0, @08 // grab the target buffer
+PRINT BYTES V13, @8
+
+BUFREQ ALLOC_LITERAL V14, @8 // make the dest buffer
+
+// INVOKE SUB_U64 V14, V13, V13 // write 0 to the buf
+LITERAL LOAD V14, @0 // write 0 to the buf
+
+// normally we'd have to make a fresh buffer for args, but since
+// this just needs its own code, we'll just use it instead.
+INVOKE EBA_INVOKE V14, V13
+
+PRINT BYTES V14, @8 // see if we got it
+BUFREQ RELEASE V14

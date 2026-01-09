@@ -262,7 +262,20 @@ void run_invoke(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "INVOKE"));
 
-   if (match_second_word(line, "ADD_U64"))
+   if (match_second_word(line, "EBA_INVOKE"))
+   {
+      int var_dest_buf = parse_variable(line[2]); assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
+      int var_args_buf = parse_variable(line[3]);
+      assert(var_args_buf >= 0 && var_args_buf < IR_STATE_SIZE);
+
+      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* args_adr = (uint64_t*) (IRstate->vars[var_args_buf]);
+
+      add_invoke_request(IRstate, args_adr);
+
+      *dest_adr = 1; // success
+   }
+   else if (match_second_word(line, "ADD_U64"))
    {
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
@@ -553,11 +566,13 @@ void run_code(INVOKE_request_t *starter_invoke)
    {
       INVOKE_request_t *current_invoke;
       current_invoke = IRstate->next_invoke;
+      printf("current invoke is %lx, next is %lx\n", (uint64_t) current_invoke, (uint64_t) current_invoke->next);
       // Possible TODO: zero out all the other vars
       IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
       IRstate->next_line = 0;
       char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
-      // print_code(IRcode);
+      printf("IR code pointer? %lx\n", (uint64_t) IRcode);
+      print_code(IRcode);
 
       while (1)
       {
@@ -572,6 +587,7 @@ void run_code(INVOKE_request_t *starter_invoke)
       }
 
       IRstate->next_invoke = current_invoke->next;
+      printf("now about to do invoke %lx\n", (uint64_t) IRstate->next_invoke);
 
       free(current_invoke);
    } while (IRstate->next_invoke != NULL);

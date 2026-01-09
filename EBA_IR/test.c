@@ -7,13 +7,15 @@
 
 
 void test_solofile(char *);
+void test_dualfile_invoke_test(void);
 void test_circ_init(void);
 
 int main(void)
 {
    printf("EBA tester\n");
    // test_solofile("examples/CMP.EBA");
-   test_circ_init();
+   test_dualfile_invoke_test();
+   // test_circ_init();
 }
 
 void test_solofile(char *fname)
@@ -33,6 +35,32 @@ void test_solofile(char *fname)
       
    free(arg_buf);
    full_free(IRcode);
+}
+
+void test_dualfile_invoke_test(void)
+{
+   char ***IRcode1, ***IRcode2;
+   INVOKE_request_t *starter_invoke;
+   IRcode1 = full_read("examples/TEST_EBA_INVOKE_1.EBA");
+   IRcode2 = full_read("examples/TEST_INVOKE.EBA");
+   printf("IRcode1 ponter? %lx\n", (uint64_t) IRcode1);
+   printf("IRcode2 ponter? %lx\n", (uint64_t) IRcode2);
+   print_code(IRcode1);
+   print_code(IRcode2);
+
+   starter_invoke = malloc(sizeof(INVOKE_request_t));
+   starter_invoke->arg_buf = malloc(2*sizeof(void*));
+   ((char****)starter_invoke->arg_buf)[0] = IRcode1;
+   ((char****)starter_invoke->arg_buf)[1] = IRcode2;
+   starter_invoke->next = NULL;
+
+   void *arg_buf = starter_invoke->arg_buf;
+
+   run_code(starter_invoke);
+      
+   free(arg_buf);
+   full_free(IRcode1);
+   full_free(IRcode2);
 }
 
 void test_circ_init(void)
