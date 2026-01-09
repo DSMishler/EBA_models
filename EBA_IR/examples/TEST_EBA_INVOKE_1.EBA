@@ -5,7 +5,9 @@
 // 1 - the other buf
 
 LITERAL READ V13, V0, @08 // grab the target buffer
-PRINT BYTES V13, @8
+
+BUFREQ ALLOC_LITERAL V12, @8 // make the args buffer
+LITERAL WRITE V12, @0, V13
 
 BUFREQ ALLOC_LITERAL V14, @8 // make the dest buffer
 
@@ -14,7 +16,7 @@ LITERAL LOAD V14, @0 // write 0 to the buf
 
 // normally we'd have to make a fresh buffer for args, but since
 // this just needs its own code, we'll just use it instead.
-INVOKE EBA_INVOKE V14, V13
+INVOKE EBA_INVOKE V14, V12
 
 PRINT BYTES V14, @8 // see if we got it
 BUFREQ RELEASE V14

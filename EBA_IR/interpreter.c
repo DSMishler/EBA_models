@@ -566,13 +566,11 @@ void run_code(INVOKE_request_t *starter_invoke)
    {
       INVOKE_request_t *current_invoke;
       current_invoke = IRstate->next_invoke;
-      printf("current invoke is %lx, next is %lx\n", (uint64_t) current_invoke, (uint64_t) current_invoke->next);
       // Possible TODO: zero out all the other vars
       IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
       IRstate->next_line = 0;
       char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
-      printf("IR code pointer? %lx\n", (uint64_t) IRcode);
-      print_code(IRcode);
+      // print_code(IRcode);
 
       while (1)
       {
@@ -587,7 +585,6 @@ void run_code(INVOKE_request_t *starter_invoke)
       }
 
       IRstate->next_invoke = current_invoke->next;
-      printf("now about to do invoke %lx\n", (uint64_t) IRstate->next_invoke);
 
       free(current_invoke);
    } while (IRstate->next_invoke != NULL);

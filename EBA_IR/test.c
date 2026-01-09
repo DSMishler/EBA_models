@@ -43,10 +43,6 @@ void test_dualfile_invoke_test(void)
    INVOKE_request_t *starter_invoke;
    IRcode1 = full_read("examples/TEST_EBA_INVOKE_1.EBA");
    IRcode2 = full_read("examples/TEST_INVOKE.EBA");
-   printf("IRcode1 ponter? %lx\n", (uint64_t) IRcode1);
-   printf("IRcode2 ponter? %lx\n", (uint64_t) IRcode2);
-   print_code(IRcode1);
-   print_code(IRcode2);
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(2*sizeof(void*));
