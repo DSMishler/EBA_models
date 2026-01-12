@@ -6,8 +6,8 @@
 // e.g. (3, 0xaaaaaaaa, 0xabababab, 0xabcdabcd)
 
 LITERAL READ V10, V0, @8
-PRINT BYTES V10, @200
 // grab the cleanup buf
+// PRINT BYTES V10, @200
 
 BUFREQ ALLOC_LITERAL V8, @8
 BUFREQ ALLOC_LITERAL V9, @8
@@ -33,6 +33,12 @@ CMP NEQ V10, V8, REPEAT
 
 
 END:
+// release the buffer which contained all the buffers we'd release
+BUFREQ RELEASE V10
+// release our own buffers
+BUFREQ RELEASE V6
+BUFREQ RELEASE V7
 BUFREQ RELEASE V8
 BUFREQ RELEASE V9
+BUFREQ RELEASE V11
 BUFREQ RELEASE V0 // even release our own arg buf

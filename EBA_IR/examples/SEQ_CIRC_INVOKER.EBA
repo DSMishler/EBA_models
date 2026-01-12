@@ -24,10 +24,12 @@ LITERAL READ V6, V0, @48
 // V5 <- circ_buf_print
 // V6 <- cleanup
 
+
 // V20 <- junk buffer
 // V21 <- stores "1"
 BUFREQ ALLOC_LITERAL V20, @200
 BUFREQ ALLOC_LITERAL V21, @8
+LITERAL LOAD V20, @0
 LITERAL LOAD V21, @1
 
 BUFREQ ALLOC_LITERAL V10, @40
@@ -35,6 +37,8 @@ BUFREQ ALLOC_LITERAL V10, @40
 BUFREQ ALLOC_LITERAL V11, @8
 LITERAL LOAD V11, @50
 // V11 <- size buffer that will need freed later
+// but note: can't be freeing this in this file since it is needed by
+// another file!
 
 
 
@@ -54,6 +58,8 @@ INVOKE EBA_INVOKE V13, V12
 LITERAL WRITE V20, @08, V12 // put it here for freeing later
 // TODO: Turn this into a variable offset and add to it every time
 INVOKE ADD_U64 V20, V20, V21
+LITERAL WRITE V20, @16, V11 // also free V11
+INVOKE ADD_U64 V20, V20, V21
 LITERAL LOAD V13, @0
 
 
@@ -66,7 +72,7 @@ LITERAL WRITE V12, @8, V10
 
 // INVOKE EBA_INVOKE V13, V12
 
-LITERAL WRITE V20, @16, V12 // put it here for freeing later
+LITERAL WRITE V20, @24, V12 // put it here for freeing later
 INVOKE ADD_U64 V20, V20, V21
 LITERAL LOAD V13, @0
 
@@ -79,7 +85,7 @@ LITERAL WRITE V12, @8, V10
 
 INVOKE EBA_INVOKE V13, V12
 
-LITERAL WRITE V20, @24, V12 // put it here for freeing later
+LITERAL WRITE V20, @32, V12 // put it here for freeing later
 INVOKE ADD_U64 V20, V20, V21
 LITERAL LOAD V13, @0
 
@@ -93,3 +99,4 @@ LITERAL WRITE V12, @8, V20
 INVOKE EBA_INVOKE V13, V12
 
 BUFREQ RELEASE V13
+BUFREQ RELEASE V21
