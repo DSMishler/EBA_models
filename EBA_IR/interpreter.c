@@ -70,30 +70,6 @@ int parse_literal(char *word)
 }
 
 
-void add_invoke_request(IR_state_t *IRstate, void* args)
-{
-   INVOKE_request_t *z = malloc(sizeof(INVOKE_request_t));
-   z->arg_buf = args;
-   z->next = NULL;
-
-   if (IRstate->next_invoke == NULL)
-   {
-      IRstate->next_invoke = z;
-      return;
-   }
-
-   INVOKE_request_t *l;
-   for(l = IRstate->next_invoke; l->next != NULL; l = l->next)
-   {
-      ;
-   }
-   l->next = z;
-   return;
-}
-
-
-
-
 
 
 
@@ -264,16 +240,13 @@ void run_invoke(IR_state_t *IRstate, char **line)
 
    if (match_second_word(line, "EBA_INVOKE"))
    {
-      int var_dest_buf = parse_variable(line[2]); assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_args_buf = parse_variable(line[3]);
+      int var_args_buf = parse_variable(line[2]);
       assert(var_args_buf >= 0 && var_args_buf < IR_STATE_SIZE);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* args_adr = (uint64_t*) (IRstate->vars[var_args_buf]);
+      uint64_t* args_addr = (uint64_t*) (IRstate->vars[var_args_buf]);
 
-      add_invoke_request(IRstate, args_adr);
-
-      *dest_adr = 1; // success
+      IRstate->code_buf = (((char****)args_addr)[0]);
+      IRstate->next_line = -1; // because 1 will be added at the end
    }
    else if (match_second_word(line, "ADD_U64"))
    {
@@ -558,39 +531,31 @@ void run_line(IR_state_t *IRstate, char **line)
    }
 }
 
-void run_code(INVOKE_request_t *starter_invoke)
+void run_code(void *arg_buf)
 {
    IR_state_t *IRstate = init_IR_state();
 
-   IRstate->next_invoke = starter_invoke;
-   do
+   // Possible TODO: zero out all the other vars.
+   // Advocate for: not doing this may possibly add a vulnerability
+   // Advocate against: doing this makes things less minimal
+   IRstate->vars[0] = (int64_t) (arg_buf);
+   // char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
+   IRstate->next_line = 0;
+   IRstate->code_buf = (((char****)arg_buf)[0]);
+   // print_code(IRcode);
+
+   while (1)
    {
-      INVOKE_request_t *current_invoke;
-      current_invoke = IRstate->next_invoke;
-      // Possible TODO: zero out all the other vars.
-      // Advocate for: not doing this may possibly add a vulnerability
-      // Advocate against: doing this makes things less minimal
-      IRstate->vars[0] = (int64_t) (current_invoke->arg_buf);
-      IRstate->next_line = 0;
-      char ***IRcode = (((char****)current_invoke->arg_buf)[0]);
-      // print_code(IRcode);
-
-      while (1)
+      if ((IRstate->code_buf[IRstate->next_line]) == NULL)
       {
-         if (IRcode[IRstate->next_line] == NULL)
-         {
-            break;
-         }
-
-         // printf("now running line %d\n", IRstate->next_line);
-         run_line(IRstate, IRcode[IRstate->next_line]);
-         // print_IR_state(IRstate);
+         break;
       }
 
-      IRstate->next_invoke = current_invoke->next;
+      // printf("now running line %d\n", IRstate->next_line);
+      run_line(IRstate, (IRstate->code_buf[IRstate->next_line]));
+      // print_IR_state(IRstate);
+   }
 
-      free(current_invoke);
-   } while (IRstate->next_invoke != NULL);
 
    free_IR_state(IRstate);
 }
@@ -602,7 +567,7 @@ IR_state_t * init_IR_state(void)
    IRstate = malloc(sizeof(IR_state_t));
    IRstate->vars = calloc(IR_STATE_SIZE, sizeof(int64_t));
    IRstate->next_line = 0;
-   IRstate->next_invoke = NULL;
+   IRstate->code_buf = NULL;
 
 
    return IRstate;

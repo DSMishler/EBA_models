@@ -14,31 +14,26 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   // test_solofile("examples/CMP.EBA");
+   test_solofile("examples/SHORT.EBA");
    // test_dualfile_invoke_test();
-   test_circ_invoke();
+   // test_circ_invoke();
    // test_circ_init();
 }
 
 void test_solofile(char *fname)
 {
    char ***IRcode;
-   INVOKE_request_t *starter_invoke;
    IRcode = full_read(fname);
 
-   starter_invoke = malloc(sizeof(INVOKE_request_t));
-   starter_invoke->arg_buf = malloc(sizeof(void*));
-   ((char****)starter_invoke->arg_buf)[0] = IRcode;
-   starter_invoke->next = NULL;
+   void *arg_buf = malloc(sizeof(void*));
+   ((char****)arg_buf)[0] = IRcode;
 
-   void *arg_buf = starter_invoke->arg_buf;
-
-   run_code(starter_invoke);
+   run_code(arg_buf);
       
    free(arg_buf);
    full_free(IRcode);
 }
-
+/*
 void test_dualfile_invoke_test(void)
 {
    char ***IRcode1, ***IRcode2;
@@ -172,3 +167,4 @@ void test_circ_init(void)
    full_free(IRcode);
 
 }
+*/
