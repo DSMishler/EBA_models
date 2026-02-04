@@ -14,8 +14,8 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   test_solofile("examples/SHORT.EBA");
-   // test_dualfile_invoke_test();
+   // test_solofile("examples/SHORT.EBA");
+   test_dualfile_invoke_test();
    // test_circ_invoke();
    // test_circ_init();
 }
@@ -28,10 +28,25 @@ void test_solofile(char *fname)
    void *arg_buf = malloc(sizeof(void*));
    ((char****)arg_buf)[0] = IRcode;
 
-   run_code(arg_buf);
+   run_code(arg_buf); // code should free its arg buf
       
-   free(arg_buf);
    full_free(IRcode);
+}
+
+void test_dualfile_invoke_test(void)
+{
+   char ***IRcode1, ***IRcode2;
+   IRcode1 = full_read("examples/INVOKE_NEXT.EBA");
+   IRcode2 = full_read("examples/SHORT.EBA");
+
+   void *arg_buf = malloc(2*sizeof(void*));
+   ((char****)arg_buf)[0] = IRcode1;
+   ((char****)arg_buf)[1] = IRcode2;
+
+   run_code(arg_buf); // code should free its arg buf
+
+   full_free(IRcode1);
+   full_free(IRcode2);
 }
 /*
 void test_dualfile_invoke_test(void)

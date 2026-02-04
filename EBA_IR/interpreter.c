@@ -168,6 +168,15 @@ void run_literal(IR_state_t *IRstate, char **line)
 
       *dest_addr = value;
    }
+   else if (match_second_word(line, "MOVE"))
+   {
+      int var_dest = parse_variable(line[2]);
+      assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
+      int var_src = parse_variable(line[3]);
+      assert(var_src >= 0 && var_src < IR_STATE_SIZE);
+
+      IRstate->vars[var_dest] = IRstate->vars[var_src];
+   }
    else
    {
       printf("error: option %s does not exist for LITERAL\n", line[1]);
