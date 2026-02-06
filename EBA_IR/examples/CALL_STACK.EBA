@@ -1,0 +1,53 @@
+// args
+// 0: this buf (always)
+// 1: the call stack buf
+// which contains a number (# elts occupied)
+// and each args buf after it is an invoke, fresh and ready to go
+
+
+// print 5 just to say it's me as a sloppy debug/hello world
+BUFREQ ALLOC_LITERAL V5, @8
+LITERAL LOAD V5, @5
+PRINT BYTES V5, @1
+BUFREQ RELEASE V5
+
+
+LITERAL READ V1, V0, @8 // V1 is now that call stack buf
+
+
+BUFREQ ALLOC_LITERAL V10, @8
+LITERAL LOAD V10, @0
+
+CMP EQ V10, V1 END
+
+BUFREQ ALLOC_LITERAL V11, @8
+BUFREQ ALLOC_LITERAL V3, @16
+BUFREQ ALLOC_LITERAL V13, @8
+
+INVOKE ADD_U64 V10, V10, V1 // v10 contains the number of things in the stack
+LITERAL LOAD V11, @1
+INVOKE SUB_U64 V1, V1, V11 // v1 now marked as having one fewer thing
+LITERAL LOAD V11, @8
+INVOKE MUL_U64 V10, V10, V11 // v10 now has the index to grab out of v1
+LITERAL LOAD V11, @0
+LITERAL LOAD V13, @8
+TRANSFER OFFSET V3, V11, V1, V10, V13
+// 8 bytes into V3 at offset 0 from V1 at offset (#elts*8)
+
+// now the buffer V3 has first inside an arg buf to call
+LITERAL WRITE V3, @8, V0 // put my number as the second arg
+
+
+BUFREQ RELEASE V10
+BUFREQ RELEASE V11
+BUFREQ RELEASE V12
+BUFREQ RELEASE V13
+
+LITERAL MOVE V0, V3
+INVOKE EBA_INVOKE V0
+
+
+END:
+BUFREQ RELEASE V10
+BUFREQ RELEASE V1
+BUFREQ RELEASE V0
