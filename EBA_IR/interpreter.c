@@ -53,6 +53,48 @@ int parse_variable(char *word)
    return atoi(word+1);
 }
 
+void* parse_var_buf(char *word, IR_state_t *IRstate)
+{
+   if (word == NULL)
+   {
+      printf("error: NULL word passed to parse_variable\n");
+      return NULL;
+   }
+   void *retval;
+   if (word[0] == 'V')
+   {
+      // then it's a variable
+      int which_var = parse_variable(word);
+      assert(which_var >= 0 && which_var < IR_STATE_SIZE);
+      retval = (void*)IRstate->vars[which_var];
+   }
+   else if (word[0] == '&')
+   {
+      uint64_t myval = atoi(word+1);
+      retval = malloc(sizeof(uint64_t));
+      *(uint64_t*)retval = myval;
+   }
+   else
+   {
+      printf("error: expected a variable or '&' buf (e.g. V14, V09, V1, &5), got %s\n", word);
+      return NULL;
+   }
+   return retval;
+}
+
+void buf_free_if_shorthand(void *buf, char *word)
+{
+   if (word[0] == '&')
+   {
+      // then we alloc-ed the buf earlier and should free it
+      free(buf);
+   }
+   else
+   {
+      ; // if it was a variable, no need to do any freeing
+   }
+}
+
 // TODO: change all of this to int64s
 int parse_literal(char *word)
 {
@@ -90,16 +132,18 @@ void run_bufreq(IR_state_t *IRstate, char **line)
    {
       int var_dest = parse_variable(line[2]);
       assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
-      int var_allocation_len_buf = parse_variable(line[3]);
-      assert(var_allocation_len_buf >= 0 && var_allocation_len_buf < IR_STATE_SIZE);
+      void *allocation_len_buf = parse_var_buf(line[3], IRstate);
 
-      int64_t allocation_len = *((int64_t *)IRstate->vars[var_allocation_len_buf]);
+      int64_t allocation_len = *((int64_t *)allocation_len_buf);
 
       void* newbuf = malloc(allocation_len);
       IRstate->vars[var_dest] = (int64_t) newbuf;
+
+      buf_free_if_shorthand(allocation_len_buf, line[3]);
    }
    else if (match_second_word(line, "ALLOC_LITERAL"))
    {
+      printf("WARNING: BUFREQ ALLOC_LITERAL will soon be deprecated\n");
       int var_dest = parse_variable(line[2]);
       assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
       int lit_allocation_len = parse_literal(line[3]);
@@ -191,29 +235,33 @@ void run_transfer(IR_state_t *IRstate, char **line)
 
    if (match_second_word(line, "OFFSET"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_dest_offset_buf = parse_variable(line[3]);
-      assert(var_dest_offset_buf >= 0 && var_dest_offset_buf < IR_STATE_SIZE);
-      int var_src_buf = parse_variable(line[4]);
-      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
-      int var_src_offset_buf = parse_variable(line[5]);
-      assert(var_src_offset_buf >= 0 && var_src_offset_buf < IR_STATE_SIZE);
-      int var_len_buf = parse_variable(line[6]);
-      assert(var_len_buf >= 0 && var_len_buf < IR_STATE_SIZE);
+      void *dest_buf        = parse_var_buf(line[2], IRstate);
+      void *dest_offset_buf = parse_var_buf(line[3], IRstate);
+      void *src_buf         = parse_var_buf(line[4], IRstate);
+      void *src_offset_buf  = parse_var_buf(line[5], IRstate);
+      void *len_buf         = parse_var_buf(line[6], IRstate);
 
-      int64_t dest_offset = *((int64_t*) (IRstate->vars[var_dest_offset_buf]));
-      int64_t src_offset = *((int64_t*) (IRstate->vars[var_src_offset_buf]));
-      int64_t len = *((int64_t*) (IRstate->vars[var_len_buf]));
+      int64_t dest_addr   = (int64_t) dest_buf;
+      int64_t dest_offset = *((int64_t*) dest_offset_buf);
+      int64_t src_addr    = (int64_t) src_buf;
+      int64_t src_offset  = *((int64_t*) src_offset_buf);
+      int64_t len  = *((int64_t*) len_buf);
+
       // TODO: double check how this is written and if we really want
       //       these pointers stored just as normal int64_t's
-      int64_t dest_addr = ((int64_t) (IRstate->vars[var_dest_buf]));
-      int64_t src_addr = ((int64_t) (IRstate->vars[var_src_buf]));
+      memcpy((void*)(dest_addr+dest_offset), (void*)(src_addr+src_offset), len);
 
-      memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(dest_offset_buf, line[3]);
+      buf_free_if_shorthand(src_buf, line[4]);
+      buf_free_if_shorthand(src_offset_buf, line[5]);
+      buf_free_if_shorthand(len_buf, line[6]);
+
    }
    else if (match_second_word(line, "OFFSET_LITERAL"))
    {
+      // deprecated
+      printf("WARNING: TRANSFER OFFSET_LITERAL will soon be deprecated\n");
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
       int lit_dest_offset = parse_literal(line[3]);
@@ -259,78 +307,83 @@ void run_invoke(IR_state_t *IRstate, char **line)
    }
    else if (match_second_word(line, "ADD_U64"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_opa_buf = parse_variable(line[3]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[4]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* dest_adr = (uint64_t*) (dest_buf);
+      uint64_t* op_a_adr = (uint64_t*) (op_a_buf);
+      uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
-      *dest_adr = *opa_adr + *opb_adr;
+      *dest_adr = *op_a_adr + *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
    }
    else if (match_second_word(line, "MUL_U64"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_opa_buf = parse_variable(line[3]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[4]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* dest_adr = (uint64_t*) (dest_buf);
+      uint64_t* op_a_adr = (uint64_t*) (op_a_buf);
+      uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
-      *dest_adr = *opa_adr * *opb_adr;
+      *dest_adr = *op_a_adr * *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
    }
    else if (match_second_word(line, "SUB_U64"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_opa_buf = parse_variable(line[3]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[4]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* dest_adr = (uint64_t*) (dest_buf);
+      uint64_t* op_a_adr = (uint64_t*) (op_a_buf);
+      uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
-      *dest_adr = *opa_adr - *opb_adr;
+      *dest_adr = *op_a_adr - *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
    }
    else if (match_second_word(line, "DIV_U64"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_opa_buf = parse_variable(line[3]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[4]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* dest_adr = (uint64_t*) (dest_buf);
+      uint64_t* op_a_adr = (uint64_t*) (op_a_buf);
+      uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
-      *dest_adr = *opa_adr / *opb_adr;
+      *dest_adr = *op_a_adr / *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
    }
    else if (match_second_word(line, "MOD_U64"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int var_opa_buf = parse_variable(line[3]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[4]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
 
-      uint64_t* dest_adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* dest_adr = (uint64_t*) (dest_buf);
+      uint64_t* op_a_adr = (uint64_t*) (op_a_buf);
+      uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
-      *dest_adr = *opa_adr % *opb_adr;
+      *dest_adr = *op_a_adr % *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
    }
    else
    {
@@ -344,117 +397,123 @@ void run_cmp(IR_state_t *IRstate, char **line)
    assert(confirm_first_word(line, "CMP"));
    if (match_second_word(line, "LT"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr < *opb_adr)
+      if (*op_a_addr < *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else if (match_second_word(line, "LEQ"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr <= *opb_adr)
+      if (*op_a_addr <= *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else if (match_second_word(line, "GT"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr > *opb_adr)
+      if (*op_a_addr > *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else if (match_second_word(line, "GEQ"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr >= *opb_adr)
+      if (*op_a_addr >= *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else if (match_second_word(line, "EQ"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr == *opb_adr)
+      if (*op_a_addr == *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else if (match_second_word(line, "NEQ"))
    {
-      int var_opa_buf = parse_variable(line[2]);
-      assert(var_opa_buf >= 0 && var_opa_buf < IR_STATE_SIZE);
-      int var_opb_buf = parse_variable(line[3]);
-      assert(var_opb_buf >= 0 && var_opb_buf < IR_STATE_SIZE);
+      void * op_a_buf = parse_var_buf(line[2], IRstate);
+      void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
       assert(lit_target >= 0);
 
-      uint64_t* opa_adr = (uint64_t*) (IRstate->vars[var_opa_buf]);
-      uint64_t* opb_adr = (uint64_t*) (IRstate->vars[var_opb_buf]);
+      uint64_t* op_a_addr = (uint64_t*) op_a_buf;
+      uint64_t* op_b_addr = (uint64_t*) op_b_buf;
 
-      if (*opa_adr != *opb_adr)
+      if (*op_a_addr != *op_b_addr)
       {
          IRstate->next_line = lit_target;
          // NOTE: at the end of this function, the PC will move one,
          // so the effect of this op can be said to jump to the NEXT line.
       }
+
+      buf_free_if_shorthand(op_a_buf, line[2]);
+      buf_free_if_shorthand(op_b_buf, line[3]);
    }
    else
    {

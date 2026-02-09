@@ -3,7 +3,7 @@
 // 1: the args buf of what I want to call again
 
 
-BUFREQ ALLOC_LITERAL V5, @8
+BUFREQ ALLOC V5, &8
 LITERAL LOAD V5, @511
 PRINT BYTES V5, @8
 BUFREQ RELEASE V5

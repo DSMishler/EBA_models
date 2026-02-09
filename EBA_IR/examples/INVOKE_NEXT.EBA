@@ -3,13 +3,13 @@
 // 1: the next buf to invoke
 
 
-BUFREQ ALLOC_LITERAL V5, @8
+BUFREQ ALLOC V5, &8
 LITERAL LOAD V5, @511
 PRINT BYTES V5, @8
 BUFREQ RELEASE V5
 
 
-BUFREQ ALLOC_LITERAL V3, @8
+BUFREQ ALLOC V3, &8
 
 TRANSFER OFFSET_LITERAL V3, @0, V0, @8, @8
 // 8 bytes from V0 (at offset 8) into V3 (at offset 0)
