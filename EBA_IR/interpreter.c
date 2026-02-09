@@ -143,7 +143,8 @@ void run_bufreq(IR_state_t *IRstate, char **line)
    }
    else if (match_second_word(line, "ALLOC_LITERAL"))
    {
-      printf("WARNING: BUFREQ ALLOC_LITERAL will soon be deprecated\n");
+      // alloc_literal should NOT be deprecated because it would be
+      // necessary if the shorthand of "&2", "&10003", etc. was not possible.
       int var_dest = parse_variable(line[2]);
       assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
       int lit_allocation_len = parse_literal(line[3]);
@@ -167,11 +168,11 @@ void run_bufreq(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
-void run_literal(IR_state_t *IRstate, char **line)
+void run_memop(IR_state_t *IRstate, char **line)
 {
-   assert(confirm_first_word(line, "LITERAL"));
+   assert(confirm_first_word(line, "MEMOP"));
 
-   if (match_second_word(line, "LOAD"))
+   if (match_second_word(line, "LOAD_LITERAL"))
    {
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
@@ -181,36 +182,41 @@ void run_literal(IR_state_t *IRstate, char **line)
       int64_t* adr = (int64_t*) (IRstate->vars[var_dest_buf]);
       *adr = lit_value;
    }
-   else if (match_second_word(line, "READ"))
+   else if (match_second_word(line, "READ_FROMBUF"))
    {
       int var_dest = parse_variable(line[2]);
       assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
-      int var_src_buf = parse_variable(line[3]);
-      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
-      int lit_offset = parse_literal(line[4]);
-      assert(lit_offset >= 0);
+
+      void *src_buf    = parse_var_buf(line[3], IRstate);
+      void *offset_buf = parse_var_buf(line[4], IRstate);
 
       // adding the offest of the literal before cast
       // to avoid having to wrestle with pointer artithmetic later
-      int64_t* src_addr = (int64_t*) ((IRstate->vars[var_src_buf]) + lit_offset);
+
+      int64_t* src_addr = (int64_t*) ((int64_t) src_buf + *((int64_t*)offset_buf));
 
       IRstate->vars[var_dest] = *src_addr;
+
+      buf_free_if_shorthand(src_buf,    line[3]);
+      buf_free_if_shorthand(offset_buf, line[4]);
       
    }
-   else if (match_second_word(line, "WRITE"))
+   else if (match_second_word(line, "WRITE_TOBUF"))
    {
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int lit_offset = parse_literal(line[3]);
-      assert(lit_offset >= 0);
+      void *dest_buf   = parse_var_buf(line[2], IRstate);
+      void *offset_buf = parse_var_buf(line[3], IRstate);
+
       int var_src = parse_variable(line[4]);
       assert(var_src >= 0 && var_src < IR_STATE_SIZE);
 
       int64_t value = IRstate->vars[var_src];
 
-      int64_t *dest_addr = (int64_t*) ((IRstate->vars[var_dest_buf]) + lit_offset);
+      int64_t *dest_addr = (int64_t*) ((int64_t) dest_buf + *((int64_t*)offset_buf));
 
       *dest_addr = value;
+
+      buf_free_if_shorthand(dest_buf,   line[2]);
+      buf_free_if_shorthand(offset_buf, line[3]);
    }
    else if (match_second_word(line, "MOVE"))
    {
@@ -221,19 +227,7 @@ void run_literal(IR_state_t *IRstate, char **line)
 
       IRstate->vars[var_dest] = IRstate->vars[var_src];
    }
-   else
-   {
-      printf("error: option %s does not exist for LITERAL\n", line[1]);
-   }
-
-   IRstate->next_line += 1;
-}
-
-void run_transfer(IR_state_t *IRstate, char **line)
-{
-   assert(confirm_first_word(line, "TRANSFER"));
-
-   if (match_second_word(line, "OFFSET"))
+   else if (match_second_word(line, "TRANSFER_WITH_OFFSET"))
    {
       void *dest_buf        = parse_var_buf(line[2], IRstate);
       void *dest_offset_buf = parse_var_buf(line[3], IRstate);
@@ -258,7 +252,19 @@ void run_transfer(IR_state_t *IRstate, char **line)
       buf_free_if_shorthand(len_buf, line[6]);
 
    }
-   else if (match_second_word(line, "OFFSET_LITERAL"))
+   else
+   {
+      printf("error: option %s does not exist for MEMOP\n", line[1]);
+   }
+
+   IRstate->next_line += 1;
+}
+
+void run_transfer(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "TRANSFER"));
+
+   if (match_second_word(line, "OFFSET_LITERAL"))
    {
       // deprecated
       printf("WARNING: TRANSFER OFFSET_LITERAL will soon be deprecated\n");
@@ -295,7 +301,7 @@ void run_invoke(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "INVOKE"));
 
-   if (match_second_word(line, "EBA_INVOKE"))
+   if (match_second_word(line, "LOCAL_BUF"))
    {
       int var_args_buf = parse_variable(line[2]);
       assert(var_args_buf >= 0 && var_args_buf < IR_STATE_SIZE);
@@ -305,7 +311,17 @@ void run_invoke(IR_state_t *IRstate, char **line)
       IRstate->code_buf = (((char****)args_addr)[0]);
       IRstate->next_line = -1; // because 1 will be added at the end
    }
-   else if (match_second_word(line, "ADD_U64"))
+   else
+   {
+      printf("error: option %s does not exist for INVOKE\n", line[1]);
+   }
+   IRstate->next_line += 1;
+}
+
+void run_mathop(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "MATHOP"));
+   if (match_second_word(line, "ADD_U64"))
    {
       void *dest_buf = parse_var_buf(line[2], IRstate);
       void *op_a_buf = parse_var_buf(line[3], IRstate);
@@ -387,10 +403,11 @@ void run_invoke(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for INVOKE\n", line[1]);
+      printf("error: option %s does not exist for MATHOP\n", line[1]);
    }
    IRstate->next_line += 1;
 }
+
 
 void run_cmp(IR_state_t *IRstate, char **line)
 {
@@ -529,15 +546,14 @@ void run_print(IR_state_t *IRstate, char **line)
 
    if (match_second_word(line, "BYTES"))
    {
-      int var = parse_variable(line[2]);
-      assert(var >= 0 && var < IR_STATE_SIZE);
-      int lit_len = parse_literal(line[3]);
-      assert(lit_len >= 0);
+      void *target_buf = parse_var_buf(line[2], IRstate);
+      void *len_buf    = parse_var_buf(line[3], IRstate);
 
-      int64_t* adr = (int64_t*) (IRstate->vars[var]);
+      int64_t* adr = (int64_t*) target_buf;
+      int64_t len = *(int64_t*) len_buf;
       int i;
       // printf("boutta print starting at 0x%lx\n", (uint64_t)adr);
-      for(i = 0; i < lit_len; i++)
+      for(i = 0; i < len; i++)
       {
          uint8_t byte;
          // uint64_t word = ((uint64_t*) adr)[i / 8];
@@ -545,6 +561,9 @@ void run_print(IR_state_t *IRstate, char **line)
          byte = ((uint8_t*)adr)[i];
          printf("byte %03d: 0x%02X\n", i, byte);
       }
+
+      buf_free_if_shorthand(target_buf, line[2]);
+      buf_free_if_shorthand(len_buf,    line[3]);
    }
    else
    {
@@ -576,9 +595,9 @@ void run_line(IR_state_t *IRstate, char **line)
    {
       run_print(IRstate, line);
    }
-   else if (samestr(line[0], "LITERAL"))
+   else if (samestr(line[0], "MEMOP"))
    {
-      run_literal(IRstate, line);
+      run_memop(IRstate, line);
    }
    else if (samestr(line[0], "TRANSFER"))
    {
@@ -587,6 +606,10 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (samestr(line[0], "INVOKE"))
    {
       run_invoke(IRstate, line);
+   }
+   else if (samestr(line[0], "MATHOP"))
+   {
+      run_mathop(IRstate, line);
    }
    else if (samestr(line[0], "CMP"))
    {
