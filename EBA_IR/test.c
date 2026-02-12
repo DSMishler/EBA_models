@@ -75,6 +75,7 @@ void test_stackcall_invoke_test(void)
 
 void test_queue_invoke(void)
 {
+   printf("queue schedule invoking test!\n");
    char ***IRcode1, ***IRcode2, ***IRcode3;
    IRcode1 = full_read("examples/SCHED_QUEUE_INIT.EBA");
    IRcode2 = full_read("examples/SCHED_QUEUE_MAIN.EBA");
