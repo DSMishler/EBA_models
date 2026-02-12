@@ -1,0 +1,27 @@
+// args
+// 0: this (always)
+// 1: the queue itself
+// 2: the code buf to the freeing code
+
+
+// just test print code
+BUFREQ ALLOC V22, &8
+MEMOP LOAD_LITERAL V22, @7
+PRINT BYTES V22, &2
+MEMOP TRANSFER_WITH_OFFSET V22, &0, &9, &0, &8
+PRINT BYTES V22, &2
+BUFREQ RELEASE V22
+
+
+
+
+
+
+// free the scheduling queue
+BUFREQ ALLOC V30, &16
+MEMOP TRANSFER_WITH_OFFSET V30, &0, V0, &16, &8
+MEMOP TRANSFER_WITH_OFFSET V30, &8, V0, &8, &8
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V30
+INVOKE LOCAL_BUF V0

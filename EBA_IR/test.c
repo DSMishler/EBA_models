@@ -9,6 +9,8 @@
 void test_solofile(char *);
 void test_dualfile_invoke_test(void);
 void test_stackcall_invoke_test(void);
+void test_queue_invoke(void);
+
 void test_circ_invoke(void);
 void test_circ_init(void);
 
@@ -17,7 +19,8 @@ int main(void)
    printf("EBA tester\n");
    // test_solofile("examples/SHORT.EBA");
    // test_dualfile_invoke_test();
-   test_stackcall_invoke_test();
+   // test_stackcall_invoke_test();
+   test_queue_invoke();
    // test_circ_invoke();
    // test_circ_init();
 }
@@ -68,6 +71,33 @@ void test_stackcall_invoke_test(void)
 
    full_free(IRcode1);
    full_free(IRcode2);
+}
+
+void test_queue_invoke(void)
+{
+   char ***IRcode1, ***IRcode2, ***IRcode3;
+   IRcode1 = full_read("examples/SCHED_QUEUE_INIT.EBA");
+   IRcode2 = full_read("examples/SCHED_QUEUE_MAIN.EBA");
+   IRcode3 = full_read("examples/SCHED_QUEUE_FREE.EBA");
+
+   void *arg_buf_2 = malloc(3*sizeof(void*));
+   ((char****)arg_buf_2)[2] = IRcode3;
+   ((char****)arg_buf_2)[1] = NULL;
+   ((char****)arg_buf_2)[0] = IRcode2;
+
+   uint64_t *size = malloc(sizeof(void*));
+   *size = 200;
+
+   void *arg_buf_1 = malloc(3*sizeof(void*));
+   ((char****)arg_buf_1)[2] = (char***)arg_buf_2;
+   ((char****)arg_buf_1)[1] = (char***)size;
+   ((char****)arg_buf_1)[0] = IRcode1;
+
+   run_code(arg_buf_1);
+
+   full_free(IRcode1);
+   full_free(IRcode2);
+   full_free(IRcode3);
 }
 /*
 void test_dualfile_invoke_test(void)

@@ -1,0 +1,41 @@
+// args buffer
+// 0: this buf (always)
+// 1: size of the queue
+// 2: the buffer I will call when done. The queue might be placed somewhere
+//    into the args buf here
+
+
+MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
+
+
+BUFREQ ALLOC V1, V14  // data
+BUFREQ ALLOC V2, &8   // size
+BUFREQ ALLOC V3, &8   // head
+BUFREQ ALLOC V4, &8   // tail
+BUFREQ ALLOC V5, &8   // full
+
+
+MEMOP TRANSFER_WITH_OFFSET V2, &0, V14, &0, &8 // move the size buf over here
+// it's inefficient to re-alloc, but doing it for readability
+
+MEMOP TRANSFER_WITH_OFFSET V3, &0, &0, &0, &8 // set head to be 0
+MEMOP TRANSFER_WITH_OFFSET V4, &0, &0, &0, &8 // set tail to be 0
+MEMOP TRANSFER_WITH_OFFSET V5, &0, &0, &0, &8 // set full to be 0
+
+BUFREQ ALLOC V8, &40 // the queue itself
+
+MEMOP WRITE_TOBUF V8, &00, V1
+MEMOP WRITE_TOBUF V8, &08, V2
+MEMOP WRITE_TOBUF V8, &16, V3
+MEMOP WRITE_TOBUF V8, &24, V4
+MEMOP WRITE_TOBUF V8, &32, V5
+
+// now set up and call main
+BUFREQ RELEASE V14 // free the size buffer
+
+MEMOP READ_FROMBUF V15, V0, &16 // grab the next buf
+MEMOP WRITE_TOBUF V15, &8, V8 // write the queue into the args buf 
+                              // (should be up so there is space)
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V15
+INVOKE LOCAL_BUF V0
