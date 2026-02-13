@@ -1,0 +1,48 @@
+// sched queue add
+// adds something to the queue. If there is no room, nothing is added
+// another continuation is called based on whether something was added
+// args buffer contains
+// 0: this code (always)
+// 1: queue intself
+// 2: the buf to add to the queue
+// 3: buf to call on success
+// 4: buf to call on failure
+
+
+MEMOP READ_FROMBUF V13, V0, &08 // grab the queue buf
+
+MEMOP READ_FROMBUF V1, V13, &00 // data
+MEMOP READ_FROMBUF V2, V13, &08 // size
+MEMOP READ_FROMBUF V3, V13, &16 // head
+MEMOP READ_FROMBUF V4, V13, &24 // tail
+MEMOP READ_FROMBUF V5, V13, &32 // full
+
+CMP EQ V5, &0, NOTFULL // if V5 is 0, then we are not full yet
+
+
+MEMOP READ_FROMBUF V6, V0, &32
+RELEASE V0
+MEMOP MOVE V0, V6
+INVOKE LOCAL_BUF V0
+
+
+
+
+NOTFULL:
+
+MEMOP TRANSFER V1, V4, V0, &16, &8
+// transfer to the data buf at its tail
+// from the arg buf at the index of the desired buf
+// 8 bytes
+
+INVOKE ADD_U64 V4, V4, &8 // tail = tail+8
+INVOKE MOD_U64 V4, V4, V2 // tail = tail % size
+
+CMP NEQ V3, V4 SKIP_MARKFULL // if the buffer still isn't full
+MEMOP LOAD V5, @1
+SKIP_MARKFULL:
+// prepare to call the next buf
+MEMOP READ_FROMBUF V6, V0, &24
+RELEASE V0
+MEMOP MOVE V0, V6
+INVOKE LOCAL_BUF V0

@@ -13,10 +13,37 @@ PRINT BYTES V22, &2
 BUFREQ RELEASE V22
 
 
+MEMOP READ_FROMBUF V6, V0, &8 // grab scheduling queue
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+BUFREQ ALLOC V7, &8 // available space
+MATHOP SUB_U64 V7, V4, V3 // available space = tail-head
+// now it might be positive, it might be negative, but if it is 0,
+// then we are either full or empty
+MATHOP SUB_U64 V7, V7, V5 // available space += full
+CMP EQ V7, &0, DONE // the queue is empty if V7 is zero
+// if V7 is not zero, then we have to peel an element off and call it
+BUFREQ RELEASE V7
+
+MEMOP READ_FROMBUF V7, V1, V3 // grab an element from the head
+MATHOP ADD_U64 V3, V3, &8 // head = head + 8 (sizeof a buf ptr)
+MATHOP MOD_U64 V3, V3, V2 // head = head % size
+MEMOP LOAD_LITERAL V5, @0 // certainly, the queue is no longer full if it was
+// skipping a conditional just makes this simpler
+
+// don't release V0, a lot of other programs like it
+MEMOP MOVE V7, V0
+INVOKE LOCAL_BUF V0
 
 
 
 
+DONE:
+BUFREQ RELEASE V7
 // free the scheduling queue
 BUFREQ ALLOC V30, &16
 MEMOP TRANSFER_WITH_OFFSET V30, &0, V0, &16, &8

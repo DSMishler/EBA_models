@@ -1,0 +1,27 @@
+// sched queue print
+// prints some of the contents of the scheduler
+// args
+// 0 - this code (always)
+// 1 - the scheduling queue
+// 2 - the exact, explicit thing to call after I'm done
+
+
+MEMOP READ_FROMBUF V12, V0, &8
+
+MEMOP READ_FROMBUF V1, V12, &00 // data
+MEMOP READ_FROMBUF V2, V12, &08 // size
+MEMOP READ_FROMBUF V3, V12, &16 // head
+MEMOP READ_FROMBUF V4, V12, &24 // tail
+MEMOP READ_FROMBUF V5, V12, &32 // full
+
+// don't print data - it won't make sense, but go ahead and print size, etc.
+PRINT BYTES V2, &8
+PRINT BYTES V3, &8
+PRINT BYTES V4, &8
+PRINT BYTES V5, &8
+
+
+MEMOP READ_FROMBUF V6, V0, &16
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V6
+INVOKE LOCAL_BUF V0
