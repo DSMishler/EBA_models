@@ -3,7 +3,6 @@
 // 1: the queue itself
 // 2: the code buf to the freeing code
 
-
 // just test print code
 BUFREQ ALLOC V22, &8
 MEMOP LOAD_LITERAL V22, @7
