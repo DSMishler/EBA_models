@@ -17,10 +17,10 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   // test_solofile("examples/SHORT.EBA");
+   test_solofile("examples/ERROR.EBA");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
-   test_queue_invoke();
+   // test_queue_invoke();
    // test_circ_invoke();
    // test_circ_init();
 }

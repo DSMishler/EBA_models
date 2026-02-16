@@ -1,0 +1,10 @@
+// args:
+// 0 - this buf (always)
+// 1 - the circular buffer
+// 2 - the READ request queue
+// 3 - the WRITE request queue
+// 4 - buffer of the CIRC_SCHED code buffers
+// 5 - buffer of the SCHED to call when done
+
+
+

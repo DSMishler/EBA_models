@@ -1,0 +1,10 @@
+// error code
+// just flagging that an error occurred
+// args
+// 0 - this buf (always)
+
+BUFREQ ALLOC V7, &8
+MEMOP LOAD_LITERAL V7, @4022250974 // little-endian-ish deadbeef
+PRINT BYTES V7, &8
+BUFREQ RELEASE V7
+BUFREQ RELEASE V0

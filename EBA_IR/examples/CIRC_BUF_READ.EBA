@@ -1,0 +1,84 @@
+// args
+// 0: this buf (always)
+// 1: circular buffer
+// 2: destination buffer (that will receive the info from the circular buffer)
+// 3: size buffer (containing the number of bytes to read)
+// 4: buffer (explicit) to call when done if successful
+// 5: buffer (explicit) to call when done if unsuccessful
+
+MEMOP READ_FROMBUF V6, V0, &8 // v6 will be the circular buffer
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+MEMOP READ_FROMBUF V7, V0, &16 // destination buffer
+MEMOP READ_FROMBUF V8, V0, &24 // (size of read) buffer
+
+
+BUFREQ ALLOC V9, &8 // occupied space buffer
+
+MATHOP MUL_U64 V9, V2, V5 // occupied space = full*size
+MATHOP ADD_U64 V9, V9, V4 // occupied space += tail
+MATHOP SUB_U64 V9, V9, V3 // occupied space -= head
+CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
+MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
+SKIP_WRAPAROUND_ADD:
+
+CMP GT V8, V9, READ_FAIL // if size of read is greater than occupied space
+// then we can't do this read
+
+BUFREQ ALLOC V10, &8 // working read size
+BUFREQ ALLOC V11, &8 // scratch buf for head+read_size
+MATHOP ADD_U64 V10, V8, &0 // working read size = read size
+MATHOP ADD_U64 V11, V8, V3 // head+read_size
+CMP LEQ V11, V2, SKIP_WRAPAROUND
+// if read_size+head > buf size, then we will end up wrapping around
+MATHOP SUB_U64 V10, V2, V3 // working read size = size-head
+SKIP_WRAPAROUND:
+
+MEMOP TRANSFER_WITH_OFFSET V7, &0, V1, V3, V10
+// transfer V10 (working read size bytes)
+// from the data but at HEAD
+// to the dest buf at index 0
+
+// head = (head+working_read_size) % buf size
+MATHOP ADD_U64 V3, V3, V10
+MATHOP MOD_U64 V3, V3, V2
+MATHOP SUB_U64 V11, V8, V10 // remaining reading = read size - working read size
+
+// now if V11 is greater than 0, we still have more reading to do
+// but if it's just zero, no worries. The code will have no effect
+// we could put a sanity check in here if we wanted (ensure head==0 if V11!=0)
+MEMOP TRANSFER_WITH_OFFSET V7, V10, V1, V3, V11
+// read remaining reading bytes
+// from data buf at HEAD (which should be zero here if V11 isn't zero)
+// to the dest buf at index V10 (len of what was read last time)
+
+// head = (head+working_read_size) % buf size
+MATHOP ADD_U64 V3, V3, V10
+MATHOP MOD_U64 V3, V3, V2
+CMP EQ V8, &0, SKIP_MARK_NOT_FULL
+// if anything was read, mark that we are not full
+MEMOP  LOAD_LITERAL V5, @0
+SKIP_MARK_NOT_FULL:
+
+
+// Read success:
+BUFREQ RELEASE V9
+BUFREQ RELEASE V10
+BUFREQ RELEASE V11
+MEMOP READ_FROMBUF V9, V0, &32
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V9
+INVOKE LOCAL_BUF V0
+
+
+
+READ_FAIL:
+BUFREQ RELEASE V9
+MEMOP READ_FROMBUF V9, V0, &40
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V9
+INVOKE LOCAL_BUF V0

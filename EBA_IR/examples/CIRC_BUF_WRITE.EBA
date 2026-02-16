@@ -1,0 +1,92 @@
+// args
+// 0: this buf (always)
+// 1: circular buffer
+// 2: soruce buffer
+// 3: size buffer (containing the number of bytes to read)
+// 4: buffer (explicit) to call when done if successful
+// 5: buffer (explicit) to call when done if unsuccessful
+
+MEMOP READ_FROMBUF V6, V0, &8 // v6 will be the circular buffer
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+MEMOP READ_FROMBUF V7, V0, &16 // source buffer
+MEMOP READ_FROMBUF V8, V0, &24 // (size of read) buffer
+
+
+BUFREQ ALLOC V9, &8 // occupied space buffer (into available space buf)
+
+MATHOP MUL_U64 V9, V2, V5 // occupied space = full*size
+MATHOP ADD_U64 V9, V9, V4 // occupied space += tail
+MATHOP SUB_U64 V9, V9, V3 // occupied space -= head
+CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
+MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
+SKIP_WRAPAROUND_ADD:
+
+MATHOP SUB_U64 V9, V7, V9 // now hold available space
+
+CMP GT V8, V9, WRITE_FAIL // if size of write is greater than available space
+// then we can't do this write
+
+
+BUFREQ ALLOC V10, &8 // working write size
+BUFREQ ALLOC V11, &8 // scratch buf for tail+write_size
+MATHOP ADD_U64 V10, V8, &0 // working write size = write size
+MATHOP ADD_U64 V11, V8, V4 // tail+write_size
+CMP LEQ V11, V2, SKIP_WRAPAROUND
+// if write_size+tail > buf size, then we will end up wrapping around
+MATHOP SUB_U64 V10, V2, V4 // working write size = size-head
+SKIP_WRAPAROUND:
+
+MEMOP TRANSFER_WITH_OFFSET V1, V4, V7, &0, V10
+// Transfer V10 (working read size) bytes
+// to V1 (data) at V4 (tail)
+// from V7 (source) at offset 0
+
+// tail = (tail+working_write_size) % buf size
+MATHOP ADD_U64 V4, V4, V10
+MATHOP MOD_U64 V4, V4, V2
+MATHOP SUB_U64 V11, V8, V10 // write remaining = write size - working write size
+
+// now if V11 is greater than 0, we still have more writing to do
+// but if it's just zero, no worries. The below transfer will have no effect
+// we could put a sanity check in here if we wanted (ensure tail==0 if V11!=0)
+MEMOP TRANSFER_WITH_OFFSET V1, V4, V7, V10, V11
+// transfer V11 (write remaining) bytes
+// to V1 (data) at V4 (tail, which should be 0)
+// from V7 (source) at offset V10 (size of last write)
+
+// tail = (tail+working_write_size) % buf size
+MATHOP ADD_U64 V4, V4, V10
+MATHOP MOD_U64 V4, V4, V2
+
+CMP EQ V3, V4, SKIP_MARK_FULL
+// if V3 != V4, can't be full
+// else V3 == V4
+// if bytes were written, then we are full
+CMP EQ V8, &0, SKIP_MARK_FULL
+MEMOP LOAD_LITERAL V5, @1
+SKIP_MARK_FULL:
+
+// write success:
+BUFREQ RELEASE V9
+BUFREQ RELEASE V10
+BUFREQ RELEASE V11
+MEMOP READ_FROMBUF V9, V0, &32
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V9
+INVOKE LOCAL_BUF V0
+
+
+
+
+
+WRITE_FAIL:
+BUFREQ RELEASE V9
+MEMOP READ_FROMBUF V9, V0, &40
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V9
+INVOKE LOCAL_BUF V0

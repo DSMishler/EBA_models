@@ -177,7 +177,6 @@ void run_memop(IR_state_t *IRstate, char **line)
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
       int lit_value = parse_literal(line[3]);
-      assert(lit_value >= 0);
 
       int64_t* adr = (int64_t*) (IRstate->vars[var_dest_buf]);
       *adr = lit_value;
@@ -417,7 +416,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -437,7 +435,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -457,7 +454,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -477,7 +473,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -497,7 +492,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -517,7 +511,6 @@ void run_cmp(IR_state_t *IRstate, char **line)
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
       int lit_target = parse_literal(line[4]);
-      assert(lit_target >= 0);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
