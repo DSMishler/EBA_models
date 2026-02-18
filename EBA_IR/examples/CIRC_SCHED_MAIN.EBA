@@ -3,8 +3,94 @@
 // 1 - the circular buffer
 // 2 - the READ request queue
 // 3 - the WRITE request queue
-// 4 - buffer of the CIRC_SCHED code buffers
-// 5 - buffer of the SCHED to call when done
+// 4 - buffer of the CIRC_SCHED code buffers (including the call stack one)
+// we'll call one of the CIRC_SCHED code buffers when done
+// CIRC_SCHED code buffers
+// 00 - CIRC_BUF_READ
+// 08 - CIRC_BUF_WRITE
+// 16 - SCHED_QUEUE_PEEK
+// 24 - SCHED_QUEUE_REMOVE
+// 32 - SCHED_QUEUE_MAIN
+// 40 - The schedule queue
+// 48 - SCHED_QUEUE_ADD
+// 56 - SCHED_QUEUE_ADD_STACK
+// 64 - CIRC_SCHED_UNPACK
 
 
+// going to create a *stack* of calls to give to the scheduler,
+// and then unpack that into the queue.
+// as a result, we expect the things we will do *last* should come *first*
+// in this code.
+// this isn't super important since this code will be just be servicing one read
+// and one write, but it's important that we make sure it calls itself
+// at the end and only if there are more reads and writes to perform.
+// This means we put that self-call first here.
 
+BUFREQ ALLOC V19, &200 // space for 200/8-1=24 arg buffers
+MEMOP LOAD_LITERAL V19, @0
+
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V0 // write V0 first into the call stack buffer
+
+///////////////////////////////////////////////////////////////////////////////
+// write request
+///////////////////////////////////////////////////////////////////////////////
+
+MEMOP READ_FROMBUF V20, V0, &24 // the WRITE request queue
+MEMOP READ_FROMBUF V1, V20, &00 // data
+MEMOP READ_FROMBUF V2, V20, &08 // size
+MEMOP READ_FROMBUF V3, V20, &16 // head
+MEMOP READ_FROMBUF V4, V20, &24 // tail
+MEMOP READ_FROMBUF V5, V20, &32 // full
+
+BUFREQ ALLOC V7, &8 // a buffer to contain if the WRITE request queue is empty
+MATHOP SUB_U64 V7, V4, V3 // V = tail-head
+MATHOP ADD_U64 V7, V7, V5 // V += full
+// first, tail-head%8 == 0, and full%8 == 1 if full, so these operations
+// are orthogonal for purposes of this check
+// now if tail!=head, the buffer is surely NOT empty then tail-head!=0,
+// and if tail==head, the buffer is NOT empty if full==1.
+CMP EQ V7, &0, WRITE_REQ_QUEUE_EMPTY
+
+// TODO: code that removes from the WRITE request queue
+// TODO: call the WRITE code
+// TODO: Code that unpacks the request
+// TODO: code that peeks at the WRITE request queue
+MEMOP LOAD_LITERAL V7, @1515
+PRINT BYTES V7, &8
+
+WRITE_REQ_QUEUE_EMPTY:
+BUFREQ RELEASE V7
+
+///////////////////////////////////////////////////////////////////////////////
+// read request
+///////////////////////////////////////////////////////////////////////////////
+
+MEMOP READ_FROMBUF V20, V0, &16 // the READ request queue
+MEMOP READ_FROMBUF V1, V20, &00 // data
+MEMOP READ_FROMBUF V2, V20, &08 // size
+MEMOP READ_FROMBUF V3, V20, &16 // head
+MEMOP READ_FROMBUF V4, V20, &24 // tail
+MEMOP READ_FROMBUF V5, V20, &32 // full
+
+BUFREQ ALLOC V7, &8 // a buffer to contain if the READ request queue is empty
+MATHOP SUB_U64 V7, V4, V3 // V = tail-head
+MATHOP ADD_U64 V7, V7, V5 // V += full
+// first, tail-head%8 == 0, and full%8 == 1 if full, so these operations
+// are orthogonal for purposes of this check
+// now if tail!=head, the buffer is surely NOT empty then tail-head!=0,
+// and if tail==head, the buffer is NOT empty if full==1.
+CMP EQ V7, &0, READ_REQ_QUEUE_EMPTY
+
+// TODO: code that removes from the READ request queue
+// TODO: call the read code
+// TODO: Code that unpacks the request
+// TODO: code that peeks at the READ request queue
+MEMOP LOAD_LITERAL V7, @1515
+PRINT BYTES V7, &8
+
+READ_REQ_QUEUE_EMPTY:
+BUFREQ RELEASE V7
+
+
+// now call that scheduling buffer

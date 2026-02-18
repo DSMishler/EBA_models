@@ -23,7 +23,7 @@ BUFREQ ALLOC V7, &8 // available space
 MATHOP SUB_U64 V7, V4, V3 // available space = tail-head
 // now it might be positive, it might be negative, but if it is 0,
 // then we are either full or empty
-MATHOP SUB_U64 V7, V7, V5 // available space += full
+MATHOP ADD_U64 V7, V7, V5 // available space += full
 CMP EQ V7, &0, DONE // the queue is empty if V7 is zero
 // if V7 is not zero, then we have to peel an element off and call it
 BUFREQ RELEASE V7

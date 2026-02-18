@@ -1,0 +1,23 @@
+// args:
+// 0 - this buf (always)
+// 1 - the buf I'll be unpacking (free after)
+// 2 - the arg buf that I'm unpacking into
+// 3 - who to call when done (most likely main scheduler)
+
+// ASSUMES everything is valid, etc.
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+
+MEMOP TRANSFER_WITH_OFFSET V2, &8, V1, &0, &24
+// transfer the three buffers (24 bytes)
+// from the unpacking buf (V1)
+// into the arg buf for the circular buffer operation (V2)
+// at offset 8 (offset zero is the code buffer)
+
+BUFREQ RELEASE V1
+
+MEMOP READ_FROMBUF V3, V0, &24
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V3
+INVOKE LOCAL_BUF V0

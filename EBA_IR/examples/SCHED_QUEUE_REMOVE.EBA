@@ -1,0 +1,21 @@
+// args
+// 0 - this buf (always)
+// 1 - the schedule queue
+// 2 - who to call when done
+
+// ASSUMES there is space, there is something needing
+// removed, etc.
+
+MEMOP READ_FROMBUF V6, V0, &8
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+MATHOP ADD_U64 V3, V3, &8
+MATHOP MOD_U64 V3, V3, V2
+MEMOP LOAD_LITERAL V5, @0 // certainly not full - something was popped
+
+MEMOP READ_FROMBUF V8, V0, &16
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V8
+INVOKE LOCAL_BUF V0

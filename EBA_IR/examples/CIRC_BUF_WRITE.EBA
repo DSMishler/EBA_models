@@ -26,7 +26,7 @@ CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
 MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
 SKIP_WRAPAROUND_ADD:
 
-MATHOP SUB_U64 V9, V7, V9 // now hold available space
+MATHOP SUB_U64 V9, V2, V9 // now hold available space
 
 CMP GT V8, V9, WRITE_FAIL // if size of write is greater than available space
 // then we can't do this write
@@ -72,17 +72,13 @@ MEMOP LOAD_LITERAL V5, @1
 SKIP_MARK_FULL:
 
 // write success:
-BUFREQ RELEASE V9
 BUFREQ RELEASE V10
 BUFREQ RELEASE V11
+BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V9, V0, &32
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V9
 INVOKE LOCAL_BUF V0
-
-
-
-
 
 WRITE_FAIL:
 BUFREQ RELEASE V9
