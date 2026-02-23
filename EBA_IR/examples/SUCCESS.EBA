@@ -1,0 +1,10 @@
+// success
+// To call when done
+// args
+// 0 - this buf (always)
+
+BUFREQ ALLOC V7, &8
+MEMOP LOAD_LITERAL V7, @160 // 0xa0
+PRINT BYTES V7, &1
+BUFREQ RELEASE V7
+BUFREQ RELEASE V0

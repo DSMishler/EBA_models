@@ -1,0 +1,82 @@
+// circ sched queue starter
+// meant to get everything going for the circ sched/sched queue demo
+// args
+// 0 - this buf (always)
+// 1 - the CIRC BUF buffers
+   // 00 - CIRC_BUF_READ
+   // 08 - CIRC_BUF_WRITE
+   // 16 - CIRC_SCHED_MAIN
+   // 24 - CIRC_SCHED_UNPACK
+   // 32 - the READ request queue (initially unalloc-ed)
+   // 40 - the WRITE request queue (initially unalloc-ed)
+// 2 - buffer of the SCHED_QUEUE code buffers (including the call stack one)
+   // we'll call one of the CIRC_SCHED code buffers when done
+   // MAIN SCHED code buffers
+   // 00 - SCHED_QUEUE_ADD
+   // 08 - SCHED_QUEUE_ADD_STACK
+   // 16 - SCHED_QUEUE_FREE
+   // 24 - SCHED_QUEUE_INIT
+   // 32 - SCHED_QUEUE_MAIN
+   // 40 - SCHED_QUEUE_PEEK
+   // 48 - SCHED_QUEUE_PRINT
+   // 56 - SCHED_QUEUE_REMOVE
+   // 64 - The schedule queue (initially unalloc-ed)
+   // 72 - (redundant) prebuilt explicit arg buf to sched_queue_main(built here)
+      // 0 - SCHED_QUEUE_MAIN
+      // 1 - the schedule queue (initially unalloc-ed)
+      // 2 - explicit arg buf containing code for SCHED_QUEUE_FREE
+   // 80 - ERROR
+   // 88 - SUCCESS
+
+MEMOP READ_FROMBUF V30, V0, &8  // circ sched bufs
+MEMOP READ_FROMBUF V31, V0, &16 // sched queue bufs
+
+
+BUFREQ ALLOC V10, &40
+// we are alloc-ing the schedule queue. Can't do anything until that is done.
+// size 200
+BUFREQ ALLOC V2, &8   // size
+BUFREQ ALLOC V3, &8   // head
+BUFREQ ALLOC V4, &8   // tail
+BUFREQ ALLOC V5, &8   // full
+
+MEMOP LOAD_LITERAL V5, @0
+MEMOP LOAD_LITERAL V4, @0
+MEMOP LOAD_LITERAL V3, @0
+MEMOP LOAD_LITERAL V2, @200
+
+BUFREQ ALLOC V1, V2
+
+MEMOP WRITE_TOBUF V10, &00, V1
+MEMOP WRITE_TOBUF V10, &08, V2
+MEMOP WRITE_TOBUF V10, &16, V3
+MEMOP WRITE_TOBUF V10, &24, V4
+MEMOP WRITE_TOBUF V10, &32, V5
+// schedule queue alloc-ed.
+
+MEMOP WRITE_TOBUF V31, &64, V10
+
+// now build the explicit arg buf to sched queue main
+BUFREQ ALLOC V11, &24
+MEMOP TRANSFER_WITH_OFFSET V11, &00, V31, &32, &8
+// V11's first index is sched_queue_main
+MEMOP TRANSFER_WITH_OFFSET V11, &08, V31, &64, &8
+// V11's second index is the schedule queue itself
+// V11's third index is sched_queue_free's explicit arg buf
+BUFREQ ALLOC V12, &24
+// now set up the explicit arg buf
+MEMOP TRANSFER_WITH_OFFSET V12, &00, V31, &16, &8
+// V12's first index: code for sched_queue_free
+MEMOP TRANSFER_WITH_OFFSET V12, &08, V31, &64, &8
+// V12's second index is the schedule queue itself
+BUFREQ ALLOC V13, &8
+MEMOP TRANSFER_WITH_OFFSET V13, &0, V31, &88, &8
+MEMOP WRITE_TOBUF V12, &16, V13
+// V12's third index is code for SUCCESS.EBA
+
+MEMOP WRITE_TOBUF V11, &16, V12
+MEMOP WRITE_TOBUF V31, &72, V11
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V11
+INVOKE LOCAL_BUF V0

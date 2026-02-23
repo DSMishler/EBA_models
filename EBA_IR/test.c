@@ -17,10 +17,10 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   test_solofile("examples/ERROR.EBA");
+   // test_solofile("examples/SUCCESS.EBA");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
-   // test_queue_invoke();
+   test_queue_invoke();
    // test_circ_invoke();
    // test_circ_init();
 }
@@ -75,30 +75,55 @@ void test_stackcall_invoke_test(void)
 
 void test_queue_invoke(void)
 {
-   printf("queue schedule invoking test!\n");
-   char ***IRcode1, ***IRcode2, ***IRcode3;
-   IRcode1 = full_read("examples/SCHED_QUEUE_INIT.EBA");
-   IRcode2 = full_read("examples/SCHED_QUEUE_MAIN.EBA");
-   IRcode3 = full_read("examples/SCHED_QUEUE_FREE.EBA");
+   printf("queue schedule circ buf invoking test!\n");
+   char ****CB_IRcodes = malloc(6*sizeof(char***));
+   char ****SQ_IRcodes = malloc(12*sizeof(char***));
+   int i;
 
-   void *arg_buf_2 = malloc(3*sizeof(void*));
-   ((char****)arg_buf_2)[2] = IRcode3;
-   ((char****)arg_buf_2)[1] = NULL;
-   ((char****)arg_buf_2)[0] = IRcode2;
+   CB_IRcodes[0] = full_read("examples/CIRC_BUF_READ.EBA");
+   CB_IRcodes[1] = full_read("examples/CIRC_BUF_WRITE.EBA");
+   CB_IRcodes[2] = full_read("examples/CIRC_SCHED_MAIN.EBA");
+   CB_IRcodes[3] = full_read("examples/CIRC_SCHED_UNPACK.EBA");
+   CB_IRcodes[4] = NULL;
+   CB_IRcodes[5] = NULL;
 
-   uint64_t *size = malloc(sizeof(void*));
-   *size = 200;
+   SQ_IRcodes[0] = full_read("examples/SCHED_QUEUE_ADD.EBA");
+   SQ_IRcodes[1] = full_read("examples/SCHED_QUEUE_ADD_STACK.EBA");
+   SQ_IRcodes[2] = full_read("examples/SCHED_QUEUE_FREE.EBA");
+   SQ_IRcodes[3] = full_read("examples/SCHED_QUEUE_INIT.EBA");
+   SQ_IRcodes[4] = full_read("examples/SCHED_QUEUE_MAIN.EBA");
+   SQ_IRcodes[5] = full_read("examples/SCHED_QUEUE_PEEK.EBA");
+   SQ_IRcodes[6] = full_read("examples/SCHED_QUEUE_PRINT.EBA");
+   SQ_IRcodes[7] = full_read("examples/SCHED_QUEUE_REMOVE.EBA");
+   SQ_IRcodes[8] = NULL;
+   SQ_IRcodes[9] = NULL;
+   SQ_IRcodes[10] = full_read("examples/ERROR.EBA");
+   SQ_IRcodes[11] = full_read("examples/SUCCESS.EBA");
+
+   char ***IRcode1;
+   IRcode1 = full_read("examples/CIRC_SCHED_QUEUE_STARTER.EBA");
 
    void *arg_buf_1 = malloc(3*sizeof(void*));
-   ((char****)arg_buf_1)[2] = (char***)arg_buf_2;
-   ((char****)arg_buf_1)[1] = (char***)size;
+   ((char****)arg_buf_1)[2] = (char***)SQ_IRcodes;
+   ((char****)arg_buf_1)[1] = (char***)CB_IRcodes;
    ((char****)arg_buf_1)[0] = IRcode1;
 
    run_code(arg_buf_1);
 
    full_free(IRcode1);
-   full_free(IRcode2);
-   full_free(IRcode3);
+
+   for(i = 0; i < 4; i++)
+   {
+      full_free(CB_IRcodes[i]);
+   }
+   free(CB_IRcodes);
+   for(i = 0; i < 8; i++)
+   {
+      full_free(SQ_IRcodes[i]);
+   }
+   full_free(SQ_IRcodes[10]);
+   full_free(SQ_IRcodes[11]);
+   free(SQ_IRcodes);
 }
 /*
 void test_dualfile_invoke_test(void)
