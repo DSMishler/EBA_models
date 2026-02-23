@@ -335,11 +335,11 @@ void labels_to_lines(char ***IRcode)
       }
       else
       {
-         // printf("label detected\n");
          // the line is not blank and the first word is a label
          // we're about to change it anyway, so let's just go ahead and
          // make them match
          char *label = first_word_i;
+         // printf("label detected: %s\n", label);
          int label_loc = i;
          label[strlen(label)-1] = '\0';
          int j;

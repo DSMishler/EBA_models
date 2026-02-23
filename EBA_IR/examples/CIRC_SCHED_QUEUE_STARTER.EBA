@@ -19,8 +19,7 @@
    // 32 - SCHED_QUEUE_MAIN
    // 40 - SCHED_QUEUE_PEEK
    // 48 - SCHED_QUEUE_PRINT
-   // 56 - SCHED_QUEUE_REMOVE
-   // 64 - The schedule queue (initially unalloc-ed)
+   // 56 - SCHED_QUEUE_REMOVE // 64 - The schedule queue (initially unalloc-ed)
    // 72 - (redundant) prebuilt explicit arg buf to sched_queue_main(built here)
       // 0 - SCHED_QUEUE_MAIN
       // 1 - the schedule queue (initially unalloc-ed)
@@ -77,6 +76,120 @@ MEMOP WRITE_TOBUF V12, &16, V13
 MEMOP WRITE_TOBUF V11, &16, V12
 MEMOP WRITE_TOBUF V31, &72, V11
 
+////////////////////////////////////////////////////////////////////////////////
+// populating the scheduler
+////////////////////////////////////////////////////////////////////////////////
+// we want to run
+// 1 - init circ buf
+// 2 - init read queue
+// 3 - init write queue
+// 4 - add some read/write requests
+// 5 - start circ sched main
+
+// we'll pop them onto the stack and use the stack code, so we put them in
+// reverse order
+
+BUFREQ ALLOC V15, &40 // circ buf
+BUFREQ ALLOC V16, &40 // read queue
+BUFREQ ALLOC V17, &40 // write queue
+
+BUFREQ ALLOC V20, &32 // Arg buf for circ sched main
+
+// first to push, last to pop to queue, circ sched main
+MEMOP TRANSFER_WITH_OFFSET V20, &0, V30, &16, &8
+// transfer 8 bytes
+// from V30 (circ bufs) at index 16 (circ sched main)
+// to V20 (circ sched main) at index 0
+MEMOP WRITE_TOBUF V20, &8, V15
+MEMOP TRANSFER_WITH_OFFSET V20, &16, V0, &8, &16
+// transfer 16 bytes NOTE: 16 this time
+// from V0 (this arg buf) at index 8 (the two big buffers)
+// to V20 (circ sched main) at index 16
+
+// load these queue buffers in their respective places
+MEMOP WRITE_TOBUF V30, &32, V16
+MEMOP WRITE_TOBUF V30, &40, V17
+
+
+// TODO: this is where you'd add the read/write requests
+// reserving V21 for it
+
+BUFREQ ALLOC V22, &32 // init code for the write queue
+BUFREQ ALLOC V23, &32 // init code for the read queue
+BUFREQ ALLOC V24, &32 // init code for the circ buf itself
+
+MEMOP TRANSFER_WITH_OFFSET V22, &0, V31, &24, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 24 (sched queue init)
+// to V22 (init write queue) at index 0
+
+// also giving all of it the size V2 set earlier
+BUFREQ ALLOC V35, &8
+MEMOP TRANSFER_WITH_OFFSET V35, &0, V2, &0, &8
+MEMOP WRITE_TOBUF V22, &8, V35
+MEMOP WRITE_TOBUF V22, &16, V17
+
+MEMOP TRANSFER_WITH_OFFSET V22, &24, V31, &72, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 72 (scheduler main arg buf)
+// to V22 (init write queue) at index 24
+
+MEMOP TRANSFER_WITH_OFFSET V23, &0, V22, &0, &32
+// copy the contents of buffer V22 into V23
+MEMOP WRITE_TOBUF V23, &16, V16 // except this time, target the read queue
+BUFREQ ALLOC V35, &8
+MEMOP TRANSFER_WITH_OFFSET V35, &0, V2, &0, &8
+MEMOP WRITE_TOBUF V23, &8, V35 // fresh size buffer (they get free-ed)
+
+MEMOP TRANSFER_WITH_OFFSET V24, &0, V22, &0, &32
+// copy the contents of buffer V22 into V23
+MEMOP WRITE_TOBUF V24, &16, V15 // except this time, target the circ buf
+// this is fine - the sched queue init makes the same struct.
+BUFREQ ALLOC V35, &8
+MEMOP TRANSFER_WITH_OFFSET V35, &0, V2, &0, &8
+MEMOP WRITE_TOBUF V24, &8, V35 // fresh size buffer (they get free-ed)
+// TODO: reconsider whether that free is necessary
+
+
+BUFREQ ALLOC V19, &104 // make a stack to push onto the scheduler
+MEMOP LOAD_LITERAL V19, @0
+
+// now push them on
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V20 // sched queue main
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V22 // init write queue
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V23 // init read queue
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V24 // init circ buf
+
+// now prep the scheduler stack add
+BUFREQ ALLOC V25, &40
+MEMOP TRANSFER_WITH_OFFSET V25, &0, V31, &8, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 8 (stack add code)
+// to V25 (stack add arg buf) at index 0
+MEMOP TRANSFER_WITH_OFFSET V25, &8, V31, &64, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 64 (the scheduler queue)
+// to V25 (stack add arg buf) at index 8
+MEMOP WRITE_TOBUF V25, &16, V19
+MEMOP TRANSFER_WITH_OFFSET V25, &24, V31, &72, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 72 (the main arg buf)
+// to V25 (stack add arg buf) at index 24
+BUFREQ ALLOC V26, &8
+MEMOP TRANSFER_WITH_OFFSET V26, &0, V31, &80, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 80 (error code buf)
+// to V26 (for error code) at index 0
+MEMOP WRITE_TOBUF V25, &32, V26
+
+
+
+
+
 BUFREQ RELEASE V0
-MEMOP MOVE V0, V11
+MEMOP MOVE V0, V25
 INVOKE LOCAL_BUF V0

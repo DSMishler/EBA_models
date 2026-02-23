@@ -4,7 +4,6 @@
 // 2: the buffer (pre-allocated) that the sched buf will live in
 // 3: the buffer I will call when done.
 
-
 MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
 
 

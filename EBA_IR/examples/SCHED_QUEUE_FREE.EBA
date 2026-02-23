@@ -4,11 +4,6 @@
 // 2: code to call when done (explicit)
 
 
-BUFREQ ALLOC V22, &8
-MEMOP TRANSFER_WITH_OFFSET V22, &0, &9, &0, &8
-PRINT BYTES V22, &2
-BUFREQ RELEASE V22
-
 MEMOP READ_FROMBUF V8, V0, &8 // grab circular buffer
 
 MEMOP READ_FROMBUF V1, V8, &00 // data

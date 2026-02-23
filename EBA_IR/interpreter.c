@@ -105,7 +105,7 @@ int parse_literal(char *word)
    }
    if (word[0] != '@')
    {
-      printf("error: expected a variable (e.g. @14, @09, @1), got %s\n", word);
+      printf("error: expected a literal (e.g. @14, @09, @1), got %s\n", word);
       return -1;
    }
    return atoi(word+1);
@@ -137,6 +137,7 @@ void run_bufreq(IR_state_t *IRstate, char **line)
       int64_t allocation_len = *((int64_t *)allocation_len_buf);
 
       void* newbuf = malloc(allocation_len);
+      // printf("buf alloc-ed: 0x%lx\n", (uint64_t)newbuf);
       IRstate->vars[var_dest] = (int64_t) newbuf;
 
       buf_free_if_shorthand(allocation_len_buf, line[3]);
@@ -158,6 +159,7 @@ void run_bufreq(IR_state_t *IRstate, char **line)
       int var_target = parse_variable(line[2]);
       assert(var_target >= 0 && var_target < IR_STATE_SIZE);
 
+      // printf("buf release-ed: 0x%lx\n", (uint64_t)(IRstate->vars[var_target]));
       free((void*)(IRstate->vars[var_target]));
    }
    else

@@ -30,12 +30,13 @@ CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
 MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
 SKIP_WRAPAROUND_ADD:
 
+
 MATHOP SUB_U64 V9, V2, V9 // now hold available space
 
 CMP GT V11, V9, ADD_FAIL // if I have to add more than is available, go to fail
 
 // check for mods, make sure it's mod 8
-MATHOP MOD_U64 V9, V11, &0
+MATHOP MOD_U64 V9, V11, &8
 CMP NEQ V9, &0, ADD_FAIL
 BUFREQ RELEASE V9
 
@@ -47,16 +48,19 @@ MEMOP TRANSFER_WITH_OFFSET V1, V4, V11, V11, &8
 // from the arg buf stack at its listed index
 // to the circular queue at its tail
 MATHOP SUB_U64 V11, V11, &8
-INVOKE ADD_U64 V4, V4, &8 // tail = tail+8
-INVOKE MOD_U64 V4, V4, V2 // tail = tail % size
+MATHOP ADD_U64 V4, V4, &8 // tail = tail+8
+MATHOP MOD_U64 V4, V4, V2 // tail = tail % size
 
 CMP EQ, &0, &0, LOOP_BEGIN
+
 
 DONE:
 BUFREQ RELEASE V11
 // prepare to call the next buf
+MEMOP READ_FROMBUF V6, V0, &32 // TODO: do not keep
+BUFREQ RELEASE V6
 MEMOP READ_FROMBUF V6, V0, &24
-RELEASE V0
+BUFREQ RELEASE V0
 MEMOP MOVE V0, V6
 INVOKE LOCAL_BUF V0
 
@@ -65,6 +69,6 @@ INVOKE LOCAL_BUF V0
 ADD_FAIL:
 BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V6, V0, &32
-RELEASE V0
+BUFREQ RELEASE V0
 MEMOP MOVE V0, V6
 INVOKE LOCAL_BUF V0
