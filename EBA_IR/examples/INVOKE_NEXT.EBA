@@ -2,7 +2,6 @@
 // 0: this buf (always)
 // 1: the next buf to invoke
 
-
 BUFREQ ALLOC V5, &8
 MEMOP LOAD_LITERAL V5, @511
 PRINT BYTES V5, &8

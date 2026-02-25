@@ -568,6 +568,50 @@ void run_print(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
+void run_log(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "LOG"));
+
+   if (match_second_word(line, "BYTES"))
+   {
+      void *target_buf = parse_var_buf(line[2], IRstate);
+      void *len_buf    = parse_var_buf(line[3], IRstate);
+
+      int64_t* adr = (int64_t*) target_buf;
+      int64_t len = *(int64_t*) len_buf;
+      int i;
+      // printf("boutta print starting at 0x%lx\n", (uint64_t)adr);
+      for(i = 0; i < len; i++)
+      {
+         uint8_t byte;
+         // uint64_t word = ((uint64_t*) adr)[i / 8];
+         // byte = (uint8_t) (word >> ((7 - (i % 8)) * 8) & ((uint8_t) 0xff));
+         byte = ((uint8_t*)adr)[i];
+         printf("byte %03d: 0x%02X\n", i, byte);
+      }
+
+      buf_free_if_shorthand(target_buf, line[2]);
+      buf_free_if_shorthand(len_buf,    line[3]);
+   }
+   else if (match_second_word(line, "STRING"))
+   {
+      assert(line[2] != NULL);
+      printf("%s\n", line[2]);
+   }
+   else if (match_second_word(line, "VAR"))
+   {
+      void *target = parse_var_buf(line[2], IRstate);
+      printf("0x%lx\n", (uint64_t)(target));
+      buf_free_if_shorthand(target, line[2]);
+   }
+   else
+   {
+      printf("error: option %s does not exist for LOG\n", line[1]);
+   }
+
+   IRstate->next_line += 1;
+}
+
 void run_line(IR_state_t *IRstate, char **line)
 {
    if (line[0] == NULL)
@@ -585,10 +629,6 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (samestr(line[0], "BUFREQ"))
    {
       run_bufreq(IRstate, line);
-   }
-   else if (samestr(line[0], "PRINT"))
-   {
-      run_print(IRstate, line);
    }
    else if (samestr(line[0], "MEMOP"))
    {
@@ -609,6 +649,14 @@ void run_line(IR_state_t *IRstate, char **line)
    else if (samestr(line[0], "CMP"))
    {
       run_cmp(IRstate, line);
+   }
+   else if (samestr(line[0], "PRINT"))
+   {
+      run_print(IRstate, line);
+   }
+   else if (samestr(line[0], "LOG"))
+   {
+      run_log(IRstate, line);
    }
    else
    {

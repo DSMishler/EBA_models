@@ -6,6 +6,8 @@
 // 4: buffer (explicit) to call when done if successful
 // 5: buffer (explicit) to call when done if unsuccessful
 
+LOG STRING CURRENTLY_RUNNING_CIRC_BUF_READ
+
 MEMOP READ_FROMBUF V6, V0, &8 // v6 will be the circular buffer
 MEMOP READ_FROMBUF V1, V6, &00 // data
 MEMOP READ_FROMBUF V2, V6, &08 // size

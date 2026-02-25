@@ -6,6 +6,8 @@
 // ASSUMES there is space, there is something needing
 // removed, etc.
 
+LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_REMOVE
+
 MEMOP READ_FROMBUF V6, V0, &8
 MEMOP READ_FROMBUF V2, V6, &08 // size
 MEMOP READ_FROMBUF V3, V6, &16 // head

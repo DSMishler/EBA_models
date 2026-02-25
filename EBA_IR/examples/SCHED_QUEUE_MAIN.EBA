@@ -5,6 +5,7 @@
 
 // just test print code
 
+LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
 
 MEMOP READ_FROMBUF V6, V0, &8 // grab scheduling queue
 MEMOP READ_FROMBUF V1, V6, &00 // data
