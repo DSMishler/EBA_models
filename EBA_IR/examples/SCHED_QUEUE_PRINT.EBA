@@ -5,7 +5,7 @@
 // 1 - the scheduling queue
 // 2 - the exact, explicit thing to call after I'm done
 
-LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_PRINT
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_PRINT
 
 MEMOP READ_FROMBUF V12, V0, &8
 

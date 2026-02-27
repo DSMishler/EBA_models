@@ -3,7 +3,7 @@
 // 1: the queue I will be freeing
 // 2: code to call when done (explicit)
 
-LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_FREE
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_FREE
 
 MEMOP READ_FROMBUF V8, V0, &8 // grab circular buffer
 

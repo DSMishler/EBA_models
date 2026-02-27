@@ -8,7 +8,7 @@
 // 3: buf to call on success
 // 4: buf to call on failure
 
-LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_ADD_STACK
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_ADD_STACK
 
 MEMOP READ_FROMBUF V13, V0, &08 // grab the queue buf
 

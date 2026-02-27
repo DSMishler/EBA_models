@@ -4,7 +4,7 @@
 // 2: the buffer (pre-allocated) that the sched buf will live in
 // 3: the buffer I will call when done.
 
-LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_INIT
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_INIT
 
 MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
 

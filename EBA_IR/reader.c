@@ -76,7 +76,7 @@ char *** full_read(char *fname)
 char ** line_to_words(char *line)
 {
    // simple finite state machine
-   int state = 0; // 0: in whitespace, 1: in word
+   int state = 0; // 0: in whitespace, 1: in word, 2: in string-word
    int i; // index through the line
    int zw; // index of which word we're on
    int zi; // index of which character in the word we're on
@@ -93,11 +93,21 @@ char ** line_to_words(char *line)
       // check for comments, newlines, or eof
       if (next == '#' || next == '\n' || next == '\0')
       {
+         if (state == 2)
+         {
+            printf("error in '%s', unfinished string '#' in string\n", line);
+            return NULL;
+         }
          zw += state; // possibly add 1 to nwords
          break;
       }
       if (next == '/' && line[i+1] == '/')
       {
+         if (state == 2)
+         {
+            printf("error in '%s', comments in strings not allowed\n", line);
+            return NULL;
+         }
          // printf("comment detected\n");
          zw += state; // possibly add 1 to nwords
          break;
@@ -116,6 +126,11 @@ char ** line_to_words(char *line)
                return NULL;
             }
          }
+         else if (next == '"')
+         {
+            printf("error on line '%s', quote begins during word\n", line);
+            return NULL;
+         }
          else
          {
             zi++;
@@ -128,10 +143,34 @@ char ** line_to_words(char *line)
          {
             ; // pass
          }
+         else if (next == '"')
+         {
+            state = 2;
+            // no zi++, we won't be storing the quote marks
+         }
          else
          {
             state = 1;
             zi++;
+         }
+      }
+      else if (state == 2)
+      {
+         if (next == '"')
+         {
+            if (!(is_ir_wspace(line[i+1]) || 
+                  line[i+1] == '\n' || line[i+1] == '\0' ||
+                  line[i+1] == '#' || (line[i+1] == '/' && line[i+2] == '/')))
+            {
+               printf("error on line '%s', quote ends during word\n", line);
+               return NULL;
+            }
+            state = 1; // state 1 will take care of the cleanup
+         }
+         else
+         {
+            zi++;
+            lens[zw] = zi;
          }
       }
 
@@ -188,9 +227,25 @@ char ** line_to_words(char *line)
          {
             ; // pass
          }
+         else if (next == '"')
+         {
+            state = 2;
+         }
          else
          {
             state = 1;
+            words[zw][zi] = line[i];
+            zi++;
+         }
+      }
+      else if (state == 2)
+      {
+         if (next == '"')
+         {
+            state = 1;
+         }
+         else
+         {
             words[zw][zi] = line[i];
             zi++;
          }

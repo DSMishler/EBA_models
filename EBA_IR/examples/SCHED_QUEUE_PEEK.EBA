@@ -7,7 +7,7 @@
 
 // ASSUMES there is space, the entry is valid, etc.
 
-LOG STRING CURRENTLY_RUNNING_SCHED_QUEUE_PEEK
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_PEEK
 
 MEMOP READ_FROMBUF V6, V0, &8  // grab schedule queue
 MEMOP READ_FROMBUF V1, V6, &0  // data

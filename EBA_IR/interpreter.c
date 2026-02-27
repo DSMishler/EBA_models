@@ -70,7 +70,9 @@ void* parse_var_buf(char *word, IR_state_t *IRstate)
    }
    else if (word[0] == '&')
    {
-      uint64_t myval = atoi(word+1);
+      char *strend;
+      uint64_t myval = strtoull(word+1, &strend, 10);
+      assert(strend != NULL);
       retval = malloc(sizeof(uint64_t));
       *(uint64_t*)retval = myval;
    }
@@ -96,7 +98,7 @@ void buf_free_if_shorthand(void *buf, char *word)
 }
 
 // TODO: change all of this to int64s
-int parse_literal(char *word)
+uint64_t parse_literal(char *word)
 {
    if (word == NULL)
    {
@@ -108,7 +110,10 @@ int parse_literal(char *word)
       printf("error: expected a literal (e.g. @14, @09, @1), got %s\n", word);
       return -1;
    }
-   return atoi(word+1);
+   char *strend;
+   uint64_t retval = strtoull(word+1, &strend, 10);
+   assert(strend != NULL);
+   return retval;
 }
 
 
@@ -148,7 +153,7 @@ void run_bufreq(IR_state_t *IRstate, char **line)
       // necessary if the shorthand of "&2", "&10003", etc. was not possible.
       int var_dest = parse_variable(line[2]);
       assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
-      int lit_allocation_len = parse_literal(line[3]);
+      uint64_t lit_allocation_len = parse_literal(line[3]);
       assert(lit_allocation_len >= 0);
 
       void* newbuf = malloc(lit_allocation_len);
@@ -178,9 +183,9 @@ void run_memop(IR_state_t *IRstate, char **line)
    {
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int lit_value = parse_literal(line[3]);
+      uint64_t lit_value = parse_literal(line[3]);
 
-      int64_t* adr = (int64_t*) (IRstate->vars[var_dest_buf]);
+      uint64_t* adr = (uint64_t*) (IRstate->vars[var_dest_buf]);
       *adr = lit_value;
    }
    else if (match_second_word(line, "READ_FROMBUF"))
@@ -271,22 +276,22 @@ void run_transfer(IR_state_t *IRstate, char **line)
       printf("WARNING: TRANSFER OFFSET_LITERAL will soon be deprecated\n");
       int var_dest_buf = parse_variable(line[2]);
       assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      int lit_dest_offset = parse_literal(line[3]);
+      uint64_t lit_dest_offset = parse_literal(line[3]);
       assert(lit_dest_offset >= 0);
       int var_src_buf = parse_variable(line[4]);
       assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
-      int lit_src_offset = parse_literal(line[5]);
+      uint64_t lit_src_offset = parse_literal(line[5]);
       assert(lit_src_offset >= 0);
-      int lit_len = parse_literal(line[6]);
+      uint64_t lit_len = parse_literal(line[6]);
       assert(lit_len >= 0);
 
-      int64_t dest_offset = (int64_t) lit_dest_offset;
-      int64_t src_offset = (int64_t) lit_src_offset;
-      int64_t len = (int64_t) lit_len;
+      uint64_t dest_offset = (uint64_t) lit_dest_offset;
+      uint64_t src_offset = (uint64_t) lit_src_offset;
+      uint64_t len = (uint64_t) lit_len;
       // TODO: double check how this is written and if we really want
       //       these pointers stored just as normal int64_t's
-      int64_t dest_addr = ((int64_t) (IRstate->vars[var_dest_buf]));
-      int64_t src_addr = ((int64_t) (IRstate->vars[var_src_buf]));
+      uint64_t dest_addr = ((uint64_t) (IRstate->vars[var_dest_buf]));
+      uint64_t src_addr = ((uint64_t) (IRstate->vars[var_src_buf]));
 
       memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
    }
@@ -417,7 +422,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -436,7 +441,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -455,7 +460,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -474,7 +479,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -493,7 +498,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -512,7 +517,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    {
       void * op_a_buf = parse_var_buf(line[2], IRstate);
       void * op_b_buf = parse_var_buf(line[3], IRstate);
-      int lit_target = parse_literal(line[4]);
+      uint64_t lit_target = parse_literal(line[4]);
 
       uint64_t* op_a_addr = (uint64_t*) op_a_buf;
       uint64_t* op_b_addr = (uint64_t*) op_b_buf;
@@ -547,7 +552,6 @@ void run_print(IR_state_t *IRstate, char **line)
       int64_t* adr = (int64_t*) target_buf;
       int64_t len = *(int64_t*) len_buf;
       int i;
-      // printf("boutta print starting at 0x%lx\n", (uint64_t)adr);
       for(i = 0; i < len; i++)
       {
          uint8_t byte;
@@ -560,38 +564,12 @@ void run_print(IR_state_t *IRstate, char **line)
       buf_free_if_shorthand(target_buf, line[2]);
       buf_free_if_shorthand(len_buf,    line[3]);
    }
-   else
-   {
-      printf("error: option %s does not exist for PRINT\n", line[1]);
-   }
-
-   IRstate->next_line += 1;
-}
-
-void run_log(IR_state_t *IRstate, char **line)
-{
-   assert(confirm_first_word(line, "LOG"));
-
-   if (match_second_word(line, "BYTES"))
+   else if (match_second_word(line, "WORD"))
    {
       void *target_buf = parse_var_buf(line[2], IRstate);
-      void *len_buf    = parse_var_buf(line[3], IRstate);
-
-      int64_t* adr = (int64_t*) target_buf;
-      int64_t len = *(int64_t*) len_buf;
-      int i;
-      // printf("boutta print starting at 0x%lx\n", (uint64_t)adr);
-      for(i = 0; i < len; i++)
-      {
-         uint8_t byte;
-         // uint64_t word = ((uint64_t*) adr)[i / 8];
-         // byte = (uint8_t) (word >> ((7 - (i % 8)) * 8) & ((uint8_t) 0xff));
-         byte = ((uint8_t*)adr)[i];
-         printf("byte %03d: 0x%02X\n", i, byte);
-      }
-
+      uint64_t* adr = (uint64_t*) target_buf;
+      printf("0x%lX\n", *adr);
       buf_free_if_shorthand(target_buf, line[2]);
-      buf_free_if_shorthand(len_buf,    line[3]);
    }
    else if (match_second_word(line, "STRING"))
    {
@@ -601,12 +579,43 @@ void run_log(IR_state_t *IRstate, char **line)
    else if (match_second_word(line, "VAR"))
    {
       void *target = parse_var_buf(line[2], IRstate);
-      printf("0x%lx\n", (uint64_t)(target));
+      printf("0x%lX\n", (uint64_t)(target));
       buf_free_if_shorthand(target, line[2]);
    }
    else
    {
-      printf("error: option %s does not exist for LOG\n", line[1]);
+      printf("error: option %s does not exist for PRINT\n", line[1]);
+   }
+
+   IRstate->next_line += 1;
+}
+
+void run_scaffold(IR_state_t *IRstate, char **line)
+{
+   assert(confirm_first_word(line, "SCAFFOLD"));
+
+   if (match_second_word(line, "SYSTEM"))
+   {
+      assert(line[2] != NULL);
+      system(line[2]);
+   }
+   else if (match_second_word(line, "CODEREAD"))
+   {
+      int var_dest = parse_variable(line[2]);
+      assert(var_dest >= 0 && var_dest < IR_STATE_SIZE);
+      assert(line[3] != NULL);
+
+      IRstate->vars[var_dest] = (uint64_t) full_read(line[3]);
+   }
+   else if (match_second_word(line, "CODEFREE"))
+   {
+      int var_dest = parse_variable(line[2]);
+
+      full_free((char***)IRstate->vars[var_dest]);
+   }
+   else
+   {
+      printf("error: option %s does not exist for SCAFFOLD\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -654,9 +663,9 @@ void run_line(IR_state_t *IRstate, char **line)
    {
       run_print(IRstate, line);
    }
-   else if (samestr(line[0], "LOG"))
+   else if (samestr(line[0], "SCAFFOLD"))
    {
-      run_log(IRstate, line);
+      run_scaffold(IRstate, line);
    }
    else
    {
