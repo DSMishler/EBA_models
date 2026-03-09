@@ -5,6 +5,8 @@
 
 #include <string.h> // TODO: probably can remove once continuations are added
 
+extern void (*eba_state)(void*);
+extern void *eba_arg;
 
 void test_solofile(char *);
 void test_dualfile_invoke_test(void);
@@ -108,7 +110,9 @@ void test_queue_invoke(void)
    ((char****)arg_buf_1)[1] = (char***)CB_IRcodes;
    ((char****)arg_buf_1)[0] = IRcode1;
 
-   run_code(arg_buf_1);
+   eba_state = &run_code;
+   eba_arg = (void*)arg_buf_1;
+   EBA_run();
 
    full_free(IRcode1);
 

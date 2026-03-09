@@ -5,13 +5,6 @@
 
 #include <stdint.h>
 
-// TODO: remove this
-// struct INVOKE_request
-// {
-   // void* arg_buf;
-   // struct INVOKE_request *next;
-// };
-// typedef struct INVOKE_request INVOKE_request_t;
 
 struct IR_state
 {
@@ -22,9 +15,13 @@ struct IR_state
 };
 typedef struct IR_state IR_state_t;
 
-void run_code(void *arg_buf);
+void run_code(void*);
+
+void EBA_run(void);
+
 IR_state_t * init_IR_state(void);
 void print_IR_state(IR_state_t *IRstate);
 void free_IR_state(IR_state_t *IRstate);
+void eba_free_IR_state(void*);
 
 #endif

@@ -7,6 +7,10 @@
 #include "interpreter.h"
 #include "reader.h"
 
+// global function pointer for the next operation to run
+void (*eba_state)(void*);
+// global arg pointer for EBA's arg
+void *eba_arg = NULL;
 
 int confirm_first_word(char **line, char *word)
 {
@@ -621,8 +625,17 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
-void run_line(IR_state_t *IRstate, char **line)
+void run_line(void* lcl_eba_arg)
 {
+   IR_state_t *IRstate = (IR_state_t*)lcl_eba_arg;
+   char **line = IRstate->code_buf[IRstate->next_line];
+   if (line == NULL)
+   {
+      eba_state = &eba_free_IR_state;
+      // do no work, and return here
+      return;
+   }
+
    if (line[0] == NULL)
    {
       // it's a no-op
@@ -674,8 +687,9 @@ void run_line(IR_state_t *IRstate, char **line)
    }
 }
 
-void run_code(void *arg_buf)
+void run_code(void* lcl_eba_arg)
 {
+   void *arg_buf = (void*)(lcl_eba_arg);
    IR_state_t *IRstate = init_IR_state();
 
    // Possible TODO: zero out all the other vars.
@@ -687,20 +701,23 @@ void run_code(void *arg_buf)
    IRstate->code_buf = (((char****)arg_buf)[0]);
    // print_code(IRcode);
 
-   while (1)
+   eba_arg = (void*)(IRstate);
+   eba_state = &run_line;
+}
+
+void EBA_run(void)
+{
+   while(1)
    {
-      if ((IRstate->code_buf[IRstate->next_line]) == NULL)
+      // TODO: change this. This is a SCAFFOLD at the moment
+      // I could see very easily many cases where
+      // you'd WANT eba_arg to be null
+      if (eba_arg == NULL)
       {
          break;
       }
-
-      // printf("now running line %d\n", IRstate->next_line);
-      run_line(IRstate, (IRstate->code_buf[IRstate->next_line]));
-      // print_IR_state(IRstate);
+      (*eba_state)(eba_arg);
    }
-
-
-   free_IR_state(IRstate);
 }
 
 
@@ -724,6 +741,13 @@ void print_IR_state(IR_state_t *IRstate)
    {
       printf("V%02d: %lx\n", i, IRstate->vars[i]);
    }
+}
+
+void eba_free_IR_state(void* lcl_eba_arg)
+{
+   IR_state_t *IRstate = (IR_state_t *)lcl_eba_arg;
+   eba_arg = NULL;
+   free_IR_state(IRstate);
 }
 
 void free_IR_state(IR_state_t *IRstate)
