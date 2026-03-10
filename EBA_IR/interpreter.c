@@ -709,10 +709,10 @@ void EBA_run(void)
 {
    while(1)
    {
-      // TODO: change this. This is a SCAFFOLD at the moment
-      // I could see very easily many cases where
-      // you'd WANT eba_arg to be null
-      if (eba_arg == NULL)
+      // NOTE: void*0 (nullptr) is guaranteed to compare unequal
+      // to any object or function, so this can only happen
+      // via the intential setting of eba_state to 0
+      if (eba_state == (void*)0)
       {
          break;
       }
@@ -747,6 +747,7 @@ void eba_free_IR_state(void* lcl_eba_arg)
 {
    IR_state_t *IRstate = (IR_state_t *)lcl_eba_arg;
    eba_arg = NULL;
+   eba_state = (void*)0;
    free_IR_state(IRstate);
 }
 
