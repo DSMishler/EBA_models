@@ -17,3 +17,11 @@ PyEBA/EBA_graphviz/testrun/*
 
 # executable test files
 EBA_IR/test
+
+# local files
+EBA_IR/local/
+
+# visualization temp files
+EBA_IR/tools/visualization/jpgs/
+EBA_IR/tools/visualization/jgrs/
+EBA_IR/tools/visualization/ebaouts/
