@@ -31,6 +31,18 @@ MEMOP WRITE_TOBUF V8, &16, V3
 MEMOP WRITE_TOBUF V8, &24, V4
 MEMOP WRITE_TOBUF V8, &32, V5
 
+
+// initialize the memory here
+// TODO: not sure if this needs to live here
+INIT_SCHED_QUEUE:
+// temporarily use V3 here
+MEMOP TRANSFER_WITH_OFFSET V1, V3, &3735928559, &0, &8
+// 0xdeadbeef as init value
+MATHOP ADD_U64 V3, V3, &8
+CMP LT V3, V2, INIT_SCHED_QUEUE
+MEMOP LOAD_LITERAL V3, @0
+
+
 // now set up and call main
 BUFREQ RELEASE V14 // free the size buffer
 
