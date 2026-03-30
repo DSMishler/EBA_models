@@ -79,7 +79,7 @@ void test_queue_invoke(void)
 {
    printf("queue schedule circ buf invoking test!\n");
    char ****CB_IRcodes = malloc(6*sizeof(char***));
-   char ****SQ_IRcodes = malloc(12*sizeof(char***));
+   char ****SQ_IRcodes = malloc(13*sizeof(char***));
    int i;
 
    CB_IRcodes[0] = full_read("examples/CIRC_BUF_READ.EBA");
@@ -101,6 +101,7 @@ void test_queue_invoke(void)
    SQ_IRcodes[9] = NULL;
    SQ_IRcodes[10] = full_read("examples/ERROR.EBA");
    SQ_IRcodes[11] = full_read("examples/SUCCESS.EBA");
+   SQ_IRcodes[12] = full_read("examples/SCHED_QUEUE_PASS_AND_FREE.EBA");
 
    char ***IRcode1;
    IRcode1 = full_read("examples/CIRC_SCHED_QUEUE_STARTER.EBA");
@@ -127,6 +128,7 @@ void test_queue_invoke(void)
    }
    full_free(SQ_IRcodes[10]);
    full_free(SQ_IRcodes[11]);
+   full_free(SQ_IRcodes[12]);
    free(SQ_IRcodes);
 }
 /*

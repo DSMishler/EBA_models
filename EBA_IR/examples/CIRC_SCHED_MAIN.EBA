@@ -26,6 +26,7 @@
       // 2 - explicit arg buf containing code for SCHED_QUEUE_FREE
    // 80 - ERROR
    // 88 - SUCCESS
+   // 96 - SCHED_QUEUE_PASS_AND_FREE
 
 
 // going to create a *stack* of calls to give to the scheduler,

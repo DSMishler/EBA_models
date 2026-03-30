@@ -26,6 +26,7 @@
       // 2 - explicit arg buf containing code for SCHED_QUEUE_FREE
    // 80 - ERROR
    // 88 - SUCCESS
+   // 96 - SCHED_QUEUE_PASS_AND_FREE
 
 PRINT STRING CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
@@ -151,17 +152,14 @@ MEMOP WRITE_TOBUF V30, &32, V16
 MEMOP WRITE_TOBUF V30, &40, V17
 
 
-// TODO: this is where you'd add the read/write requests
-// reserving V21 for it
-
+BUFREQ ALLOC V21, &24 // code for adding requests (not read beforehand)
 BUFREQ ALLOC V22, &32 // init code for the write queue
 BUFREQ ALLOC V23, &32 // init code for the read queue
 BUFREQ ALLOC V24, &32 // init code for the circ buf itself
 
-MEMOP TRANSFER_WITH_OFFSET V22, &0, V31, &24, &8
-// transfer 8 bytes
-// from V31 (sched bufs) at index 24 (sched queue init)
-// to V22 (init write queue) at index 0
+
+PRINT STRING TRANSLATE_ADD_RW_REQUESTS
+PRINT VAR V21
 PRINT STRING TRANSLATE_WRITE_QUEUE_INIT
 PRINT VAR V22
 PRINT STRING TRANSLATE_READ_QUEUE_INIT
@@ -169,7 +167,20 @@ PRINT VAR V23
 PRINT STRING TRANSLATE_CIRC_BUF_INIT
 PRINT VAR V24
 
+SCAFFOLD CODEREAD V51 examples/CIRC_BUF_ADD_REQUESTS.EBA
+MEMOP WRITE_TOBUF V21, &0, V51
+MEMOP TRANSFER_WITH_OFFSET V21, &8, V0, &8, &16
+// transfer 16 bytes
+// from V0 (my own arg buf) at index 8 (the code bufs)
+// to V21 at index 8 (so it has basically the same info this code has)
+
+
+MEMOP TRANSFER_WITH_OFFSET V22, &0, V31, &24, &8
+// transfer 8 bytes
+// from V31 (sched bufs) at index 24 (sched queue init)
+// to V22 (init write queue) at index 0
 // also giving all of it the size V2 set earlier
+
 BUFREQ ALLOC V35, &8
 MEMOP TRANSFER_WITH_OFFSET V35, &0, V2, &0, &8
 MEMOP WRITE_TOBUF V22, &8, V35
@@ -203,6 +214,8 @@ MEMOP LOAD_LITERAL V19, @0
 // now push them on
 MATHOP ADD_U64 V19, V19, &8
 MEMOP WRITE_TOBUF V19, V19, V20 // sched queue main
+MATHOP ADD_U64 V19, V19, &8
+MEMOP WRITE_TOBUF V19, V19, V21 // add rw requests
 MATHOP ADD_U64 V19, V19, &8
 MEMOP WRITE_TOBUF V19, V19, V22 // init write queue
 MATHOP ADD_U64 V19, V19, &8

@@ -1,0 +1,57 @@
+// circ buf add requests
+// adds some requests to the read queue and the write queue, both of them.
+// args
+// 0 - this buf (always)
+// 1 - the CIRC BUF buffers
+   // 00 - CIRC_BUF_READ
+   // 08 - CIRC_BUF_WRITE
+   // 16 - CIRC_SCHED_MAIN
+   // 24 - CIRC_SCHED_UNPACK
+   // 32 - the READ request queue (initially unalloc-ed)
+   // 40 - the WRITE request queue (initially unalloc-ed)
+// 2 - buffer of the SCHED_QUEUE code buffers (including the call stack one)
+   // we'll call one of the CIRC_SCHED code buffers when done
+   // MAIN SCHED code buffers
+   // 00 - SCHED_QUEUE_ADD
+   // 08 - SCHED_QUEUE_ADD_STACK
+   // 16 - SCHED_QUEUE_FREE
+   // 24 - SCHED_QUEUE_INIT
+   // 32 - SCHED_QUEUE_MAIN
+   // 40 - SCHED_QUEUE_PEEK
+   // 48 - SCHED_QUEUE_PRINT
+   // 56 - SCHED_QUEUE_REMOVE // 64 - The schedule queue (initially unalloc-ed)
+   // 72 - (redundant) prebuilt explicit arg buf to sched_queue_main
+      // 0 - SCHED_QUEUE_MAIN
+      // 1 - the schedule queue (initially unalloc-ed)
+      // 2 - explicit arg buf containing code for SCHED_QUEUE_FREE
+   // 80 - ERROR
+   // 88 - SUCCESS
+   // 96 - SCHED_QUEUE_PASS_AND_FREE
+
+
+PRINT STRING CURRENTLY_RUNNING_CURC_BUF_ADD_REQUESTS
+
+
+PRINT STRING TOIMP
+MEMOP READ_FROMBUF V31, V0, &16
+
+
+
+BUFREQ ALLOC V1, &24 // pass and free code's arg buf
+MEMOP TRANSFER_WITH_OFFSET V1, &0, V31, &96, &8
+// transfer 8 bytes
+// from V31 (sched queue bufs) offset 96 (pass and free)
+// to V1 (pass and free) first arg (code buf)
+MEMOP TRANSFER_WITH_OFFSET V1, &8, V0, &0, &8
+// transfer 8 bytes
+// from V0 (my code buf) at offset 0 (my code)
+// to V1 (pass and free) at offset 8 (to free it)
+MEMOP TRANSFER_WITH_OFFSET V1, &16, V31, &72, &8
+// transfer 8 bytes
+// from V31 (sched queue bufs) at offset 72 (explicit call to sceduler)
+// to V1 (pass and free) at offset 16 (what to call after)
+
+// call the pass and free
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V1
+INVOKE LOCAL_BUF V0
