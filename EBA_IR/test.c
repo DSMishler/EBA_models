@@ -19,12 +19,10 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   // test_solofile("examples/SUCCESS.EBA");
+   test_solofile("examples/COROUTINE_TEST_MAIN.EBA");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
-   test_queue_invoke();
-   // test_circ_invoke();
-   // test_circ_init();
+   // test_queue_invoke();
 }
 
 void test_solofile(char *fname)
@@ -35,7 +33,10 @@ void test_solofile(char *fname)
    void *arg_buf = malloc(sizeof(void*));
    ((char****)arg_buf)[0] = IRcode;
 
-   run_code(arg_buf); // code should free its arg buf
+   // code should free its arg buf
+   eba_state = &run_code;
+   eba_arg = (void*)arg_buf;
+   EBA_run();
       
    full_free(IRcode);
 }
@@ -50,7 +51,10 @@ void test_dualfile_invoke_test(void)
    ((char****)arg_buf)[0] = IRcode1;
    ((char****)arg_buf)[1] = IRcode2;
 
-   run_code(arg_buf); // code should free its arg buf
+   // code should free its arg buf
+   eba_state = &run_code;
+   eba_arg = (void*)arg_buf;
+   EBA_run();
 
    full_free(IRcode1);
    full_free(IRcode2);
@@ -69,7 +73,9 @@ void test_stackcall_invoke_test(void)
    ((char****)stack_arg)[2] = IRcode2;
    ((char****)arg_buf)[1] = (char***)stack_arg;
 
-   run_code(arg_buf);
+   eba_state = &run_code;
+   eba_arg = (void*)arg_buf;
+   EBA_run();
 
    full_free(IRcode1);
    full_free(IRcode2);

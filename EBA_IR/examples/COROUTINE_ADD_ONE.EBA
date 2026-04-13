@@ -1,0 +1,18 @@
+// add one.eba
+// adds exactly 1 to the data buffer, and then calls next
+// args
+// 0 - this buf (always)
+// 1 - buf to call when done
+
+
+MEMOP READ_FROMBUF V7, V0, &8
+
+BUFREQ ALLOC V8, &8
+MEMOP TRANSFER_WITH_OFFSET V8, &0, V7, &8, &8
+MATHOP ADD_U64 V8, V8, &1
+MEMOP TRANSFER_WITH_OFFSET V7, &8, V8, &0, &8
+BUFREQ RELEASE V8
+
+
+MEMOP MOVE V0, V7
+INVOKE LOCAL_BUF V0
