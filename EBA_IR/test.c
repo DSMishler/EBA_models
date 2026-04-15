@@ -19,10 +19,10 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   test_solofile("examples/COROUTINE_TEST_MAIN.EBA");
+   // test_solofile("examples/COROUTINE_TEST_MAIN.EBA");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
-   // test_queue_invoke();
+   test_queue_invoke();
 }
 
 void test_solofile(char *fname)

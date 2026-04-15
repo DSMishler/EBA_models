@@ -2,14 +2,15 @@
 // adds some requests to the read queue and the write queue, both of them.
 // args
 // 0 - this buf (always)
-// 1 - the CIRC BUF buffers
+// 1 - the circular buffer
+// 2 - the CIRC BUF buffers
    // 00 - CIRC_BUF_READ
    // 08 - CIRC_BUF_WRITE
    // 16 - CIRC_SCHED_MAIN
    // 24 - CIRC_SCHED_UNPACK
    // 32 - the READ request queue (initially unalloc-ed)
    // 40 - the WRITE request queue (initially unalloc-ed)
-// 2 - buffer of the SCHED_QUEUE code buffers (including the call stack one)
+// 3 - buffer of the SCHED_QUEUE code buffers (including the call stack one)
    // we'll call one of the CIRC_SCHED code buffers when done
    // MAIN SCHED code buffers
    // 00 - SCHED_QUEUE_ADD
@@ -32,26 +33,36 @@
 PRINT STRING CURRENTLY_RUNNING_CURC_BUF_ADD_REQUESTS
 
 
-PRINT STRING TOIMP
-MEMOP READ_FROMBUF V31, V0, &16
+PRINT STRING JUST_ADDING_ONE_WRITE
+MEMOP READ_FROMBUF V30, V0, &16
+MEMOP READ_FROMBUF V31, V0, &24
+
+MEMOP READ_FROMBUF V6, V30, &40 // grab the WRITE request queue
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+// BUFREQ ALLOC V50, &24 // buf for the write request
 
 
 
-BUFREQ ALLOC V1, &24 // pass and free code's arg buf
-MEMOP TRANSFER_WITH_OFFSET V1, &0, V31, &96, &8
+BUFREQ ALLOC V21, &24 // pass and free code's arg buf
+MEMOP TRANSFER_WITH_OFFSET V21, &0, V31, &96, &8
 // transfer 8 bytes
 // from V31 (sched queue bufs) offset 96 (pass and free)
-// to V1 (pass and free) first arg (code buf)
-MEMOP TRANSFER_WITH_OFFSET V1, &8, V0, &0, &8
+// to V21 (pass and free) first arg (code buf)
+MEMOP TRANSFER_WITH_OFFSET V21, &8, V0, &0, &8
 // transfer 8 bytes
 // from V0 (my code buf) at offset 0 (my code)
-// to V1 (pass and free) at offset 8 (to free it)
-MEMOP TRANSFER_WITH_OFFSET V1, &16, V31, &72, &8
+// to V21 (pass and free) at offset 8 (to free it)
+MEMOP TRANSFER_WITH_OFFSET V21, &16, V31, &72, &8
 // transfer 8 bytes
 // from V31 (sched queue bufs) at offset 72 (explicit call to sceduler)
-// to V1 (pass and free) at offset 16 (what to call after)
+// to V21 (pass and free) at offset 16 (what to call after)
 
 // call the pass and free
 BUFREQ RELEASE V0
-MEMOP MOVE V0, V1
+MEMOP MOVE V0, V21
 INVOKE LOCAL_BUF V0

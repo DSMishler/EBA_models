@@ -152,7 +152,7 @@ MEMOP WRITE_TOBUF V30, &32, V16
 MEMOP WRITE_TOBUF V30, &40, V17
 
 
-BUFREQ ALLOC V21, &24 // code for adding requests (not read beforehand)
+BUFREQ ALLOC V21, &32 // code for adding requests (not read beforehand)
 BUFREQ ALLOC V22, &32 // init code for the write queue
 BUFREQ ALLOC V23, &32 // init code for the read queue
 BUFREQ ALLOC V24, &32 // init code for the circ buf itself
@@ -169,10 +169,11 @@ PRINT VAR V24
 
 SCAFFOLD CODEREAD V51 examples/CIRC_BUF_ADD_REQUESTS.EBA
 MEMOP WRITE_TOBUF V21, &0, V51
-MEMOP TRANSFER_WITH_OFFSET V21, &8, V0, &8, &16
+MEMOP TRANSFER_WITH_OFFSET V21, &16, V0, &8, &16
 // transfer 16 bytes
 // from V0 (my own arg buf) at index 8 (the code bufs)
-// to V21 at index 8 (so it has basically the same info this code has)
+// to V21 at index 16 (so it has basically the same info this code has)
+MEMOP WRITE_TOBUF V21, &08, V15 // also add the circ buf to its first arg
 
 
 MEMOP TRANSFER_WITH_OFFSET V22, &0, V31, &24, &8

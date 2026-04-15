@@ -141,7 +141,7 @@ MEMOP TRANSFER_WITH_OFFSET V22, &40, V31, &72, &8
 BUFREQ ALLOC V24, &32
 MEMOP TRANSFER_WITH_OFFSET V24, &0, V30, &24, &8
 // transfer 8 bytes (one code buf)
-// from V30 (the circ buffers) at offset 40 (the unpack code)
+// from V30 (the circ buffers) at offset 24 (the unpack code)
 // into V23 (the arg buf) at offset 0 (where code goes)
 MEMOP WRITE_TOBUF V24, &8, V22 // buf we're unpacking into
 BUFREQ ALLOC V28, &24 // the buf for the compressed request
@@ -278,7 +278,7 @@ MEMOP TRANSFER_WITH_OFFSET V22, &40, V31, &72, &8
 BUFREQ ALLOC V24, &32
 MEMOP TRANSFER_WITH_OFFSET V24, &0, V30, &24, &8
 // transfer 8 bytes (one code buf)
-// from V30 (the circ buffers) at offset 40 (the unpack code)
+// from V30 (the circ buffers) at offset 24 (the unpack code)
 // into V23 (the arg buf) at offset 0 (where code goes)
 MEMOP WRITE_TOBUF V24, &8, V22 // buf we're unpacking into
 BUFREQ ALLOC V28, &24 // the buf for the compressed request
