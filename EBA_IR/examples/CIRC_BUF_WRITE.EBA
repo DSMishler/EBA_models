@@ -15,8 +15,9 @@ MEMOP READ_FROMBUF V3, V6, &16 // head
 MEMOP READ_FROMBUF V4, V6, &24 // tail
 MEMOP READ_FROMBUF V5, V6, &32 // full
 
+
 MEMOP READ_FROMBUF V7, V0, &16 // source buffer
-MEMOP READ_FROMBUF V8, V0, &24 // (size of read) buffer
+MEMOP READ_FROMBUF V8, V0, &24 // (size of write) buffer
 
 
 BUFREQ ALLOC V9, &8 // occupied space buffer (into available space buf)
@@ -83,6 +84,8 @@ MEMOP MOVE V0, V9
 INVOKE LOCAL_BUF V0
 
 WRITE_FAIL:
+PRINT STRING "WRITE FAILURE"
+
 BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V9, V0, &40
 BUFREQ RELEASE V0

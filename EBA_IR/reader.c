@@ -373,6 +373,8 @@ static char* get_label(int num)
    return numstr;
 }
 
+// TODO: make a kill for double labels detected (rather than the current
+//       behavior of pointing everything to the first known address)
 void labels_to_lines(char ***IRcode)
 {
    int i;

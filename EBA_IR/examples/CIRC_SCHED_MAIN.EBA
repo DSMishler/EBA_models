@@ -142,7 +142,7 @@ BUFREQ ALLOC V24, &32
 MEMOP TRANSFER_WITH_OFFSET V24, &0, V30, &24, &8
 // transfer 8 bytes (one code buf)
 // from V30 (the circ buffers) at offset 24 (the unpack code)
-// into V23 (the arg buf) at offset 0 (where code goes)
+// into V24 (the arg buf) at offset 0 (where code goes)
 MEMOP WRITE_TOBUF V24, &8, V22 // buf we're unpacking into
 BUFREQ ALLOC V28, &24 // the buf for the compressed request
 MEMOP WRITE_TOBUF V24, &16, V28
@@ -174,8 +174,7 @@ MATHOP ADD_U64 V19, V19, &8
 MEMOP WRITE_TOBUF V19, V19, V25 // push peek code
 
 // sanity print TODO: can remove this
-MEMOP LOAD_LITERAL V7, @1515
-PRINT BYTES V7, &8
+PRINT STRING END_OF_WRITE_QUEUE_POP
 
 W_REQ_QUEUE_EMPTY:
 BUFREQ RELEASE V7
@@ -279,7 +278,7 @@ BUFREQ ALLOC V24, &32
 MEMOP TRANSFER_WITH_OFFSET V24, &0, V30, &24, &8
 // transfer 8 bytes (one code buf)
 // from V30 (the circ buffers) at offset 24 (the unpack code)
-// into V23 (the arg buf) at offset 0 (where code goes)
+// into V24 (the arg buf) at offset 0 (where code goes)
 MEMOP WRITE_TOBUF V24, &8, V22 // buf we're unpacking into
 BUFREQ ALLOC V28, &24 // the buf for the compressed request
 MEMOP WRITE_TOBUF V24, &16, V28
@@ -311,8 +310,7 @@ MATHOP ADD_U64 V19, V19, &8
 MEMOP WRITE_TOBUF V19, V19, V25 // push peek code
 
 // sanity print TODO: can remove this
-MEMOP LOAD_LITERAL V7, @1616
-PRINT BYTES V7, &8
+PRINT STRING END_OF_READ_QUEUE_POP
 
 
 
