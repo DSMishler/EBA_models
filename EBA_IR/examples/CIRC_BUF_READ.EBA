@@ -25,7 +25,7 @@ MATHOP MUL_U64 V9, V2, V5 // occupied space = full*size
 MATHOP ADD_U64 V9, V9, V4 // occupied space += tail
 MATHOP SUB_U64 V9, V9, V3 // occupied space -= head
 CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
-MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
+MATHOP ADD_U64 V9, V9, V2 // if tail_buf < head_buf, add size buf
 SKIP_WRAPAROUND_ADD:
 
 CMP GT V8, V9, READ_FAIL // if size of read is greater than occupied space
@@ -58,8 +58,8 @@ MEMOP TRANSFER_WITH_OFFSET V7, V10, V1, V3, V11
 // from data buf at HEAD (which should be zero here if V11 isn't zero)
 // to the dest buf at index V10 (len of what was read last time)
 
-// head = (head+working_read_size) % buf size
-MATHOP ADD_U64 V3, V3, V10
+// head = (head+remaining_read_size) % buf size
+MATHOP ADD_U64 V3, V3, V11
 MATHOP MOD_U64 V3, V3, V2
 CMP EQ V8, &0, SKIP_MARK_NOT_FULL
 // if anything was read, mark that we are not full

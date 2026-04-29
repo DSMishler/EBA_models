@@ -26,7 +26,7 @@ MATHOP MUL_U64 V9, V2, V5 // occupied space = full*size
 MATHOP ADD_U64 V9, V9, V4 // occupied space += tail
 MATHOP SUB_U64 V9, V9, V3 // occupied space -= head
 CMP GEQ        V4, V3, SKIP_WRAPAROUND_ADD
-MATHOP ADD_U64 V6, V6, V2 // if tail_buf < head_buf, add size buf
+MATHOP ADD_U64 V9, V9, V2 // if tail_buf < head_buf, add size buf
 SKIP_WRAPAROUND_ADD:
 
 MATHOP SUB_U64 V9, V2, V9 // now hold available space
@@ -62,11 +62,11 @@ MEMOP TRANSFER_WITH_OFFSET V1, V4, V7, V10, V11
 // to V1 (data) at V4 (tail, which should be 0)
 // from V7 (source) at offset V10 (size of last write)
 
-// tail = (tail+working_write_size) % buf size
-MATHOP ADD_U64 V4, V4, V10
+// tail = (tail+remaining_write_size) % buf size
+MATHOP ADD_U64 V4, V4, V11
 MATHOP MOD_U64 V4, V4, V2
 
-CMP EQ V3, V4, SKIP_MARK_FULL
+CMP NEQ V3, V4, SKIP_MARK_FULL
 // if V3 != V4, can't be full
 // else V3 == V4
 // if bytes were written, then we are full

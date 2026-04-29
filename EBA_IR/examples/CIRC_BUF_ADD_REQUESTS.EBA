@@ -62,11 +62,60 @@ MEMOP TRANSFER_WITH_OFFSET V50, &0, V0, &8, &8
 MEMOP WRITE_TOBUF V50, &8, V51
 MEMOP WRITE_TOBUF V50, &16, V52
 
-// now put it in queue
-MEMOP WRITE_TOBUF V1, &0, V50
+PRINT STRING TRANSLATE_AAAAA
 PRINT VAR V50
+// now put it in queue
+MEMOP WRITE_TOBUF V1, V4, V50
 MATHOP ADD_U64 V4, V4, &8
 
+BUFREQ ALLOC V50, &24 // buf for the write request
+BUFREQ ALLOC V51, &64 // buf for what I will write
+BUFREQ ALLOC V52, &8 // buf for the size
+MEMOP LOAD_LITERAL V51, @65 // ASCII for 'A'
+MEMOP TRANSFER_WITH_OFFSET V51, &1, V51, &0, &1 // propagate across all 64 bytes
+MEMOP TRANSFER_WITH_OFFSET V51, &2, V51, &0, &2
+MEMOP TRANSFER_WITH_OFFSET V51, &4, V51, &0, &4
+MEMOP TRANSFER_WITH_OFFSET V51, &8, V51, &0, &8
+MEMOP TRANSFER_WITH_OFFSET V51, &16, V51, &0, &16
+MEMOP TRANSFER_WITH_OFFSET V51, &32, V51, &0, &32
+MEMOP LOAD_LITERAL V52, @5 // set size to five
+MEMOP TRANSFER_WITH_OFFSET V50, &0, V0, &8, &8
+// transfer 8 bytes
+// from v0 (arg buf) at offset 8 (loc of circ buf)
+// into v50 (request buf) at offset 0 (where the circ buf should go)
+MEMOP WRITE_TOBUF V50, &8, V51
+MEMOP WRITE_TOBUF V50, &16, V52
+
+PRINT STRING TRANSLATE_AAAAA
+PRINT VAR V50
+// now put it in queue
+MEMOP WRITE_TOBUF V1, V4, V50
+MATHOP ADD_U64 V4, V4, &8
+
+// load V1, V2, etc for read queue
+MEMOP READ_FROMBUF V6, V30, &32 // grab the READ request queue
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+BUFREQ ALLOC V50, &24 // buf for the read request
+BUFREQ ALLOC V51, &64 // buf for what I will read into
+BUFREQ ALLOC V52, &8 // buf for the size of the request
+MEMOP LOAD_LITERAL V52, @8 // set size to eight
+MEMOP TRANSFER_WITH_OFFSET V50, &0, V0, &8, &8
+// transfer 8 bytes
+// from v0 (arg buf) at offset 8 (loc of circ buf)
+// into v50 (request buf) at offset 0 (where the circ buf should go)
+MEMOP WRITE_TOBUF V50, &8, V51
+MEMOP WRITE_TOBUF V50, &16, V52
+
+PRINT STRING TRANSLATE_READ_8
+PRINT VAR V50
+// now put it in queue
+MEMOP WRITE_TOBUF V1, V4, V50
+MATHOP ADD_U64 V4, V4, &8
 
 
 BUFREQ ALLOC V21, &24 // pass and free code's arg buf
