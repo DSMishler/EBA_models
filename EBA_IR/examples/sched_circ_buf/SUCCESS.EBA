@@ -1,0 +1,7 @@
+// success
+// To call when done
+// args
+// 0 - this buf (always)
+
+PRINT STRING "Success!"
+BUFREQ RELEASE V0

@@ -2,6 +2,38 @@
 // meant to get everything going for the circ sched/sched queue demo
 // args
 // 0 - this buf (always)
+
+// will establish some buffers:
+// 1 - CIRC BUF buffers
+   // 00 - CIRC_BUF_READ
+   // 08 - CIRC_BUF_WRITE
+   // 16 - CIRC_BUF_PEEK
+   // 24 - CIRC_BUF_UNPACK
+   // 32 - CIRC_BUF_REMOVE
+   // 40 - CIRC_BUF_MAIN
+   // 48 - CIRC_BUF_ADD_RW_REQUESTS
+   // 56 - the READ request queue
+   // 64 - the WRITE request queue
+// 2 - SCHED QUEUE buffers
+   // 00 - SCHED_QUEUE_ADD
+   // 08 - SCHED_QUEUE_ADD_STACK
+   // 16 - SCHED_QUEUE_PASS_AND_FREE
+   // 24 - SCHED_QUEUE_PASS_AND_FREE_STACK
+   // 32 - SCHED_QUEUE_FREE
+   // 40 - SCHED_QUEUE_INIT
+   // 48 - SCHED_QUEUE_MAIN
+   // 56 - SCHED_QUEUE_PRINT
+   // 64 - ERROR
+   // 72 - SUCCESS
+   // 80 - the schedule queue
+   // 88 - explicit prebuilt arg buf for SCHED_QUEUE_MAIN
+      // 00 - SCHED_QUEUE_MAIN
+      // 08 - the schedule queue (initially unalloc-ed)
+      // 16 - explicit arg buf containing code to free all other code
+
+// old args
+// args
+// 0 - this buf (always)
 // 1 - the CIRC BUF buffers
    // 00 - CIRC_BUF_READ
    // 08 - CIRC_BUF_WRITE
@@ -19,7 +51,8 @@
    // 32 - SCHED_QUEUE_MAIN
    // 40 - SCHED_QUEUE_PEEK
    // 48 - SCHED_QUEUE_PRINT
-   // 56 - SCHED_QUEUE_REMOVE // 64 - The schedule queue (initially unalloc-ed)
+   // 56 - SCHED_QUEUE_REMOVE
+   // 64 - The schedule queue (initially unalloc-ed)
    // 72 - (redundant) prebuilt explicit arg buf to sched_queue_main(built here)
       // 0 - SCHED_QUEUE_MAIN
       // 1 - the schedule queue (initially unalloc-ed)
@@ -27,6 +60,12 @@
    // 80 - ERROR
    // 88 - SUCCESS
    // 96 - SCHED_QUEUE_PASS_AND_FREE
+   // 104- SCHED_QUEUE_PASS_AND_FREE_STACK
+
+LOG RESET queue.ebaout
+LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
+
+CMP EQ &0, &0, END
 
 PRINT STRING CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
@@ -167,7 +206,7 @@ PRINT VAR V23
 PRINT STRING TRANSLATE_CIRC_BUF_INIT
 PRINT VAR V24
 
-SCAFFOLD CODEREAD V51 examples/CIRC_BUF_ADD_REQUESTS.EBA
+SCAFFOLD CODEREAD V51 examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EBA
 MEMOP WRITE_TOBUF V21, &0, V51
 MEMOP TRANSFER_WITH_OFFSET V21, &16, V0, &8, &16
 // transfer 16 bytes
@@ -253,3 +292,12 @@ MEMOP WRITE_TOBUF V25, &32, V26
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V25
 INVOKE LOCAL_BUF V0
+
+
+END:
+
+PRINT STRING DONE
+
+MEMOP READ_FROMBUF V1, V0, &0
+BUFREQ RELEASE V0
+SCAFFOLD TERMINATE_WITH_CODEFREE V1

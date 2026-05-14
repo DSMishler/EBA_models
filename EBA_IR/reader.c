@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 
 int is_ir_wspace(char a)
@@ -24,6 +25,7 @@ char *** full_read(char *fname)
    int flen;
    char *fbuf;
    f = fopen(fname, "r");
+   assert(f != NULL);
 
    fseek(f, 0, SEEK_END);
    flen = ftell(f);
@@ -373,8 +375,6 @@ static char* get_label(int num)
    return numstr;
 }
 
-// TODO: make a kill for double labels detected (rather than the current
-//       behavior of pointing everything to the first known address)
 void labels_to_lines(char ***IRcode)
 {
    int i;
@@ -406,6 +406,17 @@ void labels_to_lines(char ***IRcode)
             if (first_word_j == NULL)
             {
                ; // ingore empty line
+            }
+            else if (is_label(first_word_j))
+            {
+               // make sure they don't match!
+               if (strcmp(label, first_word_j) == -':')
+               {
+                  // the labels match (eg. label="END", first_word_j="END:")
+                  printf("error! you have multiple labels for '%s'\n", label);
+                  printf("refusing to read this file.\n");
+                  exit(0);
+               }
             }
             else if (!(samestr(first_word_j, "CMP")))
             {

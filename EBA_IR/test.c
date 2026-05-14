@@ -9,6 +9,7 @@ extern void (*eba_state)(void*);
 extern void *eba_arg;
 
 void test_solofile(char *);
+void test_solofile_with_free(char *);
 void test_dualfile_invoke_test(void);
 void test_stackcall_invoke_test(void);
 void test_queue_invoke(void);
@@ -22,10 +23,25 @@ int main(void)
    // test_solofile("examples/COROUTINE_TEST_MAIN.EBA");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
-   test_queue_invoke();
+   // test_queue_invoke();
+   test_solofile("examples/sched_circ_buf/STARTER.EBA");
 }
 
 void test_solofile(char *fname)
+{
+   char ***IRcode;
+   IRcode = full_read(fname);
+
+   void *arg_buf = malloc(sizeof(void*));
+   ((char****)arg_buf)[0] = IRcode;
+
+   // code should free its arg buf
+   eba_state = &run_code;
+   eba_arg = (void*)arg_buf;
+   EBA_run();
+}
+      
+void test_solofile_with_free(char *fname)
 {
    char ***IRcode;
    IRcode = full_read(fname);
@@ -85,32 +101,35 @@ void test_queue_invoke(void)
 {
    printf("queue schedule circ buf invoking test!\n");
    char ****CB_IRcodes = malloc(6*sizeof(char***));
-   char ****SQ_IRcodes = malloc(13*sizeof(char***));
+   char ****SQ_IRcodes = malloc(16*sizeof(char***));
    int i;
 
-   CB_IRcodes[0] = full_read("examples/CIRC_BUF_READ.EBA");
-   CB_IRcodes[1] = full_read("examples/CIRC_BUF_WRITE.EBA");
-   CB_IRcodes[2] = full_read("examples/CIRC_SCHED_MAIN.EBA");
-   CB_IRcodes[3] = full_read("examples/CIRC_SCHED_UNPACK.EBA");
+   CB_IRcodes[0] = full_read("examples/sched_queue_test/CIRC_BUF_READ.EBA");
+   CB_IRcodes[1] = full_read("examples/sched_queue_test/CIRC_BUF_WRITE.EBA");
+   CB_IRcodes[2] = full_read("examples/sched_queue_test/CIRC_SCHED_MAIN.EBA");
+   CB_IRcodes[3] = full_read("examples/sched_queue_test/CIRC_SCHED_UNPACK.EBA");
    CB_IRcodes[4] = NULL;
    CB_IRcodes[5] = NULL;
 
-   SQ_IRcodes[0] = full_read("examples/SCHED_QUEUE_ADD.EBA");
-   SQ_IRcodes[1] = full_read("examples/SCHED_QUEUE_ADD_STACK.EBA");
-   SQ_IRcodes[2] = full_read("examples/SCHED_QUEUE_FREE.EBA");
-   SQ_IRcodes[3] = full_read("examples/SCHED_QUEUE_INIT.EBA");
-   SQ_IRcodes[4] = full_read("examples/SCHED_QUEUE_MAIN.EBA");
-   SQ_IRcodes[5] = full_read("examples/SCHED_QUEUE_PEEK.EBA");
-   SQ_IRcodes[6] = full_read("examples/SCHED_QUEUE_PRINT.EBA");
-   SQ_IRcodes[7] = full_read("examples/SCHED_QUEUE_REMOVE.EBA");
+   SQ_IRcodes[0] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD.EBA");
+   SQ_IRcodes[1] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD_STACK.EBA");
+   SQ_IRcodes[2] = full_read("examples/sched_queue_test/SCHED_QUEUE_FREE.EBA");
+   SQ_IRcodes[3] = full_read("examples/sched_queue_test/SCHED_QUEUE_INIT.EBA");
+   SQ_IRcodes[4] = full_read("examples/sched_queue_test/SCHED_QUEUE_MAIN.EBA");
+   SQ_IRcodes[5] = full_read("examples/sched_queue_test/SCHED_QUEUE_PEEK.EBA");
+   SQ_IRcodes[6] = full_read("examples/sched_queue_test/SCHED_QUEUE_PRINT.EBA");
+   SQ_IRcodes[7] = full_read("examples/sched_queue_test/SCHED_QUEUE_REMOVE.EBA");
    SQ_IRcodes[8] = NULL;
    SQ_IRcodes[9] = NULL;
-   SQ_IRcodes[10] = full_read("examples/ERROR.EBA");
-   SQ_IRcodes[11] = full_read("examples/SUCCESS.EBA");
-   SQ_IRcodes[12] = full_read("examples/SCHED_QUEUE_PASS_AND_FREE.EBA");
+   SQ_IRcodes[10] = full_read("examples/sched_queue_test/ERROR.EBA");
+   SQ_IRcodes[11] = full_read("examples/sched_queue_test/SUCCESS.EBA");
+   SQ_IRcodes[12] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE.EBA");
+   SQ_IRcodes[13] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE_STACK.EBA");
+   SQ_IRcodes[14] = full_read("examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EBA");
+   SQ_IRcodes[15] = full_read("examples/sched_queue_test/RELEASE_BUF_STACK.EBA");
 
    char ***IRcode1;
-   IRcode1 = full_read("examples/CIRC_SCHED_QUEUE_STARTER.EBA");
+   IRcode1 = full_read("examples/sched_queue_test/CIRC_SCHED_QUEUE_STARTER.EBA");
 
    void *arg_buf_1 = malloc(3*sizeof(void*));
    ((char****)arg_buf_1)[2] = (char***)SQ_IRcodes;
@@ -135,6 +154,9 @@ void test_queue_invoke(void)
    full_free(SQ_IRcodes[10]);
    full_free(SQ_IRcodes[11]);
    full_free(SQ_IRcodes[12]);
+   full_free(SQ_IRcodes[13]);
+   full_free(SQ_IRcodes[14]);
+   full_free(SQ_IRcodes[15]);
    free(SQ_IRcodes);
 }
 /*
