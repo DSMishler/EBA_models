@@ -17,12 +17,12 @@ int confirm_first_word(char **line, char *word)
    char *first = line[0];
    if (first == NULL)
    {
-      printf("error: empty line passed into confirm_first_word\n");
+      fprintf(stderr, "error: empty line passed into confirm_first_word\n");
       return 0;
    }
    if (!samestr(first, word))
    {
-      printf("error: expected word %s but instead see word %s\n", word, first);
+      fprintf(stderr, "error: expected word %s but instead see word %s\n", word, first);
       return 0;
    }
    else
@@ -36,7 +36,7 @@ int match_second_word(char **line, char *word)
    char *second = line[1];
    if (second == NULL)
    {
-      printf("error: one word line passed into confirm_second_word\n");
+      fprintf(stderr, "error: one word line passed into confirm_second_word\n");
       return 0;
    }
    return samestr(second, word);
@@ -46,12 +46,12 @@ int parse_variable(char *word)
 {
    if (word == NULL)
    {
-      printf("error: NULL word passed to parse_variable\n");
+      fprintf(stderr, "error: NULL word passed to parse_variable\n");
       return -1;
    }
    if (word[0] != 'V')
    {
-      printf("error: expected a variable (e.g. V14, V09, V1), got %s\n", word);
+      fprintf(stderr, "error: expected a variable (e.g. V14, V09, V1), got %s\n", word);
       return -1;
    }
    return atoi(word+1);
@@ -82,7 +82,7 @@ void* parse_var_buf(char *word, IR_state_t *IRstate)
    }
    else
    {
-      printf("error: expected a variable or '&' buf (e.g. V14, V09, V1, &5), got %s\n", word);
+      fprintf(stderr, "error: expected a variable or '&' buf (e.g. V14, V09, V1, &5), got %s\n", word);
       return NULL;
    }
    return retval;
@@ -106,12 +106,12 @@ uint64_t parse_literal(char *word)
 {
    if (word == NULL)
    {
-      printf("error: NULL word passed to parse_literal\n");
+      fprintf(stderr, "error: NULL word passed to parse_literal\n");
       return -1;
    }
    if (word[0] != '@')
    {
-      printf("error: expected a literal (e.g. @14, @09, @1), got %s\n", word);
+      fprintf(stderr, "error: expected a literal (e.g. @14, @09, @1), got %s\n", word);
       return -1;
    }
    char *strend;
@@ -173,7 +173,7 @@ void run_bufreq(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for BUFREQ\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for BUFREQ\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -264,7 +264,7 @@ void run_memop(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for MEMOP\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for MEMOP\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -301,7 +301,7 @@ void run_transfer(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for TRANSFER\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for TRANSFER\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -323,7 +323,7 @@ void run_invoke(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for INVOKE\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for INVOKE\n", line[1]);
    }
    IRstate->next_line += 1;
 }
@@ -413,7 +413,7 @@ void run_mathop(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for MATHOP\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for MATHOP\n", line[1]);
    }
    IRstate->next_line += 1;
 }
@@ -538,7 +538,7 @@ void run_cmp(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for CMP\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for CMP\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -588,7 +588,7 @@ void run_print(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for PRINT\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for PRINT\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -600,7 +600,7 @@ void run_log(IR_state_t *IRstate, char **line)
 
    if(line[2] == NULL)
    {
-      printf("error: LOG requires third argument to be a filename!\n");
+      fprintf(stderr, "error: LOG requires third argument to be a filename!\n");
       return;
    }
 
@@ -653,7 +653,7 @@ void run_log(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for LOG\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for LOG\n", line[1]);
    }
 
    fclose(fp);
@@ -691,7 +691,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    }
    else
    {
-      printf("error: option %s does not exist for SCAFFOLD\n", line[1]);
+      fprintf(stderr, "error: option %s does not exist for SCAFFOLD\n", line[1]);
    }
 
    IRstate->next_line += 1;
@@ -758,7 +758,7 @@ void run_line(void* lcl_eba_arg)
    }
    else
    {
-      printf("unknown command '%s' on line %d\n", line[0], IRstate->next_line);
+      fprintf(stderr, "unknown command '%s' on line %d\n", line[0], IRstate->next_line);
       exit(1);
    }
 }

@@ -25,7 +25,11 @@ char *** full_read(char *fname)
    int flen;
    char *fbuf;
    f = fopen(fname, "r");
-   assert(f != NULL);
+   if (f==NULL)
+   {
+      fprintf(stderr, "error: no file named %s\n", fname);
+      exit(1);
+   }
 
    fseek(f, 0, SEEK_END);
    flen = ftell(f);
@@ -97,7 +101,7 @@ char ** line_to_words(char *line)
       {
          if (state == 2)
          {
-            printf("error in '%s', unfinished string '#' in string\n", line);
+            fprintf(stderr, "error in '%s', unfinished string '#' in string\n", line);
             return NULL;
          }
          zw += state; // possibly add 1 to nwords
@@ -107,7 +111,7 @@ char ** line_to_words(char *line)
       {
          if (state == 2)
          {
-            printf("error in '%s', comments in strings not allowed\n", line);
+            fprintf(stderr, "error in '%s', comments in strings not allowed\n", line);
             return NULL;
          }
          // printf("comment detected\n");
@@ -124,13 +128,13 @@ char ** line_to_words(char *line)
             zi = 0;
             if (zw == 10)
             {
-               printf("error: too many words on line '%s'\n", line);
+               fprintf(stderr, "error: too many words on line '%s'\n", line);
                return NULL;
             }
          }
          else if (next == '"')
          {
-            printf("error on line '%s', quote begins during word\n", line);
+            fprintf(stderr, "error on line '%s', quote begins during word\n", line);
             return NULL;
          }
          else
@@ -164,7 +168,7 @@ char ** line_to_words(char *line)
                   line[i+1] == '\n' || line[i+1] == '\0' ||
                   line[i+1] == '#' || (line[i+1] == '/' && line[i+2] == '/')))
             {
-               printf("error on line '%s', quote ends during word\n", line);
+               fprintf(stderr, "error on line '%s', quote ends during word\n", line);
                return NULL;
             }
             state = 1; // state 1 will take care of the cleanup
@@ -413,7 +417,7 @@ void labels_to_lines(char ***IRcode)
                if (strcmp(label, first_word_j) == -':')
                {
                   // the labels match (eg. label="END", first_word_j="END:")
-                  printf("error! you have multiple labels for '%s'\n", label);
+                  printf("You have multiple labels for '%s'\n", label);
                   printf("refusing to read this file.\n");
                   exit(0);
                }

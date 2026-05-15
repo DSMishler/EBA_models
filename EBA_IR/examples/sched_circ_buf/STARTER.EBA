@@ -7,65 +7,231 @@
 // 1 - CIRC BUF buffers
    // 00 - CIRC_BUF_READ
    // 08 - CIRC_BUF_WRITE
-   // 16 - CIRC_BUF_PEEK
-   // 24 - CIRC_BUF_UNPACK
-   // 32 - CIRC_BUF_REMOVE
-   // 40 - CIRC_BUF_MAIN
-   // 48 - CIRC_BUF_ADD_RW_REQUESTS
-   // 56 - the READ request queue
-   // 64 - the WRITE request queue
+   // 16 - CIRC_BUF_INIT
+   // 24 - CIRC_BUF_FREE
+   // 32 - CIRC_BUF_PEEK
+   // 40 - CIRC_BUF_UNPACK
+   // 48 - CIRC_BUF_REMOVE
+   // 56 - CIRC_BUF_ADD_RW_REQUESTS
+   // 64 - CIRC_BUF_MAIN
+   // 72 - the READ request queue
+   // 80 - the WRITE request queue
+   // 88 - the circular buffer itself
 // 2 - SCHED QUEUE buffers
    // 00 - SCHED_QUEUE_ADD
    // 08 - SCHED_QUEUE_ADD_STACK
-   // 16 - SCHED_QUEUE_PASS_AND_FREE
-   // 24 - SCHED_QUEUE_PASS_AND_FREE_STACK
-   // 32 - SCHED_QUEUE_FREE
-   // 40 - SCHED_QUEUE_INIT
-   // 48 - SCHED_QUEUE_MAIN
-   // 56 - SCHED_QUEUE_PRINT
-   // 64 - ERROR
-   // 72 - SUCCESS
-   // 80 - the schedule queue
-   // 88 - explicit prebuilt arg buf for SCHED_QUEUE_MAIN
+   // 16 - SCHED_QUEUE_INIT
+   // 24 - SCHED_QUEUE_FREE
+   // 32 - SCHED_QUEUE_MAIN
+   // 40 - SCHED_QUEUE_PRINT
+   // 48 - the schedule queue
+   // 56 - explicit prebuilt arg buf for SCHED_QUEUE_MAIN
       // 00 - SCHED_QUEUE_MAIN
       // 08 - the schedule queue (initially unalloc-ed)
-      // 16 - explicit arg buf containing code to free all other code
+      // 16 - explicit arg buf containing code to free all other code/exit buf
+// 3 - generalized utility buffers
+   // 00 - RELEASE_BUF_STACK
+   // 08 - CODE_FREE_STACK
+   // 16 - ERROR
+   // 24 - bufs_to_free
+   // 32 - code_to_free
 
-// old args
-// args
-// 0 - this buf (always)
-// 1 - the CIRC BUF buffers
-   // 00 - CIRC_BUF_READ
-   // 08 - CIRC_BUF_WRITE
-   // 16 - CIRC_SCHED_MAIN
-   // 24 - CIRC_SCHED_UNPACK
-   // 32 - the READ request queue (initially unalloc-ed)
-   // 40 - the WRITE request queue (initially unalloc-ed)
-// 2 - buffer of the SCHED_QUEUE code buffers (including the call stack one)
-   // we'll call one of the CIRC_SCHED code buffers when done
-   // MAIN SCHED code buffers
-   // 00 - SCHED_QUEUE_ADD
-   // 08 - SCHED_QUEUE_ADD_STACK
-   // 16 - SCHED_QUEUE_FREE
-   // 24 - SCHED_QUEUE_INIT
-   // 32 - SCHED_QUEUE_MAIN
-   // 40 - SCHED_QUEUE_PEEK
-   // 48 - SCHED_QUEUE_PRINT
-   // 56 - SCHED_QUEUE_REMOVE
-   // 64 - The schedule queue (initially unalloc-ed)
-   // 72 - (redundant) prebuilt explicit arg buf to sched_queue_main(built here)
-      // 0 - SCHED_QUEUE_MAIN
-      // 1 - the schedule queue (initially unalloc-ed)
-      // 2 - explicit arg buf containing code for SCHED_QUEUE_FREE
-   // 80 - ERROR
-   // 88 - SUCCESS
-   // 96 - SCHED_QUEUE_PASS_AND_FREE
-   // 104- SCHED_QUEUE_PASS_AND_FREE_STACK
-
-LOG RESET queue.ebaout
+LOG RESET queue.ebaout // reset the logfile, in case last run has data there.
 LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: set up main buffers       //////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ ALLOC V1, &96
+BUFREQ ALLOC V2, &64
+BUFREQ ALLOC V3, &40
+
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_READ.EBA"
+MEMOP WRITE_TOBUF V1, &0, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_WRITE.EBA"
+MEMOP WRITE_TOBUF V1, &8, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_INIT.EBA"
+MEMOP WRITE_TOBUF V1, &16, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_FREE.EBA"
+MEMOP WRITE_TOBUF V1, &24, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_PEEK.EBA"
+MEMOP WRITE_TOBUF V1, &32, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_UNPACK.EBA"
+MEMOP WRITE_TOBUF V1, &40, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_REMOVE.EBA"
+MEMOP WRITE_TOBUF V1, &48, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_ADD_RW_REQUESTS.EBA"
+MEMOP WRITE_TOBUF V1, &56, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CIRC_BUF_MAIN.EBA"
+MEMOP WRITE_TOBUF V1, &64, V4
+// and for the actual buffers:
+BUFREQ ALLOC V4, &40 // READ request buf
+MEMOP WRITE_TOBUF V1, &72, V4
+BUFREQ ALLOC V4, &40 // WRITE request buf
+MEMOP WRITE_TOBUF V1, &80, V4
+BUFREQ ALLOC V4, &40 // the circ buf
+MEMOP WRITE_TOBUF V1, &88, V4
+
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_ADD.EBA"
+MEMOP WRITE_TOBUF V2, &0, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_ADD_STACK.EBA"
+MEMOP WRITE_TOBUF V2, &08, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_INIT.EBA"
+MEMOP WRITE_TOBUF V2, &16, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_FREE.EBA"
+MEMOP WRITE_TOBUF V2, &24, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_MAIN.EBA"
+MEMOP WRITE_TOBUF V2, &32, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/SCHED_QUEUE_PRINT.EBA"
+MEMOP WRITE_TOBUF V2, &40, V4
+BUFREQ ALLOC V4, &40 // schedule queue itself
+MEMOP WRITE_TOBUF V2, &48, V4
+BUFREQ ALLOC V4, &24 // the explicit arg (V0) for SCHED_QUEUE_MAIN (building)
+MEMOP READ_FROMBUF V5, V2, &32
+MEMOP WRITE_TOBUF V4, &0, V5 // set up code in the explicit buf
+MEMOP READ_FROMBUF V5, V2, &48
+MEMOP WRITE_TOBUF V4, &8, V5 // set up the schedule queue itself
+// NOTE: the exit code will be initialized later in the next workspace
+MEMOP WRITE_TOBUF V2, &56, V4
+
+
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/RELEASE_BUF_STACK.EBA"
+MEMOP WRITE_TOBUF V3, &0, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/CODE_FREE_STACK.EBA"
+MEMOP WRITE_TOBUF V3, &08, V4
+SCAFFOLD CODEREAD V4, "examples/sched_circ_buf/ERROR.EBA"
+MEMOP WRITE_TOBUF V3, &16, V4
+BUFREQ ALLOC V4, &208 // bufs_to_free
+MEMOP LOAD_LITERAL V4, @0
+MEMOP WRITE_TOBUF V3, &24, V4
+BUFREQ ALLOC V4, &208 // code_to_free
+MEMOP LOAD_LITERAL V4, @0
+MEMOP WRITE_TOBUF V3, &32, V4
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 2: prepare the exit call sequence     /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ ALLOC V10, &24 // first code to call for exit sequence
+// finish building the explicit arg scedule queue buffer
+MEMOP READ_FROMBUF V19, V2, &56
+MEMOP WRITE_TOBUF V19, &16, V10 // this code is called when the queue is empty
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V2, &24, &8
+// transfer 8 bytes
+// from V2 (sched queue bufs) at offset 24 (SCHED_QUEUE_FREE)
+// to V10 (arg buf) at offset 0 (code)
+MEMOP TRANSFER_WITH_OFFSET V10, &8, V2, &48, &8
+// transfer 8 bytes
+// from V2 (sched queue bufs) at offset 48 (schedule queue)
+// to V10 (arg buf) at offset 1 (schedule queue)
+
+BUFREQ ALLOC V11, &24 // will be arg buf for RELEASE_BUF_STACK
+MEMOP WRITE_TOBUF V10, &16, V11 // and is called after SCHED_QUEUE_FREE
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V3, &0, &8
+// transfer 8 bytes
+// from V3 (generalized bufs) at offset 0 (RELEASE_BUF_STACK)
+// to V11 (arg buf) at offset 0 (code)
+MEMOP TRANSFER_WITH_OFFSET V11, &8, V3, &24, &8
+// transfer 8 bytes
+// from V3 (generalized bufs) at offset 24 (bufs_to_free)
+// to V11 (arg buf) at offset 8 (bufs_to_free)
+
+BUFREQ ALLOC V12, &24 // will be arg buf for CODE_FREE_STACK
+MEMOP WRITE_TOBUF V11, &16, V12 // and is called after RELEASE_BUF_STACK
+MEMOP TRANSFER_WITH_OFFSET V12, &0, V3, &8, &8
+// transfer 8 bytes
+// from V3 (generalized bufs) at offset 8 (CODE_FREE_STACK)
+// to V12 (arg buf) at offset 0 (code)
+MEMOP TRANSFER_WITH_OFFSET V12, &8, V3, &32, &8
+// transfer 8 bytes
+// from V3 (generalized bufs) at offset 32 (code_to_free)
+// to V12 (arg buf) at offset 8 (code_to_free)
+
+// now prepare the codes that need freed
+MEMOP READ_FROMBUF V19, V3, &32
+MEMOP TRANSFER_WITH_OFFSET V19, &8, V1, &0, &72
+// Transfer 72 bytes
+// from V1 (circ buf buffers) at offset 0
+// to V19 (code to free) at offset 8 (where it starts)
+MEMOP TRANSFER_WITH_OFFSET V19, &80, V2, &0, &48
+// Transfer 48 bytes
+// from V2 (sched queue buffers) at offset 0
+// to V19 (code to free) at offset 80 (where we left off)
+MEMOP TRANSFER_WITH_OFFSET V19, &128, V3, &0, &8
+// Transfer 48 bytes
+// from V3 (generalized buffers) at offset 0 (RELEASE_BUF_STAC)
+// to V19 (code to free) at offset 128 (where we left off)
+// NOTE: we are skipped the code_free, since it is what we use to free!
+// (it can't free itself!!)
+MEMOP TRANSFER_WITH_OFFSET V19, &136, V3, &16, &8
+// Transfer 48 bytes
+// from V3 (generalized buffers) at offset 16 (ERROR.EBA)
+// to V19 (code to free) at offset 128 (where we left off)
+MEMOP TRANSFER_WITH_OFFSET V19, &144, V0, &0, &8
+// Transfer 48 bytes
+// from V3 (generalized buffers) at offset 0
+// to V0 (THIS code buf) at offset 0 (code)
+MATHOP ADD_U64 V19, V19, &144
+
+
+BUFREQ ALLOC V13, &16 // will be arg buf for SCHED_QUEUE_EXIT
+MEMOP WRITE_TOBUF V12, &16, V13 // and is called after CODE_FREE_STACK
+SCAFFOLD CODEREAD V19, "examples/sched_circ_buf/SCHED_QUEUE_EXIT.EBA"
+MEMOP WRITE_TOBUF V13, &0, V19
+MEMOP TRANSFER_WITH_OFFSET V13, &8, V12, &0, &8
+// transfer 8 bytes
+// from V12 (CODE_FREE_STACK) at offset 0 (code)
+// to V13 (SCHED_QUEUE_EXIT) at offset 8 (code to free)
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 3: pass to the next starter code      /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ ALLOC V20, &32 // code buf for SCHED_QUEUE_INIT
+MEMOP TRANSFER_WITH_OFFSET V20, &0, V2, &16, &8
+// transfer 8 bytes
+// from V2 (sched queue bufs) at offset 16 (SCHED_QUEUE_INIT)
+// to V20 (arg buf) at offset 0 (for the code)
+BUFREQ ALLOC V29, &8
+MEMOP LOAD_LITERAL V29, @200 // assume size of 200
+MEMOP WRITE_TOBUF V20, &8, V29
+MEMOP TRANSFER_WITH_OFFSET V20, &16, V2, &48, &16
+// transfer 16 bytes
+// from V2 (sched queue bufs) at offset 48 (sched queue then sched main args)
+// to V20 (arg buf) at offset 16 (sched queue then sched main args)
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 4: call next code        //////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+MEMOP READ_FROMBUF V30, V1, &72
+BUFREQ RELEASE V30
+MEMOP READ_FROMBUF V30, V1, &80
+BUFREQ RELEASE V30
+MEMOP READ_FROMBUF V30, V1, &88
+BUFREQ RELEASE V30
+BUFREQ RELEASE V1
+BUFREQ RELEASE V2
+BUFREQ RELEASE V3
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V20
+INVOKE LOCAL_BUF V0
+
+
+
+
 CMP EQ &0, &0, END
+
 
 PRINT STRING CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 

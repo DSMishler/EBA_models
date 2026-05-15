@@ -1,0 +1,52 @@
+// args buffer
+// 0: this buf (always)
+// 1: size of the queue
+// 2: the buffer (pre-allocated) that the sched buf will live in
+// 3: the buffer I will call when done.
+
+PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_INIT
+
+MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
+
+
+BUFREQ ALLOC V1, V14  // data
+BUFREQ ALLOC V2, &8   // size
+BUFREQ ALLOC V3, &8   // head
+BUFREQ ALLOC V4, &8   // tail
+BUFREQ ALLOC V5, &8   // full
+
+
+MEMOP TRANSFER_WITH_OFFSET V2, &0, V14, &0, &8 // move the size buf over here
+// it's inefficient to re-alloc, but doing it for readability
+
+MEMOP TRANSFER_WITH_OFFSET V3, &0, &0, &0, &8 // set head to be 0
+MEMOP TRANSFER_WITH_OFFSET V4, &0, &0, &0, &8 // set tail to be 0
+MEMOP TRANSFER_WITH_OFFSET V5, &0, &0, &0, &8 // set full to be 0
+
+MEMOP READ_FROMBUF V8, V0, &16
+
+MEMOP WRITE_TOBUF V8, &00, V1
+MEMOP WRITE_TOBUF V8, &08, V2
+MEMOP WRITE_TOBUF V8, &16, V3
+MEMOP WRITE_TOBUF V8, &24, V4
+MEMOP WRITE_TOBUF V8, &32, V5
+
+
+// initialize the memory here
+// TODO: not sure if this needs to live here
+INIT_SCHED_QUEUE:
+// temporarily use V3 here
+MEMOP TRANSFER_WITH_OFFSET V1, V3, &3735928559, &0, &8
+// 0xdeadbeef as init value
+MATHOP ADD_U64 V3, V3, &8
+CMP LT V3, V2, INIT_SCHED_QUEUE
+MEMOP LOAD_LITERAL V3, @0
+
+
+// now set up and call main
+BUFREQ RELEASE V14 // free the size buffer
+
+MEMOP READ_FROMBUF V15, V0, &24 // grab the next buf
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V15
+INVOKE LOCAL_BUF V0
