@@ -107,12 +107,12 @@ uint64_t parse_literal(char *word)
    if (word == NULL)
    {
       fprintf(stderr, "error: NULL word passed to parse_literal\n");
-      return -1;
+      exit(1);
    }
    if (word[0] != '@')
    {
       fprintf(stderr, "error: expected a literal (e.g. @14, @09, @1), got %s\n", word);
-      return -1;
+      exit(1);
    }
    char *strend;
    uint64_t retval = strtoull(word+1, &strend, 10);

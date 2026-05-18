@@ -1,0 +1,151 @@
+// populater
+// meant to be a continuation of the starter code
+// populates everything needed before the scheduler can be given control
+// then gives control to the scheduler
+// this code will of course also need freed, but it doesn't exist
+// in the global buffers that we like to pass around, since it
+// is only needed once
+// args buf
+// 0 - this code buf (always)
+// 1 - V1 from the starter
+// 2 - V2 from the starter
+// 3 - V3 from the starter
+
+LOG STRING queue.ebaout CURRENTLY_RUNNING_POPULATER
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+MEMOP READ_FROMBUF V3, V0, &24
+
+MEMOP READ_FROMBUF V4, V2, &56
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: populate the scheduler  ////////////////////////////////////////
+// uses vars 10-29                      ////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// we want to run
+// 1 - init circ buf (V10)
+// 2 - init read queue (V11)
+// 3 - init write queue (V12)
+// 4 - add some read/write requests (V13)
+// 5 - start circ buf main (V14)
+
+// we'll pop them onto the stack and use the stack code, so we put them in
+
+
+BUFREQ ALLOC V10, &32 // init circ buf
+BUFREQ ALLOC V11, &32 // init read queue
+BUFREQ ALLOC V12, &32 // init write queue
+BUFREQ ALLOC V13, &32 // add read and write requests
+BUFREQ ALLOC V14, &32 // circ buf main
+LOG STRING queue.ebaout TRANSLATE_INIT_CIRC_BUF
+LOG VAR queue.ebaout V10
+LOG STRING queue.ebaout TRANSLATE_INIT_READ_QUEUE
+LOG VAR queue.ebaout V11
+LOG STRING queue.ebaout TRANSLATE_INIT_WRITE_QUEUE
+LOG VAR queue.ebaout V12
+LOG STRING queue.ebaout TRANSLATE_ADD_RW_REQUESTS
+LOG VAR queue.ebaout V13
+LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_MAIN
+LOG VAR queue.ebaout V14
+
+MEMOP TRANSFER_WITH_OFFSET V14, &0, V1, &64, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 64 (circ buf main)
+// to V14 (circ buf main) at index 0
+MEMOP WRITE_TOBUF V14, &08, V1
+MEMOP WRITE_TOBUF V14, &16, V2
+MEMOP WRITE_TOBUF V14, &24, V3
+
+
+MEMOP TRANSFER_WITH_OFFSET V13, &0, V1, &56, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 56 (add rw requests)
+// to V13 (add rw requests) at index 0
+MEMOP WRITE_TOBUF V13, &08, V1
+MEMOP WRITE_TOBUF V13, &16, V2
+MEMOP WRITE_TOBUF V13, &24, V3
+
+
+MEMOP TRANSFER_WITH_OFFSET V12, &0, V1, &16, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 16 (circ buf init)
+// to V12 (write queue init) at index 0
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &16, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 16 (circ buf init)
+// to V11 (read queue init) at index 0
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &16, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 16 (circ buf init)
+// to V10 (circ buf init) at index 0
+
+BUFREQ ALLOC V29, &8
+MEMOP LOAD_LITERAL V29, @200
+BUFREQ ALLOC V28, &8
+MEMOP LOAD_LITERAL V28, @200
+BUFREQ ALLOC V27, &8
+MEMOP LOAD_LITERAL V27, @200
+
+MEMOP WRITE_TOBUF V12, &8, V29
+MEMOP WRITE_TOBUF V11, &8, V28
+MEMOP WRITE_TOBUF V10, &8, V27
+
+
+MEMOP TRANSFER_WITH_OFFSET V12, &16, V1, &80, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 80 (write queue)
+// to V12 (write queue init) at index 0
+MEMOP TRANSFER_WITH_OFFSET V11, &16, V1, &72, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 72 (read queue)
+// to V11 (read queue init) at index 0
+MEMOP TRANSFER_WITH_OFFSET V10, &16, V1, &88, &8
+// transfer 8 bytes
+// from V1 (circ bufs) at index 88 (circ buf)
+// to V10 (circ buf init) at index 0
+
+
+MEMOP WRITE_TOBUF V12, &24, V4
+MEMOP WRITE_TOBUF V11, &24, V4
+MEMOP WRITE_TOBUF V10, &24, V4
+
+
+BUFREQ ALLOC V15, &48 // stack up the codes to add them to the scheduler
+MEMOP WRITE_TOBUF V15, &08, V14
+MEMOP WRITE_TOBUF V15, &16, V13
+MEMOP WRITE_TOBUF V15, &24, V12
+MEMOP WRITE_TOBUF V15, &32, V11
+MEMOP WRITE_TOBUF V15, &40, V10
+MEMOP LOAD_LITERAL V15, @40
+
+BUFREQ ALLOC V16, &40 // sched_queue_add_stack
+MEMOP TRANSFER_WITH_OFFSET V16, &0, V2, &8, &8
+// transfer 8 bytes
+// from V2 (sched bufs) at index 8 (sched queue add stack)
+// to V16 (sched queue add stack) at index 0
+MEMOP TRANSFER_WITH_OFFSET V16, &8, V2, &48, &8
+// transfer 8 bytes
+// from V2 (sched bufs) at index 48 (scheduler queue)
+// to V16 (sched queue add stack) at index 8
+
+MEMOP WRITE_TOBUF V16, &16, V15
+
+MEMOP TRANSFER_WITH_OFFSET V16, &24, V2, &56, &8
+// transfer 8 bytes
+// from V2 (sched bufs) at index 56 (scheduler explicit buf)
+// to V16 (sched queue add stack) at index 24
+BUFREQ ALLOC V26, &8 // just a buffer for the error code
+MEMOP TRANSFER_WITH_OFFSET V26, &0, V3, &16, &8
+// transfer 8 bytes
+// from V3 (general bufs) at index 16 (ERROR.EBA code)
+// to V26 (error code) at index 0
+MEMOP WRITE_TOBUF V16, &32, V26
+
+
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V16
+INVOKE LOCAL_BUF V0

@@ -2,14 +2,14 @@
 // 0 - this buf (always)
 // 1 - the schedule queue
 // 2 - an empty buf that I'll put the peeked item into
-// 3 - who to call when done (main scheduler)
+// 3 - who to call when done (most likely the unpack code)
 
 
 // ASSUMES there is space, the entry is valid, etc.
 
-PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_PEEK
+LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_PEEK
 
-MEMOP READ_FROMBUF V6, V0, &8  // grab schedule queue
+MEMOP READ_FROMBUF V6, V0, &8  // grab the circular buffer
 MEMOP READ_FROMBUF V1, V6, &0  // data
 MEMOP READ_FROMBUF V3, V6, &16 // head
 

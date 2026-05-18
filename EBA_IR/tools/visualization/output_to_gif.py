@@ -8,7 +8,7 @@ if len(sys.argv) < 2:
 ebaoutput_fname = sys.argv[1]
 
 if ebaoutput_fname[-7:] != ".ebaout":
-    print(f"only '.ebaout' files are allowed. You inputted {output_fname}")
+    print(f"only '.ebaout' files are allowed. You inputted {ebaoutput_fname}")
     exit(1)
 
 base_fname = ebaoutput_fname[:-7]
@@ -24,7 +24,7 @@ buffer_outputs = ftext.split("CURRENTLY_RUNNING_")[1:]
 # only want what comes during/after each of these lines
 
 
-imagemagick_convert_str = "convert -size 1080x1080 -delay 100 -loop 0"
+imagemagick_convert_str = "convert -size 1080x1080 -delay 80 -loop 0"
 
 displays = {}
 displays["sched"] = {}

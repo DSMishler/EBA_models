@@ -2,11 +2,11 @@
 // 0 - this buf (always)
 // 1 - the arg buf that I'm unpacking into
 // 2 - the buf I'll be unpacking (free after)
-// 3 - who to call when done (most likely main scheduler)
+// 3 - who to call when done (most likely the read/write request proper)
 
 // ASSUMES everything is valid, etc.
 
-PRINT STRING CURRENTLY_RUNNING_CIRC_SCHED_UNPACK
+LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_UNPACK
 
 MEMOP READ_FROMBUF V1, V0, &8
 MEMOP READ_FROMBUF V2, V0, &16
@@ -22,4 +22,5 @@ BUFREQ RELEASE V2
 MEMOP READ_FROMBUF V3, V0, &24
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V3
+MEMOP READ_FROMBUF V10, V0, &32
 INVOKE LOCAL_BUF V0

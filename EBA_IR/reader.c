@@ -379,6 +379,8 @@ static char* get_label(int num)
    return numstr;
 }
 
+// possible TODO: add a final check that no CMP lines point to nonexistent
+// labels
 void labels_to_lines(char ***IRcode)
 {
    int i;

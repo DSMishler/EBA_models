@@ -3,9 +3,7 @@
 // 1: the queue itself
 // 2: explicit buf to call when nothing is left
 
-// just test print code
-
-PRINT STRING CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
+LOG STRING queue.ebaout CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
 
 MEMOP READ_FROMBUF V6, V0, &8 // grab scheduling queue
 MEMOP READ_FROMBUF V1, V6, &00 // data
@@ -14,29 +12,29 @@ MEMOP READ_FROMBUF V3, V6, &16 // head
 MEMOP READ_FROMBUF V4, V6, &24 // tail
 MEMOP READ_FROMBUF V5, V6, &32 // full
 
-/////////////printing
+///////////// logging
 
-PRINT STRING DISPLAY_SCHEDULE_QUEUE
-PRINT WORD V2
-PRINT WORD V3
-PRINT WORD V4
-PRINT WORD V5
+LOG STRING queue.ebaout DISPLAY_SCHEDULE_QUEUE
+LOG WORD queue.ebaout V2
+LOG WORD queue.ebaout V3
+LOG WORD queue.ebaout V4
+LOG WORD queue.ebaout V5
 
 BUFREQ ALLOC V41, &8
 MEMOP LOAD_LITERAL V41, @0
-START_PRINT_1:
-CMP GEQ V41, V2, END_PRINT_1
+START_LOG_1:
+CMP GEQ V41, V2, END_LOG_1
 
 MEMOP READ_FROMBUF V43, V1, V41
-PRINT VAR V43
+LOG VAR queue.ebaout V43
 MATHOP ADD_U64 V41, V41, &8
-CMP EQ &0, &0, START_PRINT_1
+CMP EQ &0, &0, START_LOG_1
 
-END_PRINT_1:
+END_LOG_1:
 BUFREQ RELEASE V41
 
 
-/////////////done printing
+/////////////done logging
 
 BUFREQ ALLOC V7, &8 // available space
 MATHOP SUB_U64 V7, V4, V3 // available space = tail-head

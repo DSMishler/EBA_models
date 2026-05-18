@@ -6,7 +6,7 @@
 // 4: buffer (explicit) to call when done if successful
 // 5: buffer (explicit) to call when done if unsuccessful
 
-PRINT STRING CURRENTLY_RUNNING_CIRC_BUF_READ
+LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_READ
 
 MEMOP READ_FROMBUF V6, V0, &8 // v6 will be the circular buffer
 MEMOP READ_FROMBUF V1, V6, &00 // data
@@ -17,7 +17,6 @@ MEMOP READ_FROMBUF V5, V6, &32 // full
 
 MEMOP READ_FROMBUF V7, V0, &16 // destination buffer
 MEMOP READ_FROMBUF V8, V0, &24 // (size of read) buffer
-
 
 BUFREQ ALLOC V9, &8 // occupied space buffer
 
@@ -77,6 +76,8 @@ MEMOP MOVE V0, V9
 INVOKE LOCAL_BUF V0
 
 READ_FAIL:
+BUFREQ RELEASE V9
+MEMOP READ_FROMBUF V9, V0, &32 // free what you would have called on success
 BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V9, V0, &40
 BUFREQ RELEASE V0

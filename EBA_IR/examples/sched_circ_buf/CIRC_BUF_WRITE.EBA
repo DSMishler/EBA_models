@@ -6,7 +6,7 @@
 // 4: buffer (explicit) to call when done if successful
 // 5: buffer (explicit) to call when done if unsuccessful
 
-PRINT STRING CURRENTLY_RUNNING_CIRC_BUF_WRITE
+LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_WRITE
 
 MEMOP READ_FROMBUF V6, V0, &8 // v6 will be the circular buffer
 MEMOP READ_FROMBUF V1, V6, &00 // data
@@ -86,6 +86,9 @@ INVOKE LOCAL_BUF V0
 WRITE_FAIL:
 PRINT STRING "WRITE FAILURE"
 
+BUFREQ RELEASE V9
+
+MEMOP READ_FROMBUF V9, V0, &32 // free what you would have called on a success
 BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V9, V0, &40
 BUFREQ RELEASE V0

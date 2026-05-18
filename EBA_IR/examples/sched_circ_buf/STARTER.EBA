@@ -136,6 +136,13 @@ MEMOP TRANSFER_WITH_OFFSET V11, &8, V3, &24, &8
 // transfer 8 bytes
 // from V3 (generalized bufs) at offset 24 (bufs_to_free)
 // to V11 (arg buf) at offset 8 (bufs_to_free)
+MEMOP READ_FROMBUF V19, V3, &24 // stack of bufs to free
+MEMOP WRITE_TOBUF V19, &08, V1
+MEMOP WRITE_TOBUF V19, &16, V2
+MEMOP WRITE_TOBUF V19, &24, V3
+MATHOP ADD_U64 V19, V19, &24
+
+
 
 BUFREQ ALLOC V12, &24 // will be arg buf for CODE_FREE_STACK
 MEMOP WRITE_TOBUF V11, &16, V12 // and is called after RELEASE_BUF_STACK
@@ -196,32 +203,30 @@ MEMOP TRANSFER_WITH_OFFSET V20, &0, V2, &16, &8
 BUFREQ ALLOC V29, &8
 MEMOP LOAD_LITERAL V29, @200 // assume size of 200
 MEMOP WRITE_TOBUF V20, &8, V29
-MEMOP TRANSFER_WITH_OFFSET V20, &16, V2, &48, &16
-// transfer 16 bytes
+MEMOP TRANSFER_WITH_OFFSET V20, &16, V2, &48, &8
+// transfer 8 bytes
 // from V2 (sched queue bufs) at offset 48 (sched queue then sched main args)
-// to V20 (arg buf) at offset 16 (sched queue then sched main args)
+// to V20 (arg buf) at offset 16 (sched queue)
 
+BUFREQ ALLOC V21, &32 // code buf for POPULATER
+MEMOP WRITE_TOBUF V20, &24, V21 // will be called after SCHED_QUEUE_INIT
 
+SCAFFOLD CODEREAD V29, "examples/sched_circ_buf/POPULATER.EBA"
 
+MEMOP WRITE_TOBUF V21, &00, V29
+MEMOP WRITE_TOBUF V21, &08, V1
+MEMOP WRITE_TOBUF V21, &16, V2
+MEMOP WRITE_TOBUF V21, &24, V3
 
-
-
+// don't forget to add that to the codes we'll later free!
+MEMOP READ_FROMBUF V28, V3, &32
+MATHOP ADD_U64 V28, V28, &8
+MEMOP WRITE_TOBUF V28, V28, V29
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 4: call next code        //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-
-MEMOP READ_FROMBUF V30, V1, &72
-BUFREQ RELEASE V30
-MEMOP READ_FROMBUF V30, V1, &80
-BUFREQ RELEASE V30
-MEMOP READ_FROMBUF V30, V1, &88
-BUFREQ RELEASE V30
-BUFREQ RELEASE V1
-BUFREQ RELEASE V2
-BUFREQ RELEASE V3
 
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V20
@@ -230,8 +235,12 @@ INVOKE LOCAL_BUF V0
 
 
 
-CMP EQ &0, &0, END
-
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 PRINT STRING CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
@@ -459,11 +468,3 @@ BUFREQ RELEASE V0
 MEMOP MOVE V0, V25
 INVOKE LOCAL_BUF V0
 
-
-END:
-
-PRINT STRING DONE
-
-MEMOP READ_FROMBUF V1, V0, &0
-BUFREQ RELEASE V0
-SCAFFOLD TERMINATE_WITH_CODEFREE V1
