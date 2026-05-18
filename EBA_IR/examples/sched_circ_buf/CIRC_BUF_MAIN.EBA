@@ -138,10 +138,6 @@ MEMOP WRITE_TOBUF V23, &16, V29 // shared with the unpack code
 MEMOP WRITE_TOBUF V23, &24, V22 // after circ buf peek, call circ buf unpack
 
 LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_WRITE
-LOG VAR queue.ebaout V20
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_WRITE_UNPACK
-LOG VAR queue.ebaout V22
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_WRITE_PEEK
 LOG VAR queue.ebaout V23
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V23
@@ -262,10 +258,6 @@ MEMOP WRITE_TOBUF V43, &16, V49 // shared with the unpack code
 MEMOP WRITE_TOBUF V43, &24, V42 // after circ buf peek, call circ buf unpack
 
 LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_READ
-LOG VAR queue.ebaout V40
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_READ_UNPACK
-LOG VAR queue.ebaout V42
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_READ_PEEK
 LOG VAR queue.ebaout V43
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V43

@@ -30,38 +30,10 @@ MEMOP READ_FROMBUF V13, V10, &16 // head
 MEMOP READ_FROMBUF V14, V10, &24 // tail
 MEMOP READ_FROMBUF V15, V10, &32 // full
 
-BUFREQ ALLOC V20, &24 // buf for the write request
-BUFREQ ALLOC V21, &64 // buf for what I will write
-BUFREQ ALLOC V22, &8 // buf for the size
-MEMOP LOAD_LITERAL V21, @65 // ASCII for 'A'
-MEMOP TRANSFER_WITH_OFFSET V21, &1, V21, &0, &1 // propagate across all 64 bytes
-MEMOP TRANSFER_WITH_OFFSET V21, &2, V21, &0, &2
-MEMOP TRANSFER_WITH_OFFSET V21, &4, V21, &0, &4
-MEMOP TRANSFER_WITH_OFFSET V21, &8, V21, &0, &8
-MEMOP TRANSFER_WITH_OFFSET V21, &16, V21, &0, &16
-MEMOP TRANSFER_WITH_OFFSET V21, &32, V21, &0, &32
-MEMOP LOAD_LITERAL V22, @5 // set size to five
-MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &88, &8
-// transfer 8 bytes
-// from V1 (circ buf bufs) at offset 88 (loc of circ buf)
-// into V20 (request buf) at offset 0 (where the circ buf should go)
-MEMOP WRITE_TOBUF V20, &8, V21
-MEMOP WRITE_TOBUF V20, &16, V22
-
-LOG STRING queue.ebaout TRANSLATE_AAAAA
-LOG VAR queue.ebaout V20
-// now put it in queue
-MEMOP WRITE_TOBUF V11, V14, V20
-MATHOP ADD_U64 V14, V14, &8
-
-// and add these buffers to be freed later
-MATHOP ADD_U64 V5, V5, &8
-MEMOP WRITE_TOBUF V5, V5, V20
-MATHOP ADD_U64 V5, V5, &8
-MEMOP WRITE_TOBUF V5, V5, V21
-MATHOP ADD_U64 V5, V5, &8
-MEMOP WRITE_TOBUF V5, V5, V22
-
+BUFREQ ALLOC V29, &8
+MEMOP LOAD_LITERAL V29, @15
+MORE_WRITE_REQUESTS:
+MATHOP SUB_U64 V29, V29, &1
 
 BUFREQ ALLOC V20, &24 // buf for the write request
 BUFREQ ALLOC V21, &64 // buf for what I will write
@@ -94,6 +66,9 @@ MATHOP ADD_U64 V5, V5, &8
 MEMOP WRITE_TOBUF V5, V5, V21
 MATHOP ADD_U64 V5, V5, &8
 MEMOP WRITE_TOBUF V5, V5, V22
+
+CMP GT V29, &0, MORE_WRITE_REQUESTS
+BUFREQ RELEASE V29
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 2: add some read requests  ////////////////////////////////////////
@@ -106,6 +81,11 @@ MEMOP READ_FROMBUF V32, V30, &08 // size
 MEMOP READ_FROMBUF V33, V30, &16 // head
 MEMOP READ_FROMBUF V34, V30, &24 // tail
 MEMOP READ_FROMBUF V35, V30, &32 // full
+
+BUFREQ ALLOC V49, &8
+MEMOP LOAD_LITERAL V49, @9
+MORE_READ_REQUESTS:
+MATHOP SUB_U64 V49, V49, &1
 
 BUFREQ ALLOC V40, &24 // buf for the read request
 BUFREQ ALLOC V41, &64 // buf for what I will read into
@@ -132,6 +112,8 @@ MEMOP WRITE_TOBUF V5, V5, V41
 MATHOP ADD_U64 V5, V5, &8
 MEMOP WRITE_TOBUF V5, V5, V42
 
+CMP GT V49, &0, MORE_READ_REQUESTS
+BUFREQ RELEASE V49
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 3: pass code along         ////////////////////////////////////////
