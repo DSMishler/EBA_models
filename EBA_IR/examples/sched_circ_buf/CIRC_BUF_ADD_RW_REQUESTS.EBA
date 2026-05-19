@@ -10,7 +10,7 @@
 LOG STRING queue.ebaout CURRENTLY_RUNNING_CURC_BUF_ADD_REQUESTS
 
 
-LOG STRING queue.ebaout JUST_ADDING_ONE_WRITE
+LOG STRING queue.ebaout ADDING_WRITE_AND_READ_REQUESTS
 MEMOP READ_FROMBUF V1, V0, &8
 MEMOP READ_FROMBUF V2, V0, &16
 MEMOP READ_FROMBUF V3, V0, &24
@@ -31,7 +31,9 @@ MEMOP READ_FROMBUF V14, V10, &24 // tail
 MEMOP READ_FROMBUF V15, V10, &32 // full
 
 BUFREQ ALLOC V29, &8
-MEMOP LOAD_LITERAL V29, @15
+MEMOP LOAD_LITERAL V29, @1
+BUFREQ ALLOC V28, &8
+MEMOP LOAD_LITERAL V28, @0
 MORE_WRITE_REQUESTS:
 MATHOP SUB_U64 V29, V29, &1
 
@@ -39,13 +41,15 @@ BUFREQ ALLOC V20, &24 // buf for the write request
 BUFREQ ALLOC V21, &64 // buf for what I will write
 BUFREQ ALLOC V22, &8 // buf for the size
 MEMOP LOAD_LITERAL V21, @65 // ASCII for 'A'
+MATHOP ADD_U64 V21, V21, V28
+MATHOP ADD_U64 V28, V28, &1
 MEMOP TRANSFER_WITH_OFFSET V21, &1, V21, &0, &1 // propagate across all 64 bytes
 MEMOP TRANSFER_WITH_OFFSET V21, &2, V21, &0, &2
 MEMOP TRANSFER_WITH_OFFSET V21, &4, V21, &0, &4
 MEMOP TRANSFER_WITH_OFFSET V21, &8, V21, &0, &8
 MEMOP TRANSFER_WITH_OFFSET V21, &16, V21, &0, &16
 MEMOP TRANSFER_WITH_OFFSET V21, &32, V21, &0, &32
-MEMOP LOAD_LITERAL V22, @5 // set size to five
+MEMOP LOAD_LITERAL V22, @22 // set size to twenty-two
 MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &88, &8
 // transfer 8 bytes
 // from V1 (circ buf bufs) at offset 88 (loc of circ buf)
@@ -53,7 +57,7 @@ MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &88, &8
 MEMOP WRITE_TOBUF V20, &8, V21
 MEMOP WRITE_TOBUF V20, &16, V22
 
-LOG STRING queue.ebaout TRANSLATE_AAAAA
+LOG STRING queue.ebaout TRANSLATE_31_ALPH
 LOG VAR queue.ebaout V20
 // now put it in queue
 MEMOP WRITE_TOBUF V11, V14, V20
@@ -69,6 +73,7 @@ MEMOP WRITE_TOBUF V5, V5, V22
 
 CMP GT V29, &0, MORE_WRITE_REQUESTS
 BUFREQ RELEASE V29
+BUFREQ RELEASE V28
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 2: add some read requests  ////////////////////////////////////////
@@ -83,14 +88,14 @@ MEMOP READ_FROMBUF V34, V30, &24 // tail
 MEMOP READ_FROMBUF V35, V30, &32 // full
 
 BUFREQ ALLOC V49, &8
-MEMOP LOAD_LITERAL V49, @9
+MEMOP LOAD_LITERAL V49, @1
 MORE_READ_REQUESTS:
 MATHOP SUB_U64 V49, V49, &1
 
 BUFREQ ALLOC V40, &24 // buf for the read request
 BUFREQ ALLOC V41, &64 // buf for what I will read into
 BUFREQ ALLOC V42, &8 // buf for the size of the request
-MEMOP LOAD_LITERAL V42, @8 // set size to eight
+MEMOP LOAD_LITERAL V42, @41 // set size to forty-one
 MEMOP TRANSFER_WITH_OFFSET V40, &0, V1, &88, &8
 // transfer 8 bytes
 // from V1 (circ buf bufs) at offset 88 (loc of circ buf)
@@ -119,6 +124,8 @@ BUFREQ RELEASE V49
 // workspace 3: pass code along         ////////////////////////////////////////
 // uses vars V50-V63 ///////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+PRINT STRING DONE_ADDING
 
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V4

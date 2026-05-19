@@ -25,8 +25,10 @@ ftext = f.read()
 f.close()
 
 if os.getcwd() == "/home/danielmishler/Mishler_LL_work/EBA_Work/EBA_models/EBA_IR/tools/visualization":
-    os.system("rm jgrs/*")
-    os.system("rm jpgs/*") # clean up old runs to avoid difficult to track  errors
+    if len(os.listdir(os.getcwd()+"/jgrs/")) > 0:
+        os.system("rm jgrs/*.jgr")
+    if len(os.listdir(os.getcwd()+"/jpgs/")) > 0:
+        os.system("rm jpgs/*.jpg") # clean up old runs to avoid difficult to track  errors
 else:
     print(f"warning, this code has specific instructions to be run in:\n")
     print("/home/danielmishler/Mishler_LL_work/EBA_Work/EBA_models/EBA_IR/tools/visualization\n")
@@ -127,8 +129,8 @@ for i in range(len(buffer_outputs)):
             sdisplays["write"]["tail"] = int(lines[line_num+3], base=16)/8
             sdisplays["write"]["occupants"] = lines[line_num+5:line_num+5+sdims['write']['num_entries']]
         elif line == "DISPLAY_CIRC_BUF":
-            cdisplays["cbuf"]["head"] = int(lines[line_num+2], base=16)/8
-            cdisplays["cbuf"]["tail"] = int(lines[line_num+3], base=16)/8
+            cdisplays["cbuf"]["head"] = int(lines[line_num+2], base=16)
+            cdisplays["cbuf"]["tail"] = int(lines[line_num+3], base=16)
             start_occ_ln = line_num+5
             end_occ_ln = line_num+5+cdims['cbuf']['num_xcells']*cdims['cbuf']['num_ycells']
             cdisplays["cbuf"]["occupants"] = lines[start_occ_ln:end_occ_ln]
@@ -231,9 +233,15 @@ for i in range(len(buffer_outputs)):
             # buf_jgr_f.write(f"newstring font Time-Roman fontsize 18 x {to_xcoord(t['tail'])} y {to_ycoord(t['tail'])} hjc vjc :\n")
             # buf_jgr_f.write("*t*\n")
             buf_jgr_f.write("newline poly color 0.0 1.0 0.0 pfill 1 pts\n")
-            buf_jgr_f.write(f"{-3+to_xcoord(t['head'])+2} {to_ycoord(t['head'])} {-3+to_xcoord(t['head'])} {to_ycoord(t['head'])+2} {-3+to_xcoord(t['head'])-2} {to_ycoord(t['head'])} {-3+to_xcoord(t['head'])} {to_ycoord(t['head'])-2}\n")
+            buf_jgr_f.write(f"{-3+to_xcoord(t['head'])+2} {to_ycoord(t['head'])}\
+                              {-3+to_xcoord(t['head'])} {to_ycoord(t['head'])+2}\
+                              {-3+to_xcoord(t['head'])-2} {to_ycoord(t['head'])}\
+                              {-3+to_xcoord(t['head'])} {to_ycoord(t['head'])-2}\n")
             buf_jgr_f.write("newline poly color 0.0 0.0 1.0 pfill 1 pts\n")
-            buf_jgr_f.write(f"{3+to_xcoord(t['tail'])+2} {to_ycoord(t['tail'])} {3+to_xcoord(t['tail'])} {to_ycoord(t['tail'])+2} {3+to_xcoord(t['tail'])-2} {to_ycoord(t['tail'])} {3+to_xcoord(t['tail'])} {to_ycoord(t['tail'])-2}\n")
+            buf_jgr_f.write(f"{3+to_xcoord(t['tail'])+2} {to_ycoord(t['tail'])}\
+                              {3+to_xcoord(t['tail'])} {to_ycoord(t['tail'])+2}\
+                              {3+to_xcoord(t['tail'])-2} {to_ycoord(t['tail'])}\
+                              {3+to_xcoord(t['tail'])} {to_ycoord(t['tail'])-2}\n")
 
             for occ in range(len(t['occupants'])):
                 text = t['occupants'][occ]
@@ -242,8 +250,33 @@ for i in range(len(buffer_outputs)):
 
                 buf_jgr_f.write(f"newstring font Time-Roman fontsize 18 x {to_xcoord(occ)} y {to_ycoord(occ)} hjc vjc :\n")
                 buf_jgr_f.write(f"{char}\n")
+
         buf_jgr_f.write(f"newstring font Time-Roman fontsize 20 x {d['start_x']+(d['linewidth']*d['num_xcells'])//2} y {d['start_y']-5} hjc vjc :\n")
         buf_jgr_f.write(f"{t['name']}\n")
+
+        legend_head_xcoord = d['start_x']+(d['linewidth']*d['num_xcells'])//2
+        legend_head_ycoord = d['start_y']-15
+        legend_tail_xcoord = d['start_x']+(d['linewidth']*d['num_xcells'])//2
+        legend_tail_ycoord = d['start_y']-20
+
+        buf_jgr_f.write(f"newstring font Time-Roman fontsize 18 x {legend_head_xcoord+10} y {legend_head_ycoord} hjc vjc :\n")
+        buf_jgr_f.write(f"head\n")
+
+        buf_jgr_f.write("newline poly color 0.0 1.0 0.0 pfill 1 pts\n")
+        buf_jgr_f.write(f"{-5+legend_head_xcoord+2} {legend_head_ycoord}\
+                          {-5+legend_head_xcoord} {legend_head_ycoord+2}\
+                          {-5+legend_head_xcoord-2} {legend_head_ycoord}\
+                          {-5+legend_head_xcoord} {legend_head_ycoord-2}\n")
+
+        buf_jgr_f.write(f"newstring font Time-Roman fontsize 18 x {legend_tail_xcoord+10} y {legend_tail_ycoord} hjc vjc :\n")
+        buf_jgr_f.write(f"tail\n")
+
+        buf_jgr_f.write("newline poly color 0.0 0.0 1.0 pfill 1 pts\n")
+        buf_jgr_f.write(f"{-5+legend_tail_xcoord+2} {legend_tail_ycoord}\
+                          {-5+legend_tail_xcoord} {legend_tail_ycoord+2}\
+                          {-5+legend_tail_xcoord-2} {legend_tail_ycoord}\
+                          {-5+legend_tail_xcoord} {legend_tail_ycoord-2}\n")
+
 
 
 
