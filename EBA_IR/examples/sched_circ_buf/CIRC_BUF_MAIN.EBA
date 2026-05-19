@@ -271,7 +271,7 @@ BUFREQ RELEASE V36
 // uses vars V50-V63 ///////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-MEMOP READ_FROMBUF V50, V1, &08 // the circular buffer
+MEMOP READ_FROMBUF V50, V1, &88 // the circular buffer
 MEMOP READ_FROMBUF V51, V50, &00 // data
 MEMOP READ_FROMBUF V52, V50, &08 // size
 MEMOP READ_FROMBUF V53, V50, &16 // head
