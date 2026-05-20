@@ -1,0 +1,20 @@
+// CIRC FREE
+// args buffer (always given as V0) contains
+// 0: the address of own buffer this code is resident in
+// 1: the address of the circular buffer
+
+
+LITERAL READ V6, V0, @8 // grab the circular buffer from the args buffer
+
+LITERAL READ V1, V6, @00 // data
+LITERAL READ V2, V6, @08 // size
+LITERAL READ V3, V6, @16 // head
+LITERAL READ V4, V6, @24 // tail
+LITERAL READ V5, V6, @32 // full
+
+BUFREQ RELEASE V1
+BUFREQ RELEASE V2
+BUFREQ RELEASE V3
+BUFREQ RELEASE V4
+BUFREQ RELEASE V5
+BUFREQ RELEASE V6

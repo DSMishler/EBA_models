@@ -1,0 +1,44 @@
+// args
+// 0: this buf (always)
+// 1: the call stack buf
+// which contains a number (# elts occupied)
+// and each args buf after it is an invoke, fresh and ready to go
+
+
+// print 5 just to say it's me as a sloppy debug/hello world
+BUFREQ ALLOC V5, &8
+MEMOP LOAD_LITERAL V5, @5
+PRINT BYTES V5, &1
+BUFREQ RELEASE V5
+
+
+MEMOP READ_FROMBUF V1, V0, &8 // V1 is now that call stack buf
+
+
+BUFREQ ALLOC V10, &8
+MEMOP LOAD_LITERAL V10, @0
+
+CMP EQ V10, V1 END
+
+BUFREQ ALLOC V3, &16
+
+MATHOP ADD_U64 V10, V10, V1 // v10 contains the number of things in the stack
+MATHOP SUB_U64 V1, V1, &1 // v1 now marked as having one fewer thing
+MATHOP MUL_U64 V10, V10, &8 // v10 now has the index to grab out of v1
+MEMOP TRANSFER_WITH_OFFSET V3, &0, V1, V10, &8
+// 8 bytes into V3 at offset 0 from V1 at offset (#elts*8)
+
+// now the buffer V3 has first inside an arg buf to call
+MEMOP WRITE_TOBUF V3, &8, V0 // put my number as the second arg
+
+
+BUFREQ RELEASE V10
+
+MEMOP MOVE V0, V3
+INVOKE LOCAL_BUF V0
+
+
+END:
+BUFREQ RELEASE V10
+BUFREQ RELEASE V1
+BUFREQ RELEASE V0

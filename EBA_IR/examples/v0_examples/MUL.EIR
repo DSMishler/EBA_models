@@ -1,0 +1,28 @@
+// multiply two numbers
+// args
+// 0 - code buffer (always)
+// 1 - dest buf (C)
+// 2 - op A
+// 3 - op B
+
+// V0 always contains the args buffer
+
+LITERAL READ V1, V0, @08
+LITERAL READ V2, V0, @16
+LITERAL READ V3, V0, @24
+
+BUFREQ ALLOC_LITERAL V4, @8
+LITERAL LOAD V4, @1
+
+// (C += A)
+INVOKE ADD_U64 V1, V2, V3
+// (B -= 1)
+INVOKE SUB_U64 V3, V3, V4
+
+
+LITERAL LOAD V4, @0 // set it at 0 and use it as return buffer
+CMP EQ V3, V4, END // if *V3==0, then end. Else, invoke self again
+
+INVOKE EBA_INVOKE V4, V0
+END:
+RELEASE V4

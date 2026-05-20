@@ -1,0 +1,23 @@
+// coroutine test main
+// args
+// 0 - this buf (always)
+// 1 - data buf (for control flow)
+// 2 - add_one_code
+
+
+BUFREQ ALLOC V5, &8
+MEMOP TRANSFER_WITH_OFFSET V5, &0, V0, &8, &8
+
+
+CMP GEQ V5, &10, DONE
+PRINT BYTES V5, &1
+BUFREQ RELEASE V5
+
+MEMOP READ_FROMBUF V11, V0, &16
+MEMOP MOVE V0, V11
+INVOKE LOCAL_BUF V0
+
+
+DONE:
+BUFREQ RELEASE V5
+PRINT STRING "Complete"

@@ -1,9 +1,0 @@
-// success
-// To call when done
-// args
-// 0 - this buf (always)
-
-PRINT BYTES &160, &1 // 0xA0
-BUFREQ RELEASE V0
-
-PRINT STRING "Success!"

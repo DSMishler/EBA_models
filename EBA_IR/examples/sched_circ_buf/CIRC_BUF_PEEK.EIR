@@ -1,0 +1,31 @@
+// args:
+// 0 - this buf (always)
+// 1 - the schedule queue
+// 2 - an empty buf that I'll put the peeked item into
+// 3 - who to call when done (most likely the unpack code)
+
+
+// ASSUMES there is space, the entry is valid, etc.
+
+// LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_PEEK
+
+MEMOP READ_FROMBUF V6, V0, &8  // grab the circular buffer
+MEMOP READ_FROMBUF V1, V6, &0  // data
+MEMOP READ_FROMBUF V3, V6, &16 // head
+
+// since we assume the entry is valid...
+
+MEMOP READ_FROMBUF V7, V0, &16 // grab dest buf
+
+MEMOP READ_FROMBUF V9, V1, V3 // grab the singular buf out of the queue
+
+MEMOP TRANSFER_WITH_OFFSET V7, &0, V9, &0, &24
+// transfer 24 bytes (one request)
+// to the requested buffer V7
+// from the head of the schedule queue (which was unpacked into buf V9)
+
+// that's all, folks. Now move on
+MEMOP READ_FROMBUF V8, V0, &24 // next buf
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V8
+INVOKE LOCAL_BUF V0

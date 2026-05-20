@@ -20,11 +20,11 @@ void test_circ_init(void);
 int main(void)
 {
    printf("EBA tester\n");
-   // test_solofile("examples/COROUTINE_TEST_MAIN.EBA");
+   // test_solofile("examples/COROUTINE_TEST_MAIN.EIR");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
    // test_queue_invoke();
-   test_solofile("examples/sched_circ_buf/STARTER.EBA");
+   test_solofile("examples/sched_circ_buf/STARTER.EIR");
 }
 
 void test_solofile(char *fname)
@@ -60,8 +60,8 @@ void test_solofile_with_free(char *fname)
 void test_dualfile_invoke_test(void)
 {
    char ***IRcode1, ***IRcode2;
-   IRcode1 = full_read("examples/INVOKE_NEXT.EBA");
-   IRcode2 = full_read("examples/SHORT.EBA");
+   IRcode1 = full_read("examples/INVOKE_NEXT.EIR");
+   IRcode2 = full_read("examples/SHORT.EIR");
 
    void *arg_buf = malloc(2*sizeof(void*));
    ((char****)arg_buf)[0] = IRcode1;
@@ -79,8 +79,8 @@ void test_dualfile_invoke_test(void)
 void test_stackcall_invoke_test(void)
 {
    char ***IRcode1, ***IRcode2;
-   IRcode1 = full_read("examples/CALL_STACK.EBA");
-   IRcode2 = full_read("examples/CALLBACK.EBA");
+   IRcode1 = full_read("examples/CALL_STACK.EIR");
+   IRcode2 = full_read("examples/CALLBACK.EIR");
    void *arg_buf = malloc(2*sizeof(void*));
    ((char****)arg_buf)[0] = IRcode1;
    void *stack_arg = malloc(25*sizeof(void*));
@@ -104,32 +104,32 @@ void test_queue_invoke(void)
    char ****SQ_IRcodes = malloc(16*sizeof(char***));
    int i;
 
-   CB_IRcodes[0] = full_read("examples/sched_queue_test/CIRC_BUF_READ.EBA");
-   CB_IRcodes[1] = full_read("examples/sched_queue_test/CIRC_BUF_WRITE.EBA");
-   CB_IRcodes[2] = full_read("examples/sched_queue_test/CIRC_SCHED_MAIN.EBA");
-   CB_IRcodes[3] = full_read("examples/sched_queue_test/CIRC_SCHED_UNPACK.EBA");
+   CB_IRcodes[0] = full_read("examples/sched_queue_test/CIRC_BUF_READ.EIR");
+   CB_IRcodes[1] = full_read("examples/sched_queue_test/CIRC_BUF_WRITE.EIR");
+   CB_IRcodes[2] = full_read("examples/sched_queue_test/CIRC_SCHED_MAIN.EIR");
+   CB_IRcodes[3] = full_read("examples/sched_queue_test/CIRC_SCHED_UNPACK.EIR");
    CB_IRcodes[4] = NULL;
    CB_IRcodes[5] = NULL;
 
-   SQ_IRcodes[0] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD.EBA");
-   SQ_IRcodes[1] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD_STACK.EBA");
-   SQ_IRcodes[2] = full_read("examples/sched_queue_test/SCHED_QUEUE_FREE.EBA");
-   SQ_IRcodes[3] = full_read("examples/sched_queue_test/SCHED_QUEUE_INIT.EBA");
-   SQ_IRcodes[4] = full_read("examples/sched_queue_test/SCHED_QUEUE_MAIN.EBA");
-   SQ_IRcodes[5] = full_read("examples/sched_queue_test/SCHED_QUEUE_PEEK.EBA");
-   SQ_IRcodes[6] = full_read("examples/sched_queue_test/SCHED_QUEUE_PRINT.EBA");
-   SQ_IRcodes[7] = full_read("examples/sched_queue_test/SCHED_QUEUE_REMOVE.EBA");
+   SQ_IRcodes[0] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD.EIR");
+   SQ_IRcodes[1] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD_STACK.EIR");
+   SQ_IRcodes[2] = full_read("examples/sched_queue_test/SCHED_QUEUE_FREE.EIR");
+   SQ_IRcodes[3] = full_read("examples/sched_queue_test/SCHED_QUEUE_INIT.EIR");
+   SQ_IRcodes[4] = full_read("examples/sched_queue_test/SCHED_QUEUE_MAIN.EIR");
+   SQ_IRcodes[5] = full_read("examples/sched_queue_test/SCHED_QUEUE_PEEK.EIR");
+   SQ_IRcodes[6] = full_read("examples/sched_queue_test/SCHED_QUEUE_PRINT.EIR");
+   SQ_IRcodes[7] = full_read("examples/sched_queue_test/SCHED_QUEUE_REMOVE.EIR");
    SQ_IRcodes[8] = NULL;
    SQ_IRcodes[9] = NULL;
-   SQ_IRcodes[10] = full_read("examples/sched_queue_test/ERROR.EBA");
-   SQ_IRcodes[11] = full_read("examples/sched_queue_test/SUCCESS.EBA");
-   SQ_IRcodes[12] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE.EBA");
-   SQ_IRcodes[13] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE_STACK.EBA");
-   SQ_IRcodes[14] = full_read("examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EBA");
-   SQ_IRcodes[15] = full_read("examples/sched_queue_test/RELEASE_BUF_STACK.EBA");
+   SQ_IRcodes[10] = full_read("examples/sched_queue_test/ERROR.EIR");
+   SQ_IRcodes[11] = full_read("examples/sched_queue_test/SUCCESS.EIR");
+   SQ_IRcodes[12] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE.EIR");
+   SQ_IRcodes[13] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE_STACK.EIR");
+   SQ_IRcodes[14] = full_read("examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EIR");
+   SQ_IRcodes[15] = full_read("examples/sched_queue_test/RELEASE_BUF_STACK.EIR");
 
    char ***IRcode1;
-   IRcode1 = full_read("examples/sched_queue_test/CIRC_SCHED_QUEUE_STARTER.EBA");
+   IRcode1 = full_read("examples/sched_queue_test/CIRC_SCHED_QUEUE_STARTER.EIR");
 
    void *arg_buf_1 = malloc(3*sizeof(void*));
    ((char****)arg_buf_1)[2] = (char***)SQ_IRcodes;
@@ -164,8 +164,8 @@ void test_dualfile_invoke_test(void)
 {
    char ***IRcode1, ***IRcode2;
    INVOKE_request_t *starter_invoke;
-   IRcode1 = full_read("examples/TEST_EBA_INVOKE_1.EBA");
-   IRcode2 = full_read("examples/TEST_INVOKE.EBA");
+   IRcode1 = full_read("examples/TEST_EBA_INVOKE_1.EIR");
+   IRcode2 = full_read("examples/TEST_INVOKE.EIR");
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(2*sizeof(void*));
@@ -188,13 +188,13 @@ void test_circ_invoke(void)
    INVOKE_request_t *starter_invoke;
 
    IRcodes = malloc(7*sizeof(void*));
-   IRcodes[0] = full_read("examples/SEQ_CIRC_INVOKER.EBA");
-   IRcodes[1] = full_read("examples/EBA_IR_CIRC_INIT.EBA");
-   IRcodes[2] = full_read("examples/EBA_IR_CIRC_FREE.EBA");
-   IRcodes[3] = full_read("examples/EBA_IR_CIRC_WRITE.EBA");
-   IRcodes[4] = full_read("examples/EBA_IR_CIRC_READ.EBA");
-   IRcodes[5] = full_read("examples/CIRC_BUF_PRINT.EBA");
-   IRcodes[6] = full_read("examples/CLEANUP.EBA");
+   IRcodes[0] = full_read("examples/SEQ_CIRC_INVOKER.EIR");
+   IRcodes[1] = full_read("examples/EBA_IR_CIRC_INIT.EIR");
+   IRcodes[2] = full_read("examples/EBA_IR_CIRC_FREE.EIR");
+   IRcodes[3] = full_read("examples/EBA_IR_CIRC_WRITE.EIR");
+   IRcodes[4] = full_read("examples/EBA_IR_CIRC_READ.EIR");
+   IRcodes[5] = full_read("examples/CIRC_BUF_PRINT.EIR");
+   IRcodes[6] = full_read("examples/CLEANUP.EIR");
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = (void*) (IRcodes);
@@ -217,7 +217,7 @@ void test_circ_init(void)
    char ***IRcode;
    void *arg_buf;
    INVOKE_request_t *starter_invoke;
-   IRcode = full_read("examples/EBA_IR_CIRC_INIT.EBA");
+   IRcode = full_read("examples/EBA_IR_CIRC_INIT.EIR");
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(3*sizeof(void*));
@@ -238,7 +238,7 @@ void test_circ_init(void)
    full_free(IRcode);
    
    // now write a lil bit into the circular buffer
-   IRcode = full_read("examples/EBA_IR_CIRC_WRITE.EBA");
+   IRcode = full_read("examples/EBA_IR_CIRC_WRITE.EIR");
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(4*sizeof(void*));
    ((void**)starter_invoke->arg_buf)[0] = (void*)IRcode;
@@ -256,7 +256,7 @@ void test_circ_init(void)
    full_free(IRcode);
 
    // read some of what was written back in.
-   IRcode = full_read("examples/EBA_IR_CIRC_READ.EBA");
+   IRcode = full_read("examples/EBA_IR_CIRC_READ.EIR");
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(4*sizeof(void*));
    ((void**)starter_invoke->arg_buf)[0] = (void*)IRcode;
@@ -278,7 +278,7 @@ void test_circ_init(void)
    free(dbuf);
 
    // now free the cirular buffer
-   IRcode = full_read("examples/EBA_IR_CIRC_FREE.EBA");
+   IRcode = full_read("examples/EBA_IR_CIRC_FREE.EIR");
 
    starter_invoke = malloc(sizeof(INVOKE_request_t));
    starter_invoke->arg_buf = malloc(2*sizeof(void*));
