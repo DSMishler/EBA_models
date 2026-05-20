@@ -270,53 +270,28 @@ void run_memop(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
-void run_transfer(IR_state_t *IRstate, char **line)
-{
-   assert(confirm_first_word(line, "TRANSFER"));
-
-   if (match_second_word(line, "OFFSET_LITERAL"))
-   {
-      // deprecated
-      printf("WARNING: TRANSFER OFFSET_LITERAL will soon be deprecated\n");
-      int var_dest_buf = parse_variable(line[2]);
-      assert(var_dest_buf >= 0 && var_dest_buf < IR_STATE_SIZE);
-      uint64_t lit_dest_offset = parse_literal(line[3]);
-      assert(lit_dest_offset >= 0);
-      int var_src_buf = parse_variable(line[4]);
-      assert(var_src_buf >= 0 && var_src_buf < IR_STATE_SIZE);
-      uint64_t lit_src_offset = parse_literal(line[5]);
-      assert(lit_src_offset >= 0);
-      uint64_t lit_len = parse_literal(line[6]);
-      assert(lit_len >= 0);
-
-      uint64_t dest_offset = (uint64_t) lit_dest_offset;
-      uint64_t src_offset = (uint64_t) lit_src_offset;
-      uint64_t len = (uint64_t) lit_len;
-      // TODO: double check how this is written and if we really want
-      //       these pointers stored just as normal int64_t's
-      uint64_t dest_addr = ((uint64_t) (IRstate->vars[var_dest_buf]));
-      uint64_t src_addr = ((uint64_t) (IRstate->vars[var_src_buf]));
-
-      memcpy((void*) (dest_addr+dest_offset), (void*) (src_addr+src_offset), len);
-   }
-   else
-   {
-      fprintf(stderr, "error: option %s does not exist for TRANSFER\n", line[1]);
-   }
-
-   IRstate->next_line += 1;
-}
-
 void run_invoke(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "INVOKE"));
 
-   if (match_second_word(line, "LOCAL_BUF"))
+   if (match_second_word(line, "LOCAL"))
    {
       int var_args_buf = parse_variable(line[2]);
       assert(var_args_buf >= 0 && var_args_buf < IR_STATE_SIZE);
 
       uint64_t* args_addr = (uint64_t*) (IRstate->vars[var_args_buf]);
+
+      IRstate->code_buf = (char***)args_addr;
+      IRstate->next_line = -1; // because 1 will be added at the end
+   }
+   else if (match_second_word(line, "LOCAL_BUF"))
+   {
+      int var_args_buf = parse_variable(line[2]);
+      assert(var_args_buf >= 0 && var_args_buf < IR_STATE_SIZE);
+
+      uint64_t* args_addr = (uint64_t*) (IRstate->vars[var_args_buf]);
+
+      fprintf(stderr, "warning: LOCAL_BUF is deprecated and will soon no longer be supported!\n");
 
       IRstate->code_buf = (((char****)args_addr)[0]);
       IRstate->next_line = -1; // because 1 will be added at the end
@@ -601,6 +576,23 @@ void run_log(IR_state_t *IRstate, char **line)
    if(line[2] == NULL)
    {
       fprintf(stderr, "error: LOG requires third argument to be a filename!\n");
+      assert(0); // crasht the program
+   }
+
+   if (strlen(line[2]) < 8)
+   {
+      fprintf(stderr, "warning: LOG requires third argument to end in .eirout\n");
+      fprintf(stderr, "your argument '%s' is not long enough to do so meaningfully\n", line[2]);
+      // skip the line and move on
+      IRstate->next_line += 1;
+      return;
+   }
+   if (!(samestr(line[2] + strlen(line[2])-7, ".eirout")))
+   {
+      fprintf(stderr, "warning: LOG requires third argument to end in .eirout\n");
+      fprintf(stderr, "your argument '%s' does not.\n", line[2]);
+      // skip the line and move on
+      IRstate->next_line += 1;
       return;
    }
 
@@ -727,10 +719,6 @@ void run_line(void* lcl_eba_arg)
    else if (samestr(line[0], "MEMOP"))
    {
       run_memop(IRstate, line);
-   }
-   else if (samestr(line[0], "TRANSFER"))
-   {
-      run_transfer(IRstate, line);
    }
    else if (samestr(line[0], "INVOKE"))
    {

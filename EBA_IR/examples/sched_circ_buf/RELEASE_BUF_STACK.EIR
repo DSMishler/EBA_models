@@ -6,7 +6,7 @@
 // 2 - the explicit buffer to call afterwards
 
 
-LOG STRING queue.ebaout CURRENTLY_RUNNING_RELEASE_BUF_STACK
+LOG STRING queue.eirout CURRENTLY_RUNNING_RELEASE_BUF_STACK
 
 
 // possible TODO: sanity check that V1%8 is in fact zero
@@ -27,4 +27,5 @@ BUFREQ RELEASE V1
 MEMOP READ_FROMBUF V2, V0, &16
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V2
-INVOKE LOCAL_BUF V0
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

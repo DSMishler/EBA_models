@@ -7,20 +7,20 @@ if len(sys.argv) < 2:
     print(f"usage: {w_python} output_to_jpgs.py <target>")
     exit(1)
 
-ebaoutput_fname = sys.argv[1]
+eiroutput_fname = sys.argv[1]
 
-if ebaoutput_fname[-7:] != ".ebaout":
-    print(f"only '.ebaout' files are allowed. You inputted {ebaoutput_fname}")
+if eiroutput_fname[-7:] != ".eirout":
+    print(f"only '.eirout' files are allowed. You inputted {eiroutput_fname}")
     exit(1)
 
-base_fname = ebaoutput_fname[:-7]
+base_fname = eiroutput_fname[:-7]
 while True:
     try:
         base_fname = base_fname[base_fname.index('/')+1:]
     except ValueError:
         break
 
-f = open(f"{ebaoutput_fname}")
+f = open(f"{eiroutput_fname}")
 ftext = f.read()
 f.close()
 

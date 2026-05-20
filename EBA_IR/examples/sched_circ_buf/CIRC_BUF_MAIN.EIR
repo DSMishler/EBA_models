@@ -14,7 +14,7 @@
 // at the end and only if there are more reads and writes to perform.
 // This means we put that self-call first here.
 
-LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_SCHED_MAIN
+LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_MAIN
 
 MEMOP READ_FROMBUF V1, V0, &08 // the CIRC BUF bufs
 MEMOP READ_FROMBUF V2, V0, &16 // the SCHED_QUEUE bufs
@@ -40,11 +40,11 @@ MEMOP READ_FROMBUF V15, V10, &32 // full
 
 /////////////logging for visualization
 
-LOG STRING queue.ebaout DISPLAY_WRITE_QUEUE
-LOG WORD queue.ebaout V12
-LOG WORD queue.ebaout V13
-LOG WORD queue.ebaout V14
-LOG WORD queue.ebaout V15
+LOG STRING queue.eirout DISPLAY_WRITE_QUEUE
+LOG WORD queue.eirout V12
+LOG WORD queue.eirout V13
+LOG WORD queue.eirout V14
+LOG WORD queue.eirout V15
 
 BUFREQ ALLOC V19, &8
 MEMOP LOAD_LITERAL V19, @0
@@ -52,7 +52,7 @@ START_WRITE_LOG:
 CMP GEQ V19, V12, END_WRITE_LOG
 
 MEMOP READ_FROMBUF V18, V11, V19
-LOG VAR queue.ebaout V18
+LOG VAR queue.eirout V18
 MATHOP ADD_U64 V19, V19, &8
 CMP EQ &0, &0, START_WRITE_LOG
 
@@ -137,8 +137,8 @@ MEMOP TRANSFER_WITH_OFFSET V23, &8, V1, &80, &8
 MEMOP WRITE_TOBUF V23, &16, V29 // shared with the unpack code
 MEMOP WRITE_TOBUF V23, &24, V22 // after circ buf peek, call circ buf unpack
 
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_WRITE
-LOG VAR queue.ebaout V23
+LOG STRING queue.eirout TRANSLATE_CIRC_BUF_WRITE
+LOG VAR queue.eirout V23
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V23
 // push circ_buf_write (peek->unpack->write->remove)
@@ -160,11 +160,11 @@ MEMOP READ_FROMBUF V35, V30, &32 // full
 
 /////////////logging for visualization
 
-LOG STRING queue.ebaout DISPLAY_READ_QUEUE
-LOG WORD queue.ebaout V32
-LOG WORD queue.ebaout V33
-LOG WORD queue.ebaout V34
-LOG WORD queue.ebaout V35
+LOG STRING queue.eirout DISPLAY_READ_QUEUE
+LOG WORD queue.eirout V32
+LOG WORD queue.eirout V33
+LOG WORD queue.eirout V34
+LOG WORD queue.eirout V35
 
 BUFREQ ALLOC V39, &8
 MEMOP LOAD_LITERAL V39, @0
@@ -172,7 +172,7 @@ START_READ_LOG:
 CMP GEQ V39, V32, END_READ_LOG
 
 MEMOP READ_FROMBUF V38, V31, V39
-LOG VAR queue.ebaout V38
+LOG VAR queue.eirout V38
 MATHOP ADD_U64 V39, V39, &8
 CMP EQ &0, &0, START_READ_LOG
 
@@ -257,8 +257,8 @@ MEMOP TRANSFER_WITH_OFFSET V43, &8, V1, &72, &8
 MEMOP WRITE_TOBUF V43, &16, V49 // shared with the unpack code
 MEMOP WRITE_TOBUF V43, &24, V42 // after circ buf peek, call circ buf unpack
 
-LOG STRING queue.ebaout TRANSLATE_CIRC_BUF_READ
-LOG VAR queue.ebaout V43
+LOG STRING queue.eirout TRANSLATE_CIRC_BUF_READ
+LOG VAR queue.eirout V43
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V43
 // push circ_buf_read (peek->unpack->read->remove)
@@ -281,15 +281,15 @@ MEMOP READ_FROMBUF V55, V50, &32 // full
 
 ///////////// log circular buffer contents
 
-LOG VAR queue.ebaout V50
-LOG VAR queue.ebaout V51
-LOG STRING queue.ebaout DISPLAY_CIRC_BUF
-LOG WORD queue.ebaout V52
-LOG WORD queue.ebaout V53
-LOG WORD queue.ebaout V54
-LOG WORD queue.ebaout V55
+LOG VAR queue.eirout V50
+LOG VAR queue.eirout V51
+LOG STRING queue.eirout DISPLAY_CIRC_BUF
+LOG WORD queue.eirout V52
+LOG WORD queue.eirout V53
+LOG WORD queue.eirout V54
+LOG WORD queue.eirout V55
 
-LOG BYTES queue.ebaout V51, V52
+LOG BYTES queue.eirout V51, V52
 
 ///////////// done logging
 
@@ -307,12 +307,12 @@ BUFREQ ALLOC V56, &24 // free for write queue
 BUFREQ ALLOC V57, &24 // free for read queue
 BUFREQ ALLOC V58, &24 // free for circ buf
 
-LOG STRING queue.ebaout TRANSLATE_FREE_WRITE_QUEUE
-LOG VAR queue.ebaout V56
-LOG STRING queue.ebaout TRANSLATE_FREE_READ_QUEUE
-LOG VAR queue.ebaout V57
-LOG STRING queue.ebaout TRANSLATE_FREE_CIRC_BUF
-LOG VAR queue.ebaout V58
+LOG STRING queue.eirout TRANSLATE_FREE_WRITE_QUEUE
+LOG VAR queue.eirout V56
+LOG STRING queue.eirout TRANSLATE_FREE_READ_QUEUE
+LOG VAR queue.eirout V57
+LOG STRING queue.eirout TRANSLATE_FREE_CIRC_BUF
+LOG VAR queue.eirout V58
 
 MEMOP TRANSFER_WITH_OFFSET V56, &0, V1, &24, &8
 // transfer 8 bytes
@@ -366,4 +366,5 @@ MEMOP TRANSFER_WITH_OFFSET V60, &0, V3, &16, &8
 MEMOP WRITE_TOBUF V59, &32, V60
 
 MEMOP MOVE V0, V59
-INVOKE LOCAL_BUF V0
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

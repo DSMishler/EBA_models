@@ -4,7 +4,7 @@
 // 2: the buffer (pre-allocated) that the sched buf will live in
 // 3: the buffer I will call when done.
 
-LOG STRING queue.ebaout CURRENTLY_RUNNING_SCHED_QUEUE_INIT
+LOG STRING queue.eirout CURRENTLY_RUNNING_SCHED_QUEUE_INIT
 
 MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
 
@@ -49,4 +49,5 @@ BUFREQ RELEASE V14 // free the size buffer
 MEMOP READ_FROMBUF V15, V0, &24 // grab the next buf
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V15
-INVOKE LOCAL_BUF V0
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

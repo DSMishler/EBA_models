@@ -6,7 +6,7 @@
 // ASSUMES there is space, there is something needing
 // removed, etc.
 
-// LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_BUF_REMOVE
+// LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_BUF_REMOVE
 
 MEMOP READ_FROMBUF V6, V0, &8
 MEMOP READ_FROMBUF V2, V6, &08 // size
@@ -20,4 +20,5 @@ MEMOP LOAD_LITERAL V5, @0 // certainly not full - something was popped
 MEMOP READ_FROMBUF V8, V0, &16
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V8
-INVOKE LOCAL_BUF V0
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

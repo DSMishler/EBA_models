@@ -36,8 +36,8 @@
    // 24 - bufs_to_free
    // 32 - code_to_free
 
-LOG RESET queue.ebaout // reset the logfile, in case last run has data there.
-LOG STRING queue.ebaout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
+LOG RESET queue.eirout // reset the logfile, in case last run has data there.
+LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 1: set up main buffers       //////////////////////////////////////
@@ -230,7 +230,5 @@ MEMOP WRITE_TOBUF V28, V28, V29
 
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V20
-INVOKE LOCAL_BUF V0
-
-
-
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1
