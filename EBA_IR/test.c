@@ -24,7 +24,7 @@ int main(void)
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
    // test_queue_invoke();
-   test_solofile("examples/sched_circ_buf/STARTER.EIR");
+   test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
 }
 
 void test_solofile(char *fname)

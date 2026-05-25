@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include "interpreter.h"
 #include "reader.h"
