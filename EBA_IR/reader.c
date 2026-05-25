@@ -5,7 +5,6 @@
 #include <ctype.h>
 #include <assert.h>
 
-
 int is_ir_wspace(char a)
 {
    if (a == ' '  || a == ','  || a == '\t' ||
@@ -17,6 +16,20 @@ int is_ir_wspace(char a)
    {
       return 0;
    }
+}
+
+char * modify_and_shorten(char *line)
+{
+   int i;
+   for(i = 0; line[i] != '\0'; i++)
+   {
+      if (line[i] == '\n')
+      {
+         line[i] = '\0';
+         break;
+      }
+   }
+   return line;
 }
 
 char *** full_read(char *fname)
@@ -69,9 +82,6 @@ char *** full_read(char *fname)
 
    free(fbuf);
 
-   // TODO: it may be wise to not implement labels and jumping, but this
-   //       code will do this for now.
-
    labels_to_lines(IRcode);
 
    // print_code(IRcode);
@@ -79,6 +89,7 @@ char *** full_read(char *fname)
    return IRcode;
 }
 
+// turn a line of code (within a larger body) into an array of words
 char ** line_to_words(char *line)
 {
    // simple finite state machine
@@ -101,7 +112,7 @@ char ** line_to_words(char *line)
       {
          if (state == 2)
          {
-            fprintf(stderr, "error in '%s', unfinished string '#' in string\n", line);
+            fprintf(stderr, "error in '%s', unfinished string '#' in string\n", modify_and_shorten(line));
             return NULL;
          }
          zw += state; // possibly add 1 to nwords
@@ -111,7 +122,7 @@ char ** line_to_words(char *line)
       {
          if (state == 2)
          {
-            fprintf(stderr, "error in '%s', comments in strings not allowed\n", line);
+            fprintf(stderr, "error in '%s', comments in strings not allowed\n", modify_and_shorten(line));
             return NULL;
          }
          // printf("comment detected\n");
@@ -128,13 +139,13 @@ char ** line_to_words(char *line)
             zi = 0;
             if (zw == 10)
             {
-               fprintf(stderr, "error: too many words on line '%s'\n", line);
+               fprintf(stderr, "error: too many words on line '%s'\n", modify_and_shorten(line));
                return NULL;
             }
          }
          else if (next == '"')
          {
-            fprintf(stderr, "error on line '%s', quote begins during word\n", line);
+            fprintf(stderr, "error on line '%s', quote begins during word\n", modify_and_shorten(line));
             return NULL;
          }
          else
@@ -168,7 +179,7 @@ char ** line_to_words(char *line)
                   line[i+1] == '\n' || line[i+1] == '\0' ||
                   line[i+1] == '#' || (line[i+1] == '/' && line[i+2] == '/')))
             {
-               fprintf(stderr, "error on line '%s', quote ends during word\n", line);
+               fprintf(stderr, "error on line '%s', quote ends during word\n", modify_and_shorten(line));
                return NULL;
             }
             state = 1; // state 1 will take care of the cleanup
