@@ -682,6 +682,32 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       full_free((char***)IRstate->vars[var_dest]);
       eba_state = &eba_free_IR_state;
    }
+   else if (match_second_word(line, "P_LOCK_INIT"))
+   {
+      int var_dest = parse_variable(line[2]);
+      void *plock = malloc(sizeof(pthread_mutex_t));
+      pthread_mutex_init(plock, NULL);
+      IRstate->vars[var_dest] = (int64_t) plock;
+   }
+   else if (match_second_word(line, "P_LOCK_ACK"))
+   {
+      int var_dest = parse_variable(line[2]);
+      void *plock = (void*) IRstate->vars[var_dest];
+      pthread_mutex_lock(plock);
+   }
+   else if (match_second_word(line, "P_LOCK_REL"))
+   {
+      int var_dest = parse_variable(line[2]);
+      void *plock = (void*) IRstate->vars[var_dest];
+      pthread_mutex_unlock(plock);
+   }
+   else if (match_second_word(line, "P_LOCK_FREE"))
+   {
+      int var_dest = parse_variable(line[2]);
+      void *plock = (void*) IRstate->vars[var_dest];
+      pthread_mutex_destroy(plock);
+      free(plock);
+   }
    else
    {
       fprintf(stderr, "error: option %s does not exist for SCAFFOLD\n", line[1]);

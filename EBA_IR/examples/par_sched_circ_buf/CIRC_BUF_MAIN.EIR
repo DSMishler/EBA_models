@@ -339,6 +339,8 @@ MEMOP WRITE_TOBUF V4, V4, V57 // push read queue free
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V58 // push circ buf free
 
+MEMOP READ_FROMBUF V63, V3, &40 // grab the mutex
+SCAFFOLD P_LOCK_FREE V63 // and free it
 
 BUFREQ RELEASE V0 // and release ourselves
 SKIP_CLEANUP:

@@ -29,6 +29,7 @@
    // 16 - ERROR
    // 24 - bufs_to_free
    // 32 - code_to_free
+   // 40 - the parallelism lock
 
 
 // old args
