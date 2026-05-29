@@ -1,12 +1,20 @@
 // args buffer
 // 0: this buf (always)
-// 1: size of the queue
-// 2: the buffer (pre-allocated) that the sched buf will live in
-// 3: the buffer I will call when done.
+// 1: called thread (this one)
+// 2: sending thread (in case needed)
+// 3: size of the queue
+// 4: the buffer (pre-allocated) that the sched buf will live in
+// 5: the lock to unlock when done
 
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_BUF_INIT
 
-MEMOP READ_FROMBUF V14, V0, &8 // now v14 contains the size buffer for the queue
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
+MEMOP READ_FROMBUF V1, V0, &16
+BUFREQ RELEASE V1
+
+
+MEMOP READ_FROMBUF V14, V0, &24 // now v14 contains the size buffer for the queue
 
 
 BUFREQ ALLOC V1, V14  // data
@@ -23,7 +31,7 @@ MEMOP TRANSFER_WITH_OFFSET V3, &0, &0, &0, &8 // set head to be 0
 MEMOP TRANSFER_WITH_OFFSET V4, &0, &0, &0, &8 // set tail to be 0
 MEMOP TRANSFER_WITH_OFFSET V5, &0, &0, &0, &8 // set full to be 0
 
-MEMOP READ_FROMBUF V8, V0, &16
+MEMOP READ_FROMBUF V8, V0, &32
 
 MEMOP WRITE_TOBUF V8, &00, V1
 MEMOP WRITE_TOBUF V8, &08, V2
@@ -46,8 +54,9 @@ MEMOP LOAD_LITERAL V3, @0
 // now set up and call main
 BUFREQ RELEASE V14 // free the size buffer
 
-MEMOP READ_FROMBUF V15, V0, &24 // grab the next buf
+MEMOP READ_FROMBUF V15, V0, &40 // grab the lock
+SCAFFOLD P_SEM_POST V15 // release it
 BUFREQ RELEASE V0
-MEMOP MOVE V0, V15
-MEMOP READ_FROMBUF V1, V0, &0
-INVOKE LOCAL V1
+// MEMOP MOVE V0, V15
+// MEMOP READ_FROMBUF V1, V0, &0
+// INVOKE LOCAL V1

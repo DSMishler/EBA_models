@@ -1,0 +1,9 @@
+// sem post
+// args
+// 0 - This code (always)
+// 1 - Semamphore to post to
+
+
+MEMOP READ_FROMBUF V1, V0, &8
+SCAFFOLD P_SEM_POST V1
+BUFREQ RELEASE V0

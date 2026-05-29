@@ -36,6 +36,7 @@
    // 24 - bufs_to_free
    // 32 - code_to_free
 
+PRINT STRING "sched_circ_buf test"
 LOG RESET queue.eirout // reset the logfile, in case last run has data there.
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
@@ -166,19 +167,19 @@ MEMOP TRANSFER_WITH_OFFSET V19, &80, V2, &0, &48
 // from V2 (sched queue buffers) at offset 0
 // to V19 (code to free) at offset 80 (where we left off)
 MEMOP TRANSFER_WITH_OFFSET V19, &128, V3, &0, &8
-// Transfer 48 bytes
+// Transfer 8 bytes
 // from V3 (generalized buffers) at offset 0 (RELEASE_BUF_STAC)
 // to V19 (code to free) at offset 128 (where we left off)
 // NOTE: we are skipped the code_free, since it is what we use to free!
 // (it can't free itself!!)
 MEMOP TRANSFER_WITH_OFFSET V19, &136, V3, &16, &8
-// Transfer 48 bytes
+// Transfer 8 bytes
 // from V3 (generalized buffers) at offset 16 (ERROR.EBA)
-// to V19 (code to free) at offset 128 (where we left off)
+// to V19 (code to free) at offset 136 (where we left off)
 MEMOP TRANSFER_WITH_OFFSET V19, &144, V0, &0, &8
-// Transfer 48 bytes
-// from V3 (generalized buffers) at offset 0
-// to V0 (THIS code buf) at offset 0 (code)
+// Transfer 8 bytes
+// from V0 (this code buf) at offset 0 (where the code is)
+// to V19 (code to free) at offset 144 (where we left off)
 MATHOP ADD_U64 V19, V19, &144
 
 

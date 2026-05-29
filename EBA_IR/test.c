@@ -3,10 +3,8 @@
 #include "reader.h"
 #include "interpreter.h"
 
-#include <string.h> // TODO: probably can remove once continuations are added
-
-extern void (*eba_state)(void*);
-extern void *eba_arg;
+extern void (*eba_states[16])(void*);
+extern void *eba_args[16];
 
 void test_solofile(char *);
 void test_solofile_with_free(char *);
@@ -19,12 +17,14 @@ void test_circ_init(void);
 
 int main(void)
 {
-   printf("EBA tester\n");
+   // printf("EBA tester\n");
    // test_solofile("examples/COROUTINE_TEST_MAIN.EIR");
    // test_dualfile_invoke_test();
    // test_stackcall_invoke_test();
    // test_queue_invoke();
    test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+   // test_solofile("examples/sched_circ_buf/STARTER.EIR");
+   return 0;
 }
 
 void test_solofile(char *fname)
@@ -32,133 +32,136 @@ void test_solofile(char *fname)
    char ***IRcode;
    IRcode = full_read(fname);
 
-   void *arg_buf = malloc(sizeof(void*));
-   ((char****)arg_buf)[0] = IRcode;
+   uint64_t *p_w_thread = malloc(sizeof(uint64_t));
+   *p_w_thread = 0;
 
-   // code should free its arg buf
-   eba_state = &run_code;
-   eba_arg = (void*)arg_buf;
-   EBA_run();
+   void **arg_buf = malloc(2*sizeof(void*));
+   arg_buf[0] = (void*)IRcode;
+   arg_buf[1] = (void*)p_w_thread;
+
+   eba_states[0] = &run_code;
+   eba_args[0] = (void*)arg_buf;
+   EBA_run(NULL);
 }
       
-void test_solofile_with_free(char *fname)
-{
-   char ***IRcode;
-   IRcode = full_read(fname);
+// void test_solofile_with_free(char *fname)
+// {
+//    char ***IRcode;
+//    IRcode = full_read(fname);
+// 
+//    void *arg_buf = malloc(sizeof(void*));
+//    ((char****)arg_buf)[0] = IRcode;
+// 
+//    // code should free its arg buf
+//    eba_state = &thread_starter;
+//    eba_arg = (void*)arg_buf;
+//    EBA_run(0);
+//       
+//    full_free(IRcode);
+// }
 
-   void *arg_buf = malloc(sizeof(void*));
-   ((char****)arg_buf)[0] = IRcode;
+// void test_dualfile_invoke_test(void)
+// {
+//    char ***IRcode1, ***IRcode2;
+//    IRcode1 = full_read("examples/INVOKE_NEXT.EIR");
+//    IRcode2 = full_read("examples/SHORT.EIR");
+// 
+//    void *arg_buf = malloc(2*sizeof(void*));
+//    ((char****)arg_buf)[0] = IRcode1;
+//    ((char****)arg_buf)[1] = IRcode2;
+// 
+//    // code should free its arg buf
+//    eba_state = &thread_starter;
+//    eba_arg = (void*)arg_buf;
+//    EBA_run(0);
+// 
+//    full_free(IRcode1);
+//    full_free(IRcode2);
+// }
 
-   // code should free its arg buf
-   eba_state = &run_code;
-   eba_arg = (void*)arg_buf;
-   EBA_run();
-      
-   full_free(IRcode);
-}
+// void test_stackcall_invoke_test(void)
+// {
+//    char ***IRcode1, ***IRcode2;
+//    IRcode1 = full_read("examples/CALL_STACK.EIR");
+//    IRcode2 = full_read("examples/CALLBACK.EIR");
+//    void *arg_buf = malloc(2*sizeof(void*));
+//    ((char****)arg_buf)[0] = IRcode1;
+//    void *stack_arg = malloc(25*sizeof(void*));
+//    *((uint64_t*)stack_arg) = 2;
+//    ((char****)stack_arg)[1] = IRcode2;
+//    ((char****)stack_arg)[2] = IRcode2;
+//    ((char****)arg_buf)[1] = (char***)stack_arg;
+// 
+//    eba_state = &thread_starter;
+//    eba_arg = (void*)arg_buf;
+//    EBA_run(0);
+// 
+//    full_free(IRcode1);
+//    full_free(IRcode2);
+// }
 
-void test_dualfile_invoke_test(void)
-{
-   char ***IRcode1, ***IRcode2;
-   IRcode1 = full_read("examples/INVOKE_NEXT.EIR");
-   IRcode2 = full_read("examples/SHORT.EIR");
-
-   void *arg_buf = malloc(2*sizeof(void*));
-   ((char****)arg_buf)[0] = IRcode1;
-   ((char****)arg_buf)[1] = IRcode2;
-
-   // code should free its arg buf
-   eba_state = &run_code;
-   eba_arg = (void*)arg_buf;
-   EBA_run();
-
-   full_free(IRcode1);
-   full_free(IRcode2);
-}
-
-void test_stackcall_invoke_test(void)
-{
-   char ***IRcode1, ***IRcode2;
-   IRcode1 = full_read("examples/CALL_STACK.EIR");
-   IRcode2 = full_read("examples/CALLBACK.EIR");
-   void *arg_buf = malloc(2*sizeof(void*));
-   ((char****)arg_buf)[0] = IRcode1;
-   void *stack_arg = malloc(25*sizeof(void*));
-   *((uint64_t*)stack_arg) = 2;
-   ((char****)stack_arg)[1] = IRcode2;
-   ((char****)stack_arg)[2] = IRcode2;
-   ((char****)arg_buf)[1] = (char***)stack_arg;
-
-   eba_state = &run_code;
-   eba_arg = (void*)arg_buf;
-   EBA_run();
-
-   full_free(IRcode1);
-   full_free(IRcode2);
-}
-
-void test_queue_invoke(void)
-{
-   printf("queue schedule circ buf invoking test!\n");
-   char ****CB_IRcodes = malloc(6*sizeof(char***));
-   char ****SQ_IRcodes = malloc(16*sizeof(char***));
-   int i;
-
-   CB_IRcodes[0] = full_read("examples/sched_queue_test/CIRC_BUF_READ.EIR");
-   CB_IRcodes[1] = full_read("examples/sched_queue_test/CIRC_BUF_WRITE.EIR");
-   CB_IRcodes[2] = full_read("examples/sched_queue_test/CIRC_SCHED_MAIN.EIR");
-   CB_IRcodes[3] = full_read("examples/sched_queue_test/CIRC_SCHED_UNPACK.EIR");
-   CB_IRcodes[4] = NULL;
-   CB_IRcodes[5] = NULL;
-
-   SQ_IRcodes[0] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD.EIR");
-   SQ_IRcodes[1] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD_STACK.EIR");
-   SQ_IRcodes[2] = full_read("examples/sched_queue_test/SCHED_QUEUE_FREE.EIR");
-   SQ_IRcodes[3] = full_read("examples/sched_queue_test/SCHED_QUEUE_INIT.EIR");
-   SQ_IRcodes[4] = full_read("examples/sched_queue_test/SCHED_QUEUE_MAIN.EIR");
-   SQ_IRcodes[5] = full_read("examples/sched_queue_test/SCHED_QUEUE_PEEK.EIR");
-   SQ_IRcodes[6] = full_read("examples/sched_queue_test/SCHED_QUEUE_PRINT.EIR");
-   SQ_IRcodes[7] = full_read("examples/sched_queue_test/SCHED_QUEUE_REMOVE.EIR");
-   SQ_IRcodes[8] = NULL;
-   SQ_IRcodes[9] = NULL;
-   SQ_IRcodes[10] = full_read("examples/sched_queue_test/ERROR.EIR");
-   SQ_IRcodes[11] = full_read("examples/sched_queue_test/SUCCESS.EIR");
-   SQ_IRcodes[12] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE.EIR");
-   SQ_IRcodes[13] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE_STACK.EIR");
-   SQ_IRcodes[14] = full_read("examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EIR");
-   SQ_IRcodes[15] = full_read("examples/sched_queue_test/RELEASE_BUF_STACK.EIR");
-
-   char ***IRcode1;
-   IRcode1 = full_read("examples/sched_queue_test/CIRC_SCHED_QUEUE_STARTER.EIR");
-
-   void *arg_buf_1 = malloc(3*sizeof(void*));
-   ((char****)arg_buf_1)[2] = (char***)SQ_IRcodes;
-   ((char****)arg_buf_1)[1] = (char***)CB_IRcodes;
-   ((char****)arg_buf_1)[0] = IRcode1;
-
-   eba_state = &run_code;
-   eba_arg = (void*)arg_buf_1;
-   EBA_run();
-
-   full_free(IRcode1);
-
-   for(i = 0; i < 4; i++)
-   {
-      full_free(CB_IRcodes[i]);
-   }
-   free(CB_IRcodes);
-   for(i = 0; i < 8; i++)
-   {
-      full_free(SQ_IRcodes[i]);
-   }
-   full_free(SQ_IRcodes[10]);
-   full_free(SQ_IRcodes[11]);
-   full_free(SQ_IRcodes[12]);
-   full_free(SQ_IRcodes[13]);
-   full_free(SQ_IRcodes[14]);
-   full_free(SQ_IRcodes[15]);
-   free(SQ_IRcodes);
-}
+// void test_queue_invoke(void)
+// {
+//    printf("queue schedule circ buf invoking test!\n");
+//    char ****CB_IRcodes = malloc(6*sizeof(char***));
+//    char ****SQ_IRcodes = malloc(16*sizeof(char***));
+//    int i;
+// 
+//    CB_IRcodes[0] = full_read("examples/sched_queue_test/CIRC_BUF_READ.EIR");
+//    CB_IRcodes[1] = full_read("examples/sched_queue_test/CIRC_BUF_WRITE.EIR");
+//    CB_IRcodes[2] = full_read("examples/sched_queue_test/CIRC_SCHED_MAIN.EIR");
+//    CB_IRcodes[3] = full_read("examples/sched_queue_test/CIRC_SCHED_UNPACK.EIR");
+//    CB_IRcodes[4] = NULL;
+//    CB_IRcodes[5] = NULL;
+// 
+//    SQ_IRcodes[0] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD.EIR");
+//    SQ_IRcodes[1] = full_read("examples/sched_queue_test/SCHED_QUEUE_ADD_STACK.EIR");
+//    SQ_IRcodes[2] = full_read("examples/sched_queue_test/SCHED_QUEUE_FREE.EIR");
+//    SQ_IRcodes[3] = full_read("examples/sched_queue_test/SCHED_QUEUE_INIT.EIR");
+//    SQ_IRcodes[4] = full_read("examples/sched_queue_test/SCHED_QUEUE_MAIN.EIR");
+//    SQ_IRcodes[5] = full_read("examples/sched_queue_test/SCHED_QUEUE_PEEK.EIR");
+//    SQ_IRcodes[6] = full_read("examples/sched_queue_test/SCHED_QUEUE_PRINT.EIR");
+//    SQ_IRcodes[7] = full_read("examples/sched_queue_test/SCHED_QUEUE_REMOVE.EIR");
+//    SQ_IRcodes[8] = NULL;
+//    SQ_IRcodes[9] = NULL;
+//    SQ_IRcodes[10] = full_read("examples/sched_queue_test/ERROR.EIR");
+//    SQ_IRcodes[11] = full_read("examples/sched_queue_test/SUCCESS.EIR");
+//    SQ_IRcodes[12] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE.EIR");
+//    SQ_IRcodes[13] = full_read("examples/sched_queue_test/SCHED_QUEUE_PASS_AND_FREE_STACK.EIR");
+//    SQ_IRcodes[14] = full_read("examples/sched_queue_test/CIRC_BUF_ADD_REQUESTS.EIR");
+//    SQ_IRcodes[15] = full_read("examples/sched_queue_test/RELEASE_BUF_STACK.EIR");
+// 
+//    char ***IRcode1;
+//    IRcode1 = full_read("examples/sched_queue_test/CIRC_SCHED_QUEUE_STARTER.EIR");
+// 
+//    void *arg_buf_1 = malloc(3*sizeof(void*));
+//    ((char****)arg_buf_1)[2] = (char***)SQ_IRcodes;
+//    ((char****)arg_buf_1)[1] = (char***)CB_IRcodes;
+//    ((char****)arg_buf_1)[0] = IRcode1;
+// 
+//    eba_state = &thread_starter;
+//    eba_arg = (void*)arg_buf_1;
+//    EBA_run(0);
+// 
+//    full_free(IRcode1);
+// 
+//    for(i = 0; i < 4; i++)
+//    {
+//       full_free(CB_IRcodes[i]);
+//    }
+//    free(CB_IRcodes);
+//    for(i = 0; i < 8; i++)
+//    {
+//       full_free(SQ_IRcodes[i]);
+//    }
+//    full_free(SQ_IRcodes[10]);
+//    full_free(SQ_IRcodes[11]);
+//    full_free(SQ_IRcodes[12]);
+//    full_free(SQ_IRcodes[13]);
+//    full_free(SQ_IRcodes[14]);
+//    full_free(SQ_IRcodes[15]);
+//    free(SQ_IRcodes);
+// }
 /*
 void test_dualfile_invoke_test(void)
 {

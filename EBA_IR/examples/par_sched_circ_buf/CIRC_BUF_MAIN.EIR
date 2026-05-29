@@ -20,6 +20,10 @@ MEMOP READ_FROMBUF V1, V0, &08 // the CIRC BUF bufs
 MEMOP READ_FROMBUF V2, V0, &16 // the SCHED_QUEUE bufs
 MEMOP READ_FROMBUF V3, V0, &24 // the generalized bufs
 
+MEMOP READ_FROMBUF V7, V3, &48
+SCAFFOLD P_SEM_WAIT V7
+SCAFFOLD P_SEM_WAIT V7
+
 BUFREQ ALLOC V4, &104 // space for 104/8-1=12 arg buffers
 MEMOP LOAD_LITERAL V4, @0
 
@@ -101,18 +105,13 @@ MEMOP TRANSFER_WITH_OFFSET V21, &8, V1, &80, &8
 // transfer 8 bytes (one code buf)
 // from V1 (the circ buf buffers) at offset 80 (the write queue)
 // into V21 (the arg buf) at offset 8
-MEMOP TRANSFER_WITH_OFFSET V21, &16, V2, &56, &8
-// transfer 8 bytes (one code buf)
-// from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
-// into V21 (the arg buf) at offset 16
+MEMOP WRITE_TOBUF V21, &16, V7
+// when done, free the semaphore
 
 // now pop that into the arg buf for the circ buf write:
 MEMOP WRITE_TOBUF V20, &32, V21
-// and on a fail, skip removing from the queue and just call that scheduler
-MEMOP TRANSFER_WITH_OFFSET V20, &40, V2, &56, &8
-// transfer 8 bytes (one code buf)
-// from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
-// into V20 (the arg buf) at offset 40
+// and on a fail, skip removing from the queue and just free that semaphore
+MEMOP WRITE_TOBUF V20, &40, V7
 
 // now prep the circ buf unpack
 BUFREQ ALLOC V22, &32
@@ -125,25 +124,34 @@ BUFREQ ALLOC V29, &24 // the buf for the compressed request
 MEMOP WRITE_TOBUF V22, &16, V29
 MEMOP WRITE_TOBUF V22, &24, V20 // after circ buf unpack, call circ buf write
 
-BUFREQ ALLOC V23, &32
+BUFREQ ALLOC V23, &48
 MEMOP TRANSFER_WITH_OFFSET V23, &0, V1, &32, &8
 // transfer 8 bytes (one code buf)
 // from V1 (the circ buf buffers) at offset 32 (the peek code)
 // into V23 (the arg buf) at offset 0 (where the code goes)
-MEMOP TRANSFER_WITH_OFFSET V23, &8, V1, &80, &8
+BUFREQ ALLOC V27, &8
+MEMOP WRITE_TOBUF V23, &8, V27 // for the called thread
+BUFREQ ALLOC V27, &8
+SCAFFOLD PTHREAD_GET_TID V27
+MEMOP WRITE_TOBUF V23, &16, V27 // for the calling thread
+MEMOP TRANSFER_WITH_OFFSET V23, &24, V1, &80, &8
 // transfer 8 bytes (one buf)
 // from V1 (the circ buffers) at offset 80 (the write queue)
-// into V23 (the arg buf) at offset 8
-MEMOP WRITE_TOBUF V23, &16, V29 // shared with the unpack code
-MEMOP WRITE_TOBUF V23, &24, V22 // after circ buf peek, call circ buf unpack
+// into V23 (the arg buf) at offset 24
+MEMOP WRITE_TOBUF V23, &32, V29 // shared with the unpack code
+MEMOP WRITE_TOBUF V23, &40, V22 // after circ buf peek, call circ buf unpack
 
 LOG STRING queue.eirout TRANSLATE_CIRC_BUF_WRITE
 LOG VAR queue.eirout V23
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V23
 // push circ_buf_write (peek->unpack->write->remove)
+CMP EQ &0, &0, W_DONE
 
 W_REQ_QUEUE_EMPTY:
+SCAFFOLD P_SEM_POST V7
+
+W_DONE:
 BUFREQ RELEASE V16
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +215,7 @@ BUFREQ ALLOC V40, &48
 MEMOP TRANSFER_WITH_OFFSET V40, &0, V1, &0, &8
 // transfer 8 bytes
 // from V1 (circ buf buffers) at offset 8 (the circ buf read code)
-// into V20 (the arg buf) at offset 0 (where the code goes)
+// into V40 (the arg buf) at offset 0 (where the code goes)
 // we'll get indices 1, 2, and 3 populated later
 
 // if successful, REMOVE the entry from the read queue buffer
@@ -216,54 +224,58 @@ BUFREQ ALLOC V41, &24
 MEMOP TRANSFER_WITH_OFFSET V41, &0, V1, &48, &8
 // transfer 8 bytes (one code buf)
 // from V1 (circ buf buffers) at offset 48 (the remove code)
-// into V21 (the arg buf) at offset 0 (where the code goes)
+// into V41 (the arg buf) at offset 0 (where the code goes)
 MEMOP TRANSFER_WITH_OFFSET V41, &8, V1, &72, &8
 // transfer 8 bytes (one code buf)
 // from V1 (the circ buf buffers) at offset 72 (the read queue)
-// into V21 (the arg buf) at offset 8
-MEMOP TRANSFER_WITH_OFFSET V41, &16, V2, &56, &8
-// transfer 8 bytes (one code buf)
-// from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
-// into V21 (the arg buf) at offset 16
+// into V41 (the arg buf) at offset 8
+MEMOP WRITE_TOBUF V41, &16, V7
+// when done, free the semaphore
 
-// now pop that into the arg buf for the circ buf read:
+// now pop that into the arg buf for the circ buf write:
 MEMOP WRITE_TOBUF V40, &32, V41
-// and on a fail, skip removing from the queue and just call that scheduler
-MEMOP TRANSFER_WITH_OFFSET V40, &40, V2, &56, &8
-// transfer 8 bytes (one code buf)
-// from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
-// into V40 (the arg buf) at offset 40
+// and on a fail, skip removing from the queue and just free that semaphore
+MEMOP WRITE_TOBUF V40, &40, V7
 
 // now prep the circ buf unpack
 BUFREQ ALLOC V42, &32
 MEMOP TRANSFER_WITH_OFFSET V42, &0, V1, &40, &8
 // transfer 8 bytes (one code buf)
 // from V1 (the circ buffers) at offset 40 (the unpack code)
-// into V22 (the arg buf) at offset 0 (where code goes)
+// into V42 (the arg buf) at offset 0 (where code goes)
 MEMOP WRITE_TOBUF V42, &8, V40 // buf we're unpacking into
 BUFREQ ALLOC V49, &24 // the buf for the compressed request
 MEMOP WRITE_TOBUF V42, &16, V49
 MEMOP WRITE_TOBUF V42, &24, V40 // after circ buf unpack, call circ buf read
 
-BUFREQ ALLOC V43, &32
+BUFREQ ALLOC V43, &48
 MEMOP TRANSFER_WITH_OFFSET V43, &0, V1, &32, &8
 // transfer 8 bytes (one code buf)
 // from V1 (the circ buf buffers) at offset 32 (the peek code)
-// into V23 (the arg buf) at offset 0 (where the code goes)
-MEMOP TRANSFER_WITH_OFFSET V43, &8, V1, &72, &8
+// into V43 (the arg buf) at offset 0 (where the code goes)
+BUFREQ ALLOC V47, &8
+MEMOP WRITE_TOBUF V43, &8, V47 // for the called thread
+BUFREQ ALLOC V47, &8
+SCAFFOLD PTHREAD_GET_TID V47
+MEMOP WRITE_TOBUF V43, &16, V47 // for the calling thread
+MEMOP TRANSFER_WITH_OFFSET V43, &24, V1, &72, &8
 // transfer 8 bytes (one buf)
 // from V1 (the circ buffers) at offset 72 (the read queue)
-// into V23 (the arg buf) at offset 8
-MEMOP WRITE_TOBUF V43, &16, V49 // shared with the unpack code
-MEMOP WRITE_TOBUF V43, &24, V42 // after circ buf peek, call circ buf unpack
+// into V43 (the arg buf) at offset 24
+MEMOP WRITE_TOBUF V43, &32, V49 // shared with the unpack code
+MEMOP WRITE_TOBUF V43, &40, V42 // after circ buf peek, call circ buf unpack
 
 LOG STRING queue.eirout TRANSLATE_CIRC_BUF_READ
 LOG VAR queue.eirout V43
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V43
 // push circ_buf_read (peek->unpack->read->remove)
+CMP EQ &0, &0, R_DONE
 
 R_REQ_QUEUE_EMPTY:
+SCAFFOLD P_SEM_POST V7
+
+R_DONE:
 BUFREQ RELEASE V36
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -311,36 +323,46 @@ LOG STRING queue.eirout TRANSLATE_FREE_WRITE_QUEUE
 LOG VAR queue.eirout V56
 LOG STRING queue.eirout TRANSLATE_FREE_READ_QUEUE
 LOG VAR queue.eirout V57
-LOG STRING queue.eirout TRANSLATE_FREE_CIRC_BUF
+LOG STRING queue.eirout TRANSLATE_FREE_QUEUES
 LOG VAR queue.eirout V58
 
 MEMOP TRANSFER_WITH_OFFSET V56, &0, V1, &24, &8
 // transfer 8 bytes
 // from V1 (the circ buf buffers) at offset 24 (circ_buf_free code buf)
 // to V56 (arg buf for freeing write queue) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V57, &0, V1, &24, &8
+// transfer 8 bytes
+// from V1 (the circ buf buffers) at offset 24 (circ_buf_free code buf)
+// to V57 (arg buf for freeing read queue) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V58, &0, V1, &24, &8
+// transfer 8 bytes
+// from V1 (the circ buf buffers) at offset 24 (circ_buf_free code buf)
+// to V58 (arg buf for freeing circ buf) at offset 0
+
 MEMOP TRANSFER_WITH_OFFSET V56, &8, V1, &80, &8
 // transfer 8 bytes
 // from V1 (the circ buffers) at offset 80 (the write queue)
 // to V56 (free write queue) at offset 8
+// same for V57
+MEMOP TRANSFER_WITH_OFFSET V57, &8, V1, &72, &8 // except it gets read queue
+// same for V58
+MEMOP TRANSFER_WITH_OFFSET V58, &8, V1, &88, &8 // except it gets the circ buf
+
+MEMOP WRITE_TOBUF V58, &16, V57 // after freeing circ buf, free read queue
+MEMOP WRITE_TOBUF V57, &16, V56 // after freeing read queue, free write queue
 MEMOP TRANSFER_WITH_OFFSET V56, &16, V2, &56, &8
 // transfer 8 bytes
 // from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
 // into V56 (the arg buf) at offset 16
 
-MEMOP TRANSFER_WITH_OFFSET V57, &0, V56, &0, &24 // copy over to V57
-MEMOP TRANSFER_WITH_OFFSET V57, &8, V1, &72, &8 // except it gets read queue
-MEMOP TRANSFER_WITH_OFFSET V58, &0, V56, &0, &24 // copy over to V58
-MEMOP TRANSFER_WITH_OFFSET V58, &8, V1, &88, &8 // except it gets the circ buf
-
-MATHOP ADD_U64 V4, V4, &8
-MEMOP WRITE_TOBUF V4, V4, V56 // push write queue free
-MATHOP ADD_U64 V4, V4, &8
-MEMOP WRITE_TOBUF V4, V4, V57 // push read queue free
 MATHOP ADD_U64 V4, V4, &8
 MEMOP WRITE_TOBUF V4, V4, V58 // push circ buf free
 
-MEMOP READ_FROMBUF V63, V3, &40 // grab the mutex
-SCAFFOLD P_LOCK_FREE V63 // and free it
+MEMOP READ_FROMBUF V63, V3, &40 // grab the first semaphore
+SCAFFOLD P_SEM_FREE V63 // and free it
+MEMOP READ_FROMBUF V63, V3, &48 // grab the second semaphore
+SCAFFOLD P_SEM_FREE V63 // and free it
+
 
 BUFREQ RELEASE V0 // and release ourselves
 SKIP_CLEANUP:
@@ -361,9 +383,9 @@ MEMOP TRANSFER_WITH_OFFSET V59, &24, V2, &56, &8
 // from V2 (the sched buffers) at offset 56 (sched_queue_main arg buf)
 // into V59 (the arg buf) at offset 24
 BUFREQ ALLOC V60, &8
-MEMOP TRANSFER_WITH_OFFSET V60, &0, V3, &16, &8
+MEMOP TRANSFER_WITH_OFFSET V60, &0, V3, &56, &8
 // transfer 8 bytes (one code buf)
-// from V3 (the general buffers) at offset 16 (error code buf)
+// from V3 (the general buffers) at offset 56 (error code buf)
 // into V60 (the arg buf) at offset 0
 MEMOP WRITE_TOBUF V59, &32, V60
 

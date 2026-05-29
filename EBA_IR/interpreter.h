@@ -8,6 +8,7 @@
 
 struct IR_state
 {
+   uint64_t w_thread;
    int64_t* vars;
    int next_line; // TODO: might just use pointer for next line to not have
                   // to keep track of both next line and code buf
@@ -17,7 +18,7 @@ typedef struct IR_state IR_state_t;
 
 void run_code(void*);
 
-void EBA_run(void);
+void * EBA_run(void *arg);
 
 IR_state_t * init_IR_state(void);
 void print_IR_state(IR_state_t *IRstate);

@@ -4,7 +4,7 @@
 // 2: soruce buffer
 // 3: size buffer (containing the number of bytes to read)
 // 4: buffer (explicit) to call when done if successful
-// 5: buffer (explicit) to call when done if unsuccessful
+// 5: sem to post when done if unsuccessful
 
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_BUF_WRITE
 
@@ -85,14 +85,12 @@ MEMOP READ_FROMBUF V1, V0, &0
 INVOKE LOCAL V1
 
 WRITE_FAIL:
-PRINT STRING "WRITE FAILURE"
+// PRINT STRING "WRITE FAILURE"
 
 BUFREQ RELEASE V9
 
 MEMOP READ_FROMBUF V9, V0, &32 // free what you would have called on a success
 BUFREQ RELEASE V9
 MEMOP READ_FROMBUF V9, V0, &40
+SCAFFOLD P_SEM_POST V9
 BUFREQ RELEASE V0
-MEMOP MOVE V0, V9
-MEMOP READ_FROMBUF V1, V0, &0
-INVOKE LOCAL V1

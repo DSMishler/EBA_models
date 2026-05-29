@@ -1,21 +1,27 @@
 // args:
 // 0 - this buf (always)
-// 1 - the schedule queue
-// 2 - an empty buf that I'll put the peeked item into
-// 3 - who to call when done (most likely the unpack code)
-
+// 1 - the called thread (me)
+// 2 - the calling thread (in case I wanted it)
+// 3 - the schedule queue
+// 4 - an empty buf that I'll put the peeked item into
+// 5 - who to call when done (most likely the unpack code)
 
 // ASSUMES there is space, the entry is valid, etc.
 
 // LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_BUF_PEEK
 
-MEMOP READ_FROMBUF V6, V0, &8  // grab the circular buffer
+MEMOP READ_FROMBUF V11, V0, &8
+BUFREQ RELEASE V11
+MEMOP READ_FROMBUF V11, V0, &16
+BUFREQ RELEASE V11
+
+MEMOP READ_FROMBUF V6, V0, &24 // grab the circular buffer
 MEMOP READ_FROMBUF V1, V6, &0  // data
 MEMOP READ_FROMBUF V3, V6, &16 // head
 
 // since we assume the entry is valid...
 
-MEMOP READ_FROMBUF V7, V0, &16 // grab dest buf
+MEMOP READ_FROMBUF V7, V0, &32 // grab dest buf
 
 MEMOP READ_FROMBUF V9, V1, V3 // grab the singular buf out of the queue
 
@@ -25,7 +31,7 @@ MEMOP TRANSFER_WITH_OFFSET V7, &0, V9, &0, &24
 // from the head of the schedule queue (which was unpacked into buf V9)
 
 // that's all, folks. Now move on
-MEMOP READ_FROMBUF V8, V0, &24 // next buf
+MEMOP READ_FROMBUF V8, V0, &40 // next buf
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V8
 MEMOP READ_FROMBUF V1, V0, &0

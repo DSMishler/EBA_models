@@ -1,7 +1,7 @@
 // args
 // 0 - this buf (always)
-// 1 - the schedule queue
-// 2 - who to call when done
+// 1 - the schedule queue (for RW requests)
+// 2 - semaphore to release when done
 
 // ASSUMES there is space, there is something needing
 // removed, etc.
@@ -20,5 +20,4 @@ MEMOP LOAD_LITERAL V5, @0 // certainly not full - something was popped
 MEMOP READ_FROMBUF V8, V0, &16
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V8
-MEMOP READ_FROMBUF V1, V0, &0
-INVOKE LOCAL V1
+SCAFFOLD P_SEM_POST V0

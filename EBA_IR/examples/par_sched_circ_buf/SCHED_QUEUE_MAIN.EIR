@@ -47,6 +47,8 @@ CMP EQ V7, &0, DONE // the queue is empty if V7 is zero
 // if V7 is not zero, then we have to peel an element off and call it
 BUFREQ RELEASE V7
 
+SCHEDULE:
+
 MEMOP READ_FROMBUF V7, V1, V3 // grab an element from the head
 MATHOP ADD_U64 V3, V3, &8 // head = head + 8 (sizeof a buf ptr)
 MATHOP MOD_U64 V3, V3, V2 // head = head % size
@@ -54,6 +56,21 @@ MEMOP LOAD_LITERAL V5, @0 // certainly, the queue is no longer full
 // (skipping a conditional just makes this simpler)
 
 
+CMP EQ V3, V4, FINAL // if V3==V4 (head == tail), then *don't* keep iterating
+// but if not, there are more things to spawn. Spawn a thread to do it!
+MEMOP READ_FROMBUF V8, V7, &8 // grab the thread buf from the arg buf
+// (assume it's correctly placed)
+SCAFFOLD PTHREAD_GET_AVAIL V8
+MEMOP READ_FROMBUF V9, V7, &16 // grab the thread buf from the arg buf
+// (assume it's correctly placed)
+SCAFFOLD PTHREAD_GET_TID V9
+// PRINT STRING "SCHEDULER SPAWNING TO"
+// PRINT WORD V8
+SCAFFOLD PTHREAD_SPAWN_HEAVY V7
+
+CMP EQ &0, &0, SCHEDULE
+
+FINAL:
 // don't release V0, a lot of other programs like it
 MEMOP MOVE V0, V7
 MEMOP READ_FROMBUF V1, V0, &0

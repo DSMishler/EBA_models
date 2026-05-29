@@ -5,6 +5,8 @@
 
 pthread_mutex_t lock;
 
+int ints[16] = {5};
+
 void *fakelock;
 
 void* threadfunc(void *arg)
@@ -16,8 +18,19 @@ void* threadfunc(void *arg)
    return NULL;
 }
 
+void* tfunc(void* arg)
+{
+   pthread_mutex_lock(fakelock);
+   printf("mythreadnum is %lld\n", (long long int) arg);
+   sleep(1);
+   pthread_mutex_unlock(fakelock);
+   return NULL;
+}
+
 int main(void)
 {
+   printf("ints[0]: %d\n", ints[0]);
+   printf("ints[2]: %d\n", ints[2]);
    pthread_t tids[4];
    int targs[4];
    fakelock = malloc(sizeof(pthread_mutex_t));
@@ -31,7 +44,7 @@ int main(void)
    for(i = 0; i < 4; i++)
    {
       targs[i] = i;
-      pthread_create(tids+i, NULL, threadfunc, targs+i);
+      pthread_create(tids+i, NULL, tfunc, (void*)(targs[i]));
    }
 
    for(i = 0; i < 4; i++)

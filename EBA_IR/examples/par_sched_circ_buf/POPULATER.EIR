@@ -18,6 +18,7 @@ MEMOP READ_FROMBUF V2, V0, &16
 MEMOP READ_FROMBUF V3, V0, &24
 
 MEMOP READ_FROMBUF V4, V2, &56
+MEMOP READ_FROMBUF V6, V3, &40
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,10 +36,10 @@ MEMOP READ_FROMBUF V4, V2, &56
 // we'll pop them onto the stack and use the stack code, so we put them in
 
 
-BUFREQ ALLOC V10, &32 // init circ buf
-BUFREQ ALLOC V11, &32 // init read queue
-BUFREQ ALLOC V12, &32 // init write queue
-BUFREQ ALLOC V13, &32 // add read and write requests
+BUFREQ ALLOC V10, &48 // init circ buf
+BUFREQ ALLOC V11, &48 // init read queue
+BUFREQ ALLOC V12, &48 // init write queue
+BUFREQ ALLOC V13, &48 // add read and write requests
 BUFREQ ALLOC V14, &32 // circ buf main
 LOG STRING queue.eirout TRANSLATE_INIT_CIRC_BUF
 LOG VAR queue.eirout V10
@@ -64,9 +65,16 @@ MEMOP TRANSFER_WITH_OFFSET V13, &0, V1, &56, &8
 // transfer 8 bytes
 // from V1 (circ bufs) at index 56 (add rw requests)
 // to V13 (add rw requests) at index 0
-MEMOP WRITE_TOBUF V13, &08, V1
-MEMOP WRITE_TOBUF V13, &16, V2
-MEMOP WRITE_TOBUF V13, &24, V3
+
+BUFREQ ALLOC V25, &8 // for the target thread
+MEMOP WRITE_TOBUF V13, &8, V25
+BUFREQ ALLOC V25, &8 // for the sending thread
+SCAFFOLD PTHREAD_GET_TID V25
+MEMOP WRITE_TOBUF V13, &16, V25
+
+MEMOP WRITE_TOBUF V13, &24, V1
+MEMOP WRITE_TOBUF V13, &32, V2
+MEMOP WRITE_TOBUF V13, &40, V3
 
 
 MEMOP TRANSFER_WITH_OFFSET V12, &0, V1, &16, &8
@@ -82,6 +90,24 @@ MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &16, &8
 // from V1 (circ bufs) at index 16 (circ buf init)
 // to V10 (circ buf init) at index 0
 
+BUFREQ ALLOC V25, &8 // for the target thread
+MEMOP WRITE_TOBUF V12, &8, V25
+BUFREQ ALLOC V25, &8 // for the target thread
+MEMOP WRITE_TOBUF V11, &8, V25
+BUFREQ ALLOC V25, &8 // for the target thread
+MEMOP WRITE_TOBUF V10, &8, V25
+
+BUFREQ ALLOC V25, &8 // for the sending thread
+SCAFFOLD PTHREAD_GET_TID V25
+MEMOP WRITE_TOBUF V12, &16, V25
+BUFREQ ALLOC V25, &8 // for the sending thread
+SCAFFOLD PTHREAD_GET_TID V25
+MEMOP WRITE_TOBUF V11, &16, V25
+BUFREQ ALLOC V25, &8 // for the sending thread
+SCAFFOLD PTHREAD_GET_TID V25
+MEMOP WRITE_TOBUF V10, &16, V25
+
+
 BUFREQ ALLOC V29, &8
 MEMOP LOAD_LITERAL V29, @200
 BUFREQ ALLOC V28, &8
@@ -89,28 +115,28 @@ MEMOP LOAD_LITERAL V28, @200
 BUFREQ ALLOC V27, &8
 MEMOP LOAD_LITERAL V27, @200
 
-MEMOP WRITE_TOBUF V12, &8, V29
-MEMOP WRITE_TOBUF V11, &8, V28
-MEMOP WRITE_TOBUF V10, &8, V27
+MEMOP WRITE_TOBUF V12, &24, V29
+MEMOP WRITE_TOBUF V11, &24, V28
+MEMOP WRITE_TOBUF V10, &24, V27
 
 
-MEMOP TRANSFER_WITH_OFFSET V12, &16, V1, &80, &8
+MEMOP TRANSFER_WITH_OFFSET V12, &32, V1, &80, &8
 // transfer 8 bytes
 // from V1 (circ bufs) at index 80 (write queue)
 // to V12 (write queue init) at index 0
-MEMOP TRANSFER_WITH_OFFSET V11, &16, V1, &72, &8
+MEMOP TRANSFER_WITH_OFFSET V11, &32, V1, &72, &8
 // transfer 8 bytes
 // from V1 (circ bufs) at index 72 (read queue)
 // to V11 (read queue init) at index 0
-MEMOP TRANSFER_WITH_OFFSET V10, &16, V1, &88, &8
+MEMOP TRANSFER_WITH_OFFSET V10, &32, V1, &88, &8
 // transfer 8 bytes
 // from V1 (circ bufs) at index 88 (circ buf)
 // to V10 (circ buf init) at index 0
 
 
-MEMOP WRITE_TOBUF V12, &24, V4
-MEMOP WRITE_TOBUF V11, &24, V4
-MEMOP WRITE_TOBUF V10, &24, V4
+MEMOP WRITE_TOBUF V12, &40, V6 // all of them will be posting the sem when done
+MEMOP WRITE_TOBUF V11, &40, V6
+MEMOP WRITE_TOBUF V10, &40, V6
 
 
 BUFREQ ALLOC V15, &48 // stack up the codes to add them to the scheduler
@@ -138,9 +164,9 @@ MEMOP TRANSFER_WITH_OFFSET V16, &24, V2, &56, &8
 // from V2 (sched bufs) at index 56 (scheduler explicit buf)
 // to V16 (sched queue add stack) at index 24
 BUFREQ ALLOC V26, &8 // just a buffer for the error code
-MEMOP TRANSFER_WITH_OFFSET V26, &0, V3, &16, &8
+MEMOP TRANSFER_WITH_OFFSET V26, &0, V3, &56, &8
 // transfer 8 bytes
-// from V3 (general bufs) at index 16 (ERROR.EBA code)
+// from V3 (general bufs) at index 56 (ERROR.EIR code)
 // to V26 (error code) at index 0
 MEMOP WRITE_TOBUF V16, &32, V26
 

@@ -1,7 +1,8 @@
-// circ sched queue starter
+// parallel circ sched queue starter
 // meant to get everything going for the circ sched/sched queue demo
 // args
 // 0 - this buf (always)
+// 1 - which thread (not needed, can free instantly)
 
 // will establish some buffers:
 // 1 - CIRC BUF buffers
@@ -32,13 +33,19 @@
 // 3 - generalized utility buffers
    // 00 - RELEASE_BUF_STACK
    // 08 - CODE_FREE_STACK
-   // 16 - ERROR
+   // 16 - SEMPOST
    // 24 - bufs_to_free
    // 32 - code_to_free
-   // 40 - lock for parallelism
+   // 40 - semaphore 1 for parallelism
+   // 48 - semaphore 2 for parallelism
+   // 56 - ERROR
 
+PRINT STRING "EBA tester testing par_sched_circ_buf"
 LOG RESET queue.eirout // reset the logfile, in case last run has data there.
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
+
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 1: set up main buffers       //////////////////////////////////////
@@ -46,7 +53,7 @@ LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
 BUFREQ ALLOC V1, &96
 BUFREQ ALLOC V2, &64
-BUFREQ ALLOC V3, &48
+BUFREQ ALLOC V3, &64
 
 SCAFFOLD CODEREAD V4, "examples/par_sched_circ_buf/CIRC_BUF_READ.EIR"
 MEMOP WRITE_TOBUF V1, &0, V4
@@ -101,7 +108,7 @@ SCAFFOLD CODEREAD V4, "examples/par_sched_circ_buf/RELEASE_BUF_STACK.EIR"
 MEMOP WRITE_TOBUF V3, &0, V4
 SCAFFOLD CODEREAD V4, "examples/par_sched_circ_buf/CODE_FREE_STACK.EIR"
 MEMOP WRITE_TOBUF V3, &08, V4
-SCAFFOLD CODEREAD V4, "examples/par_sched_circ_buf/ERROR.EIR"
+SCAFFOLD CODEREAD V4, "examples/par_sched_circ_buf/SEM_POST.EIR"
 MEMOP WRITE_TOBUF V3, &16, V4
 BUFREQ ALLOC V4, &2008 // bufs_to_free
 MEMOP LOAD_LITERAL V4, @0
@@ -109,8 +116,10 @@ MEMOP WRITE_TOBUF V3, &24, V4
 BUFREQ ALLOC V4, &208 // code_to_free
 MEMOP LOAD_LITERAL V4, @0
 MEMOP WRITE_TOBUF V3, &32, V4
-SCAFFOLD P_LOCK_INIT V4 // alloc the mutex
+SCAFFOLD P_SEM_INIT V4 // alloc the semaphore
 MEMOP WRITE_TOBUF V3, &40, V4
+SCAFFOLD P_SEM_INIT V4 // alloc the semaphore
+MEMOP WRITE_TOBUF V3, &48, V4
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 2: prepare the exit call sequence     /////////////////////////////
@@ -169,19 +178,19 @@ MEMOP TRANSFER_WITH_OFFSET V19, &80, V2, &0, &48
 // from V2 (sched queue buffers) at offset 0
 // to V19 (code to free) at offset 80 (where we left off)
 MEMOP TRANSFER_WITH_OFFSET V19, &128, V3, &0, &8
-// Transfer 48 bytes
+// Transfer 8 bytes
 // from V3 (generalized buffers) at offset 0 (RELEASE_BUF_STAC)
 // to V19 (code to free) at offset 128 (where we left off)
-// NOTE: we are skipped the code_free, since it is what we use to free!
+// NOTE: we skipped the code_free, since it is what we use to free!
 // (it can't free itself!!)
 MEMOP TRANSFER_WITH_OFFSET V19, &136, V3, &16, &8
-// Transfer 48 bytes
-// from V3 (generalized buffers) at offset 16 (ERROR.EBA)
-// to V19 (code to free) at offset 128 (where we left off)
+// Transfer 8 bytes
+// from V3 (generalized buffers) at offset 16 (SEM_POST.EIR)
+// to V19 (code to free) at offset 136 (where we left off)
 MEMOP TRANSFER_WITH_OFFSET V19, &144, V0, &0, &8
-// Transfer 48 bytes
-// from V3 (generalized buffers) at offset 0
-// to V0 (THIS code buf) at offset 0 (code)
+// Transfer 8 bytes
+// from V0 (this code buf) at offset 0 (where the code is)
+// to V19 (code to free) at offset 144 (where we left off)
 MATHOP ADD_U64 V19, V19, &144
 
 

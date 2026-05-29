@@ -2,20 +2,32 @@
 // adds some requests to the read queue and the write queue, both of them.
 // args buf
 // 0 - this code buf (always)
-// 1 - V1 from the starter
-// 2 - V2 from the starter
-// 3 - V3 from the starter
+// 1 - called thread (this one)
+// 2 - sending thread (in case needed)
+// 3 - V1 from the starter
+// 4 - V2 from the starter
+// 5 - V3 from the starter
 
 
 LOG STRING queue.eirout CURRENTLY_RUNNING_CURC_BUF_ADD_REQUESTS
 
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
+MEMOP READ_FROMBUF V1, V0, &16
+BUFREQ RELEASE V1
 
 LOG STRING queue.eirout ADDING_WRITE_AND_READ_REQUESTS
-MEMOP READ_FROMBUF V1, V0, &8
-MEMOP READ_FROMBUF V2, V0, &16
-MEMOP READ_FROMBUF V3, V0, &24
+MEMOP READ_FROMBUF V1, V0, &24
+MEMOP READ_FROMBUF V2, V0, &32
+MEMOP READ_FROMBUF V3, V0, &40
 MEMOP READ_FROMBUF V4, V2, &56
 MEMOP READ_FROMBUF V5, V3, &24
+
+MEMOP READ_FROMBUF V6, V3, &40
+MEMOP READ_FROMBUF V7, V3, &48 // circ buf main's sem
+SCAFFOLD P_SEM_WAIT V6
+SCAFFOLD P_SEM_WAIT V6
+SCAFFOLD P_SEM_WAIT V6
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +137,12 @@ BUFREQ RELEASE V49
 // uses vars V50-V63 ///////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+SCAFFOLD P_SEM_POST V7
+SCAFFOLD P_SEM_POST V7
+
 BUFREQ RELEASE V0
-MEMOP MOVE V0, V4
-MEMOP READ_FROMBUF V1, V0, &0
-INVOKE LOCAL V1
+// MEMOP READ_FROMBUF V0, V3, &48
+// MEMOP MOVE V0, V4
+// MEMOP READ_FROMBUF V1, V0, &0
+// INVOKE LOCAL V1
+
