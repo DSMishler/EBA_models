@@ -2,6 +2,7 @@
 // meant to get everything going for the circ sched/sched queue demo
 // args
 // 0 - this buf (always)
+// 1 - what thread I'm on
 
 // will establish some buffers:
 // 1 - CIRC BUF buffers
@@ -39,6 +40,9 @@
 PRINT STRING "sched_circ_buf test"
 LOG RESET queue.eirout // reset the logfile, in case last run has data there.
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
+
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 1: set up main buffers       //////////////////////////////////////

@@ -3,7 +3,6 @@
 // args
 // 0 - this buf (always)
 
-PRINT BYTES &160, &1 // 0xA0
+PRINT STRING "Success!"
 BUFREQ RELEASE V0
 
-PRINT STRING "Success!"

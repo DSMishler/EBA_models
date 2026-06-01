@@ -1,0 +1,13 @@
+// template starter code
+
+// args
+// 0 - this code buffer
+// 1 - the thread we spawned on
+
+PRINT STRING "template starter"
+
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
+MEMOP READ_FROMBUF V1, V0, &0
+BUFREQ RELEASE V0
+SCAFFOLD TERMINATE_WITH_CODEFREE V1
