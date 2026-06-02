@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include "reader.h"
 #include "interpreter.h"
+#include "tools/glfw/include/GLFW/glfw3.h"
 
 extern void (*eba_states[16])(void*);
 extern void *eba_args[16];
@@ -11,9 +12,11 @@ void test_solofile(char *);
 
 int main(void)
 {
+   GLFWwindow* window = glfwCreateWindow(1000, 1000, "MyWindow", NULL, NULL);
+   glfwMakeContextCurrent(window);
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
-   test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+   test_solofile("examples/streaming_test/STARTER.EIR");
    pthread_mutex_destroy(&interpreter_lock);
    return 0;
 }

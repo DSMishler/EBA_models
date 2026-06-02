@@ -2,10 +2,13 @@
 
 // args
 // 0 - this code buffer
-// 1 - the thread we spawned on
+// 1 - the node we spawned on
+// 2 - the thread we spawned on
 
-PRINT STRING "template starter"
+PRINT STRING "EIR streaming test:"
 
+MEMOP READ_FROMBUF V1, V0, &16
+BUFREQ RELEASE V1
 MEMOP READ_FROMBUF V1, V0, &8
 BUFREQ RELEASE V1
 MEMOP READ_FROMBUF V1, V0, &0
