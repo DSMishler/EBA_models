@@ -2,7 +2,8 @@
 // meant to get everything going for the circ sched/sched queue demo
 // args
 // 0 - this buf (always)
-// 1 - which thread (not needed, can free instantly)
+// 1 - which node (not needed, can free instantly)
+// 2 - which thread (not needed, can free instantly)
 
 // will establish some buffers:
 // 1 - CIRC BUF buffers
@@ -45,6 +46,8 @@ LOG RESET queue.eirout // reset the logfile, in case last run has data there.
 LOG STRING queue.eirout CURRENTLY_RUNNING_CIRC_SCHED_QUEUE_STARTER
 
 MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
+MEMOP READ_FROMBUF V1, V0, &16
 BUFREQ RELEASE V1
 
 ////////////////////////////////////////////////////////////////////////////////

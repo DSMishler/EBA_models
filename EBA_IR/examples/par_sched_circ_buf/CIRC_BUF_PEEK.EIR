@@ -1,7 +1,7 @@
 // args:
 // 0 - this buf (always)
-// 1 - the called thread (me)
-// 2 - the calling thread (in case I wanted it)
+// 1 - the called node (me)
+// 2 - the called thread (in case I wanted it)
 // 3 - the schedule queue
 // 4 - an empty buf that I'll put the peeked item into
 // 5 - who to call when done (most likely the unpack code)

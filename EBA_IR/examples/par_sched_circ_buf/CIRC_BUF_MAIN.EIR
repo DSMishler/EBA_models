@@ -130,10 +130,9 @@ MEMOP TRANSFER_WITH_OFFSET V23, &0, V1, &32, &8
 // from V1 (the circ buf buffers) at offset 32 (the peek code)
 // into V23 (the arg buf) at offset 0 (where the code goes)
 BUFREQ ALLOC V27, &8
-MEMOP WRITE_TOBUF V23, &8, V27 // for the called thread
+MEMOP WRITE_TOBUF V23, &8, V27 // for the called tnode
 BUFREQ ALLOC V27, &8
-SCAFFOLD PTHREAD_GET_TID V27
-MEMOP WRITE_TOBUF V23, &16, V27 // for the calling thread
+MEMOP WRITE_TOBUF V23, &16, V27 // for the called thread
 MEMOP TRANSFER_WITH_OFFSET V23, &24, V1, &80, &8
 // transfer 8 bytes (one buf)
 // from V1 (the circ buffers) at offset 80 (the write queue)
@@ -254,10 +253,9 @@ MEMOP TRANSFER_WITH_OFFSET V43, &0, V1, &32, &8
 // from V1 (the circ buf buffers) at offset 32 (the peek code)
 // into V43 (the arg buf) at offset 0 (where the code goes)
 BUFREQ ALLOC V47, &8
-MEMOP WRITE_TOBUF V43, &8, V47 // for the called thread
+MEMOP WRITE_TOBUF V43, &8, V47 // for the called node
 BUFREQ ALLOC V47, &8
-SCAFFOLD PTHREAD_GET_TID V47
-MEMOP WRITE_TOBUF V43, &16, V47 // for the calling thread
+MEMOP WRITE_TOBUF V43, &16, V47 // for the called thread
 MEMOP TRANSFER_WITH_OFFSET V43, &24, V1, &72, &8
 // transfer 8 bytes (one buf)
 // from V1 (the circ buffers) at offset 72 (the read queue)

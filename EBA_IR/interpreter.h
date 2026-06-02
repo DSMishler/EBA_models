@@ -5,9 +5,11 @@
 
 #include <stdint.h>
 
+extern pthread_mutex_t interpreter_lock;
 
 struct IR_state
 {
+   uint64_t w_node;
    uint64_t w_thread;
    int64_t* vars;
    int next_line; // TODO: might just use pointer for next line to not have

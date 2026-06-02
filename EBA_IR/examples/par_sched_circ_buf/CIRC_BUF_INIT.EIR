@@ -1,7 +1,7 @@
 // args buffer
 // 0: this buf (always)
-// 1: called thread (this one)
-// 2: sending thread (in case needed)
+// 1: called node (this one)
+// 2: called thread (this one) (in case needed)
 // 3: size of the queue
 // 4: the buffer (pre-allocated) that the sched buf will live in
 // 5: the lock to unlock when done

@@ -66,10 +66,9 @@ MEMOP TRANSFER_WITH_OFFSET V13, &0, V1, &56, &8
 // from V1 (circ bufs) at index 56 (add rw requests)
 // to V13 (add rw requests) at index 0
 
-BUFREQ ALLOC V25, &8 // for the target thread
+BUFREQ ALLOC V25, &8 // for the target node
 MEMOP WRITE_TOBUF V13, &8, V25
-BUFREQ ALLOC V25, &8 // for the sending thread
-SCAFFOLD PTHREAD_GET_TID V25
+BUFREQ ALLOC V25, &8 // for the target thread
 MEMOP WRITE_TOBUF V13, &16, V25
 
 MEMOP WRITE_TOBUF V13, &24, V1

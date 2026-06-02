@@ -16,6 +16,8 @@ void (*eba_states[MAX_THREADS])(void*);
 // global arg pointer for EBA's arg (w/MAX_THREADS threads)
 void *eba_args[MAX_THREADS];
 
+pthread_mutex_t interpreter_lock;
+
 int confirm_first_word(char **line, char *word)
 {
    char *first = line[0];
@@ -132,6 +134,38 @@ void var_errmsg(char *func, int line)
 }
 
 
+// NOTE: not threadsafe inherently. Wrap in locks
+int get_avail_w_thread(void)
+{
+   int i;
+   for (i = 0; i < MAX_THREADS; i++)
+   {
+      if (eba_states[i] == (void*)0)
+      {
+         break;
+      }
+   }
+   int w_thread = i;
+   if (w_thread >= MAX_THREADS)
+   {
+      return -1;
+   }
+   return w_thread;
+}
+
+// NOTE: not threadsafe inherently. Wrap in locks
+int thread_is_avail(int w_thread)
+{
+   if (w_thread >= MAX_THREADS || w_thread < 0)
+   {
+      return 0;
+   }
+   if (eba_states[w_thread] == (void*)0)
+   {
+      return 1;
+   }
+   return 0;
+}
 
 
 
@@ -210,6 +244,22 @@ void run_bufreq(IR_state_t *IRstate, char **line)
 
       // printf("buf release-ed: 0x%lx\n", (uint64_t)(IRstate->vars[var_target]));
       free((void*)(IRstate->vars[var_target]));
+   }
+   else if (match_second_word(line, "RELEASE_REMOTE"))
+   {
+      void *remote_buf_id_buf = parse_var_buf(line[2], IRstate);
+      int64_t remote_buf_id = *((int64_t *)remote_buf_id_buf);
+      remote_buf_id += 0; // keep compilers happy while it's unused
+
+      int var_target = parse_variable(line[3]);
+      if (var_target < 0 || var_target >= IR_STATE_SIZE)
+      {
+         var_errmsg("BUFREQ RELEASE", IRstate->next_line);
+      }
+
+      // printf("buf release-ed: 0x%lx\n", (uint64_t)(IRstate->vars[var_target]));
+      free((void*)(IRstate->vars[var_target]));
+      buf_free_if_shorthand(remote_buf_id_buf, line[2]);
    }
    else
    {
@@ -839,14 +889,21 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    }
    else if (match_second_word(line, "PTHREAD_SPAWN_HEAVY"))
    {
+      pthread_mutex_lock(&interpreter_lock);
       void *arg_buf = parse_var_buf(line[2], IRstate);
 
-      uint64_t *p_w_thread = ((uint64_t **)arg_buf)[1];
+      uint64_t *p_w_thread = ((uint64_t **)arg_buf)[2];
       uint64_t w_thread = *p_w_thread;
       if (w_thread >= MAX_THREADS)
       {
          fprintf(stderr, "error: thread %lu not allowed (max is %d). Stop.\n",
                   w_thread, MAX_THREADS-1);
+         exit(1);
+      }
+
+      if (!(thread_is_avail(w_thread)))
+      {
+         fprintf(stderr, "error: thread %lu appears to be taken!. Stop.\n", w_thread);
          exit(1);
       }
 
@@ -864,6 +921,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
 
 
       buf_free_if_shorthand(arg_buf, line[2]);
+      pthread_mutex_unlock(&interpreter_lock);
    }
    else if (match_second_word(line, "PTHREAD_GET_TID"))
    {
@@ -873,30 +931,29 @@ void run_scaffold(IR_state_t *IRstate, char **line)
 
       buf_free_if_shorthand(tid_buf, line[2]);
    }
+   else if (match_second_word(line, "GET_NODEID"))
+   {
+      void *tid_buf = parse_var_buf(line[2], IRstate);
+      
+      *((uint64_t*)tid_buf) = IRstate->w_node;
+
+      buf_free_if_shorthand(tid_buf, line[2]);
+   }
    else if (match_second_word(line, "PTHREAD_GET_AVAIL"))
    {
+      pthread_mutex_lock(&interpreter_lock);
       void *avl_buf = parse_var_buf(line[2], IRstate);
       
-      //NOTE: only thread-safe is only thread 0 spawns other threads
-      int i;
-      for (i = 0; i < MAX_THREADS; i++)
+      uint64_t w_thread = get_avail_w_thread();
+      if (w_thread == (uint64_t)(-1))
       {
-         if (eba_states[i] == (void*)0)
-         {
-            break;
-         }
-      }
-      uint64_t w_thread = i;
-      if (w_thread >= MAX_THREADS)
-      {
-         fprintf(stderr, "error: no thread is available! Refusing spawn.\n");
-         IRstate->next_line += 1;
-         return;
+         fprintf(stderr, "no available thread! You're probably going to segfault.\n");
       }
 
       *((uint64_t*)avl_buf) = w_thread;
 
       buf_free_if_shorthand(avl_buf, line[2]);
+      pthread_mutex_unlock(&interpreter_lock);
    }
    else
    {
@@ -981,13 +1038,16 @@ void run_code(void* lcl_eba_arg)
 {
    char ****arg_buf = (char****)lcl_eba_arg;
    char*** code_buf = ((char****)(lcl_eba_arg))[0];
-   uint64_t* p_w_thread = ((uint64_t**)(lcl_eba_arg))[1];
+   uint64_t* p_w_node = ((uint64_t**)(lcl_eba_arg))[1];
+   uint64_t w_node = *p_w_node;
+   uint64_t* p_w_thread = ((uint64_t**)(lcl_eba_arg))[2];
    uint64_t w_thread = *p_w_thread;
    IR_state_t *IRstate = init_IR_state();
 
    // Note: we do NOT zero out all the other vars.
    // Advocate for zeroing: not doing this may possibly add a vulnerability
    // Advocate against: doing this makes things less minimal
+   IRstate->w_node = w_node;
    IRstate->w_thread = w_thread;
    IRstate->vars[0] = (int64_t) (arg_buf);
    IRstate->next_line = 0;

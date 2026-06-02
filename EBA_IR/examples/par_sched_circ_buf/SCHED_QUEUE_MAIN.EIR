@@ -60,12 +60,12 @@ CMP EQ V3, V4, FINAL // if V3==V4 (head == tail), then *don't* keep iterating
 // but if not, there are more things to spawn. Spawn a thread to do it!
 MEMOP READ_FROMBUF V8, V7, &8 // grab the thread buf from the arg buf
 // (assume it's correctly placed)
-SCAFFOLD PTHREAD_GET_AVAIL V8
+SCAFFOLD GET_NODEID V8
 MEMOP READ_FROMBUF V9, V7, &16 // grab the thread buf from the arg buf
 // (assume it's correctly placed)
-SCAFFOLD PTHREAD_GET_TID V9
+SCAFFOLD PTHREAD_GET_AVAIL V9
 // PRINT STRING "SCHEDULER SPAWNING TO"
-// PRINT WORD V8
+// PRINT WORD V9
 SCAFFOLD PTHREAD_SPAWN_HEAVY V7
 
 CMP EQ &0, &0, SCHEDULE
