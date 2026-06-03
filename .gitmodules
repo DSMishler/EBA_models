@@ -1,3 +1,0 @@
-[submodule "EBA_IR/EBA_IR/tools/glfw"]
-	path = EBA_IR/EBA_IR/tools/glfw
-	url = https://github.com/glfw/glfw.git

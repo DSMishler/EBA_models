@@ -5,8 +5,6 @@
 
 #include <stdint.h>
 
-void nonexist(void);
-
 extern pthread_mutex_t interpreter_lock;
 
 struct IR_state
