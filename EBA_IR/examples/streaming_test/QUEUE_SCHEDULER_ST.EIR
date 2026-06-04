@@ -1,0 +1,71 @@
+// args
+// 0: this (always)
+// 1: the queue itself
+// 2: explicit buf to call when nothing is left
+
+// LOG STRING queue.eirout CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
+
+MEMOP READ_FROMBUF V6, V0, &8 // grab scheduling queue
+MEMOP READ_FROMBUF V1, V6, &00 // data
+MEMOP READ_FROMBUF V2, V6, &08 // size
+MEMOP READ_FROMBUF V3, V6, &16 // head
+MEMOP READ_FROMBUF V4, V6, &24 // tail
+MEMOP READ_FROMBUF V5, V6, &32 // full
+
+///////////// logging
+
+LOG STRING queue.eirout DISPLAY_SCHEDULE_QUEUE
+LOG WORD queue.eirout V2
+LOG WORD queue.eirout V3
+LOG WORD queue.eirout V4
+LOG WORD queue.eirout V5
+
+BUFREQ ALLOC V41, &8
+MEMOP LOAD_LITERAL V41, @0
+START_LOG_1:
+CMP GEQ V41, V2, END_LOG_1
+
+MEMOP READ_FROMBUF V43, V1, V41
+LOG VAR queue.eirout V43
+MATHOP ADD_U64 V41, V41, &8
+CMP EQ &0, &0, START_LOG_1
+
+END_LOG_1:
+BUFREQ RELEASE V41
+
+
+/////////////done logging
+
+BUFREQ ALLOC V7, &8 // available space
+MATHOP SUB_U64 V7, V4, V3 // available space = tail-head
+// now it might be positive, it might be negative, but if it is 0,
+// then we are either full or empty
+MATHOP ADD_U64 V7, V7, V5 // available space += full
+
+
+CMP EQ V7, &0, DONE // the queue is empty if V7 is zero
+// if V7 is not zero, then we have to peel an element off and call it
+BUFREQ RELEASE V7
+
+MEMOP READ_FROMBUF V7, V1, V3 // grab an element from the head
+MATHOP ADD_U64 V3, V3, &8 // head = head + 8 (sizeof a buf ptr)
+MATHOP MOD_U64 V3, V3, V2 // head = head % size
+MEMOP LOAD_LITERAL V5, @0 // certainly, the queue is no longer full
+// (skipping a conditional just makes this simpler)
+
+
+// don't release V0, a lot of other programs like it
+MEMOP MOVE V0, V7
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1
+
+
+
+DONE:
+BUFREQ RELEASE V7
+
+MEMOP READ_FROMBUF V30, V0, &16
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V30
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

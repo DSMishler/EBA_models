@@ -402,7 +402,7 @@ void run_invoke(IR_state_t *IRstate, char **line)
 
       uint64_t* args_addr = (uint64_t*) (IRstate->vars[var_args_buf]);
 
-      fprintf(stderr, "warning: LOCAL_BUF is deprecated and will soon no longer be supported!\n");
+      // fprintf(stderr, "warning: LOCAL_BUF is deprecated and will soon no longer be supported!\n");
 
       IRstate->code_buf = (((char****)args_addr)[0]);
       IRstate->next_line = -1; // because 1 will be added at the end
