@@ -356,6 +356,11 @@ void run_memop(IR_state_t *IRstate, char **line)
       int64_t src_offset  = *((int64_t*) src_offset_buf);
       int64_t len  = *((int64_t*) len_buf);
 
+      if (len == 0)
+      {
+         printf("warning: TRANSFER_WITH_OFFSET with length of zero!\n");
+      }
+
       // TODO: double check how this is written and if we really want
       //       these pointers stored just as normal int64_t's
       memcpy((void*)(dest_addr+dest_offset), (void*)(src_addr+src_offset), len);
@@ -649,6 +654,26 @@ void run_print(IR_state_t *IRstate, char **line)
          // byte = (uint8_t) (word >> ((7 - (i % 8)) * 8) & ((uint8_t) 0xff));
          byte = ((uint8_t*)adr)[i];
          printf("byte %03d: 0x%02X\n", i, byte);
+      }
+
+      buf_free_if_shorthand(target_buf, line[2]);
+      buf_free_if_shorthand(len_buf,    line[3]);
+   }
+   else if (match_second_word(line, "STREAM"))
+   {
+      void *target_buf = parse_var_buf(line[2], IRstate);
+      void *len_buf    = parse_var_buf(line[3], IRstate);
+
+      int64_t* adr = (int64_t*) target_buf;
+      int64_t len = *(int64_t*) len_buf;
+      int i;
+      for(i = 0; i < len; i++)
+      {
+         uint8_t byte;
+         // uint64_t word = ((uint64_t*) adr)[i / 8];
+         // byte = (uint8_t) (word >> ((7 - (i % 8)) * 8) & ((uint8_t) 0xff));
+         byte = ((uint8_t*)adr)[i];
+         printf("%c", byte);
       }
 
       buf_free_if_shorthand(target_buf, line[2]);
@@ -975,12 +1000,15 @@ void run_line(void* lcl_eba_arg)
       return;
    }
 
-   // printf("t%lu running line %d:", IRstate->w_thread, IRstate->next_line+1);
-   // for(int i = 0; line[i] != NULL; i++)
-   // {
-      // printf(" %s", line[i]);
-   // }
-   // printf("\n");
+   if(0) // print
+   {
+      printf("t%lu running line %d:", IRstate->w_thread, IRstate->next_line+1);
+      for(int i = 0; line[i] != NULL; i++)
+      {
+         printf(" %s", line[i]);
+      }
+      printf("\n");
+   }
 
    if (line[0] == NULL)
    {

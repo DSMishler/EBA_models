@@ -16,7 +16,7 @@ PyEBA/EBA_graphviz/testrun/*
 *.svg
 
 # eba output file
-*.ebaout
+*.eirout
 
 # executable test files
 EBA_IR/test

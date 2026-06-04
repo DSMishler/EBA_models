@@ -1,0 +1,75 @@
+// stream
+// prints a portion of the contents of a stream to the screen
+// args
+// 0 - this code buf (always)
+// 1 - the stream itself
+// 2 - the blocksize of what I should pull
+// 3 - my progress in pulling it
+// 4 - number of repeats remaining
+// 5 - buf to call when done and more is left
+// 6 - buf to call when done and no more is left
+
+LOG STRING stream.eirout "CURRENTLY_RUNNING_STREAM"
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+MEMOP READ_FROMBUF V3, V0, &24
+MEMOP READ_FROMBUF V4, V0, &32
+MEMOP READ_FROMBUF V5, V0, &40
+MEMOP READ_FROMBUF V6, V0, &48
+
+MEMOP READ_FROMBUF V7, V1, &0
+MEMOP READ_FROMBUF V8, V1, &8
+
+BUFREQ ALLOC V10, &8 // remaining this run
+MATHOP SUB_U64 V10, V7, V3 // remaining=size-progress
+// ASSUME size%blocksize == 0
+
+CMP GT V10, &0, STREAM
+// else, V10 is less than or equal to zero
+CMP EQ V4, &0, END
+// else, V10 is less than or equal to zero and we have runs to go
+MATHOP SUB_U64 V4, V4, &1
+MEMOP LOAD_LITERAL V3, @0
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V7, &0, &8 // full size now remains this run
+
+
+STREAM:
+BUFREQ RELEASE V10
+
+
+BUFREQ ALLOC V11, V2
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V8, V3, V2
+// transfer V2 (blocksize bytes)
+// from V8 (stream data) at offset V3 (progress)
+// to V11 (streaming buf) at offset 0
+
+PRINT STREAM V11, V2
+
+BUFREQ RELEASE V11
+
+MATHOP ADD_U64 V3, V3, V2
+
+
+MEMOP MOVE V0, V5
+INVOKE LOCAL_BUF V0
+
+
+
+
+END:
+BUFREQ RELEASE V10
+PRINT STRING ""
+
+// sloppy, but reach into the failure code (sched queue add)
+//and free the error buf
+MEMOP READ_FROMBUF V7, V5, &32
+BUFREQ RELEASE V7
+
+BUFREQ RELEASE V2
+BUFREQ RELEASE V3
+BUFREQ RELEASE V4
+BUFREQ RELEASE V5
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V6
+INVOKE LOCAL_BUF V0

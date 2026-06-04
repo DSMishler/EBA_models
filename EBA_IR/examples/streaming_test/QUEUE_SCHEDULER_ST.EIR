@@ -3,7 +3,7 @@
 // 1: the queue itself
 // 2: explicit buf to call when nothing is left
 
-// LOG STRING queue.eirout CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
+// LOG STRING stream.eirout CURRENTLY_RUNNING_SCHED_QUEUE_MAIN
 
 MEMOP READ_FROMBUF V6, V0, &8 // grab scheduling queue
 MEMOP READ_FROMBUF V1, V6, &00 // data
@@ -14,11 +14,11 @@ MEMOP READ_FROMBUF V5, V6, &32 // full
 
 ///////////// logging
 
-LOG STRING queue.eirout DISPLAY_SCHEDULE_QUEUE
-LOG WORD queue.eirout V2
-LOG WORD queue.eirout V3
-LOG WORD queue.eirout V4
-LOG WORD queue.eirout V5
+LOG STRING stream.eirout DISPLAY_SCHEDULE_QUEUE
+LOG WORD stream.eirout V2
+LOG WORD stream.eirout V3
+LOG WORD stream.eirout V4
+LOG WORD stream.eirout V5
 
 BUFREQ ALLOC V41, &8
 MEMOP LOAD_LITERAL V41, @0
@@ -26,7 +26,7 @@ START_LOG_1:
 CMP GEQ V41, V2, END_LOG_1
 
 MEMOP READ_FROMBUF V43, V1, V41
-LOG VAR queue.eirout V43
+LOG VAR stream.eirout V43
 MATHOP ADD_U64 V41, V41, &8
 CMP EQ &0, &0, START_LOG_1
 

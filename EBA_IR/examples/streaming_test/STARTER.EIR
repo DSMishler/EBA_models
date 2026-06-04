@@ -14,6 +14,10 @@
    // 24 - RELEASE_BUF_STACK
    // 32 - CODE_FREE_STACK
    // 40 - EXIT
+   // 48 - SCHED_QUEUE_ADD
+   // 56 - SCHED_QUEUE_ADD_STACK
+   // 64 - STREAM
+   // 72 - ERROR
 // V2 - utility buffers
    // 00 - bufs to free
    // 08 - codes to free
@@ -21,6 +25,12 @@
       // 00 - the code
       // 08 - the sched queue
       // 16 - code to call when done
+// V3 - streaming buffers
+   // 00 - node 0
+   // 08 - node 1
+   // 16 - node 2
+   // 24 - node 3
+   // 32 - node 4
 
 PRINT STRING "EIR streaming test:"
 LOG RESET stream.eirout
@@ -38,6 +48,7 @@ BUFREQ RELEASE V1
 
 BUFREQ ALLOC V1, &104
 BUFREQ ALLOC V2, &104
+BUFREQ ALLOC V3, &40
 
 
 SCAFFOLD CODEREAD V9, "examples/streaming_test/QUEUE_SCHEDULER_ST.EIR"
@@ -52,6 +63,14 @@ SCAFFOLD CODEREAD V9, "examples/streaming_test/CODE_FREE_STACK.EIR"
 MEMOP WRITE_TOBUF V1, &32, V9
 SCAFFOLD CODEREAD V9, "examples/streaming_test/EXIT.EIR"
 MEMOP WRITE_TOBUF V1, &40, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_test/SCHED_QUEUE_ADD.EIR"
+MEMOP WRITE_TOBUF V1, &48, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_test/SCHED_QUEUE_ADD_STACK.EIR"
+MEMOP WRITE_TOBUF V1, &56, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_test/STREAM.EIR"
+MEMOP WRITE_TOBUF V1, &64, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_test/ERROR.EIR"
+MEMOP WRITE_TOBUF V1, &72, V9
 
 
 
@@ -72,13 +91,28 @@ MEMOP WRITE_TOBUF V4, &8, V5 // add the scheduler queue to the arg buf
 MEMOP WRITE_TOBUF V2, &16, V4
 
 
+BUFREQ ALLOC V6, &8
+MEMOP LOAD_LITERAL V6, @40
+WRITE_TO_V3:
+MATHOP SUB_U64 V6, V6, &8
+BUFREQ ALLOC V9, &16
+BUFREQ ALLOC V8, &100
+BUFREQ ALLOC V7, &8
+MEMOP LOAD_LITERAL V7, @100
+MEMOP WRITE_TOBUF V9, &0, V7
+MEMOP WRITE_TOBUF V9, &8, V8
+MEMOP WRITE_TOBUF V3, V6, V9
+CMP NEQ V6, &0, WRITE_TO_V3
+BUFREQ RELEASE V6
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 1: set entry squence    ///////////////////////////////////////////
 // uses V10-V19                /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// sched queue init --> queue scheduler st
+// sched queue init --> populater
 
 
 BUFREQ ALLOC V10, &32 // sched queue init
@@ -93,10 +127,13 @@ MEMOP WRITE_TOBUF V10, &8, V19
 
 MEMOP WRITE_TOBUF V10, &16, V5 // sched queue
 
-MEMOP TRANSFER_WITH_OFFSET V10, &24, V2, &16, &8
-// transfer 8 bytes
-// from V2 (utility bufs) at offset 16 (arg buf of queue scheduler st)
-// to V10 (arg buf of sched queue init) at offset 24 (what to call when done)
+BUFREQ ALLOC V11, &32 // populater
+MEMOP WRITE_TOBUF V10, &24, V11 // call it when done with sched queue init
+SCAFFOLD CODEREAD V18, "examples/streaming_test/POPULATER.EIR"
+MEMOP WRITE_TOBUF V11, &0, V18
+MEMOP WRITE_TOBUF V11, &8, V1
+MEMOP WRITE_TOBUF V11, &16, V2
+MEMOP WRITE_TOBUF V11, &24, V3
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,10 +163,25 @@ MEMOP TRANSFER_WITH_OFFSET V21, &0, V1, &24, &8
 
 MEMOP READ_FROMBUF V29, V2, &0 // grab the buf stack
 MEMOP LOAD_LITERAL V29, @0 // load in zero
-MATHOP ADD_U64 V29, V29, &8 // add V1, V2
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
 MEMOP WRITE_TOBUF V29, V29, V1
-MATHOP ADD_U64 V29, V29, &8 // add V1, V2
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
 MEMOP WRITE_TOBUF V29, V29, V2
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
+MEMOP WRITE_TOBUF V29, V29, V3
+
+BUFREQ ALLOC V26, &8
+MEMOP LOAD_LITERAL V26, @40
+CLEANUP_V3:
+MATHOP SUB_U64 V26, V26, &8
+MEMOP READ_FROMBUF V25, V3, V26
+MATHOP ADD_U64 V29, V29, &8
+MEMOP TRANSFER_WITH_OFFSET V29, V29, V25, &0, &16 // add the two bufs to free
+MATHOP ADD_U64 V29, V29, &16
+MEMOP WRITE_TOBUF V29, V29, V25
+CMP NEQ V26, &0, CLEANUP_V3
+BUFREQ RELEASE V26
+
 
 MEMOP WRITE_TOBUF V21, &8, V29
 
@@ -145,13 +197,19 @@ MEMOP READ_FROMBUF V29, V2, &8 // grab the code stack
 MEMOP LOAD_LITERAL V29, @0 // load in zero
 MEMOP TRANSFER_WITH_OFFSET V29, &8, V1, &0, &32
 // transfer 32 bytes
-// from V1 (code bufs) at offset 0 (all but buf release stack and exit)
+// from V1 (code bufs) at offset 0 (up to buf release stack and exit)
 // to V29 (bufs to free) at offset 8 (where the codes to free begin)
 // EXIT will free code free stack and itself
-MATHOP ADD_U64 V29, V29, &32
+MEMOP TRANSFER_WITH_OFFSET V29, &40, V1, &48, &32
+// transfer 32 bytes
+// from V1 (code bufs) at offset 48 (after buf release stack and exit)
+// to V29 (bufs to free) at offset 40 (where the codes to free left off)
+MATHOP ADD_U64 V29, V29, &64
 MEMOP READ_FROMBUF V28, V0, &0 // also grab my code
 MATHOP ADD_U64 V29, V29, &8
 MEMOP WRITE_TOBUF V29, V29, V28 // and put it ready to free
+MATHOP ADD_U64 V29, V29, &8
+MEMOP WRITE_TOBUF V29, V29, V18 // and the populater
 
 MEMOP WRITE_TOBUF V22, &8, V29
 

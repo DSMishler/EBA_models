@@ -1,0 +1,153 @@
+// populater
+// continuing the work of the starter
+// args
+// 0 - this code (always)
+// 1 - V1 from starter
+// 2 - V2 from starter
+// 3 - V3 from starter
+
+
+// needs to populate all five stream instances
+// then it will hand control to sched_queue_add_stack to add them all
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+MEMOP READ_FROMBUF V3, V0, &24
+MEMOP READ_FROMBUF V4, V2, &16
+MEMOP READ_FROMBUF V7, V4, &8
+
+BUFREQ ALLOC V5, &48 // for the sched queue add stack
+MEMOP LOAD_LITERAL V5, @0
+
+MEMOP READ_FROMBUF V6, V2, &0 // bufs to free
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: prepare the stream instances    ////////////////////////////////
+// uses V10-V19                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+BUFREQ ALLOC V19, &8
+MEMOP LOAD_LITERAL V19, @40
+PREP_STREAMS:
+MATHOP SUB_U64 V19, V19, &8
+BUFREQ ALLOC V10, &56 // STREAM.EIR
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &64, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 64 (stream code)
+// to V10 (stream code arg buf) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V10, &8, V3, V19, &8
+// transfer 8 bytes
+// from V3 (stream bufs) at offset V19 (grabs from the last to the first)
+// to V10 (stream code arg buf) at offset 8
+BUFREQ ALLOC V18, &8 // blocksize
+MEMOP LOAD_LITERAL V18, @10
+BUFREQ ALLOC V17, &8 // progress
+MEMOP LOAD_LITERAL V17, @0
+BUFREQ ALLOC V16, &8 // repeats
+MEMOP LOAD_LITERAL V16, @10
+MEMOP WRITE_TOBUF V10, &16, V18
+MEMOP WRITE_TOBUF V10, &24, V17
+MEMOP WRITE_TOBUF V10, &32, V16
+
+// when no more is left, do the schedule queue
+MEMOP WRITE_TOBUF V10, &48, V4
+
+BUFREQ ALLOC V11, &40 // sched queue add
+MEMOP WRITE_TOBUF V10, &40, V11 // is called when done with stream
+
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &48, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 48 (sched queue add)
+// to V11 (sched queue add arg buf) at offset 0
+MEMOP WRITE_TOBUF V11, &8, V7
+MEMOP WRITE_TOBUF V11, &16, V10 // and it adds stream back to the scheduler queue
+MEMOP WRITE_TOBUF V11, &24, V4 // calls scheduler on success
+BUFREQ ALLOC V15, &8 // error.eir buf
+MEMOP TRANSFER_WITH_OFFSET V15, &0, V1, &72, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 72 (error.eir)
+// to V15 (error.eir buf buf) at offset 0
+MEMOP WRITE_TOBUF V11, &32, V15 // calls error on failure
+
+MATHOP ADD_U64 V5, V5, &8
+MEMOP WRITE_TOBUF V5, V5, V10
+
+CMP NEQ V19, &0, PREP_STREAMS
+BUFREQ RELEASE V19
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 2: prepare the sched queue add stack  /////////////////////////////
+// uses V20-V29                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+BUFREQ ALLOC V20, &40
+MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &56, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 56 (sched queue add stack)
+// to V20 (sched queue add stack arg buf) at offset 0
+MEMOP WRITE_TOBUF V20, &8, V7
+MEMOP WRITE_TOBUF V20, &16, V5
+MEMOP WRITE_TOBUF V20, &24, V4 // calls scheduler on success
+BUFREQ ALLOC V25, &8 // error.eir buf
+MEMOP TRANSFER_WITH_OFFSET V25, &0, V1, &72, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 72 (error.eir)
+// to V25 (error.eir buf buf) at offset 0
+MEMOP WRITE_TOBUF V20, &32, V25 // calls error on failure
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 3: initialize the streams             /////////////////////////////
+// uses V30-V39                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+MEMOP READ_FROMBUF V30, V3, &0
+MEMOP READ_FROMBUF V31, V3, &08
+MEMOP READ_FROMBUF V32, V3, &16
+MEMOP READ_FROMBUF V33, V3, &24
+MEMOP READ_FROMBUF V34, V3, &32
+
+MEMOP READ_FROMBUF V38, V30, &8
+MEMOP LOAD_LITERAL V38, @65 // ascii A
+MEMOP READ_FROMBUF V38, V31, &8
+MEMOP LOAD_LITERAL V38, @81 // ascii Q
+MEMOP READ_FROMBUF V38, V32, &8
+MEMOP LOAD_LITERAL V38, @97 // ascii a
+MEMOP READ_FROMBUF V38, V33, &8
+MEMOP LOAD_LITERAL V38, @113 // ascii q
+MEMOP READ_FROMBUF V38, V34, &8
+MEMOP LOAD_LITERAL V38, @48 // ascii 0
+
+
+BUFREQ ALLOC V39, &8
+MEMOP LOAD_LITERAL V39, @40
+INIT_STREAMS:
+MATHOP SUB_U64 V39, V39, &8
+MEMOP READ_FROMBUF V35, V3, V39
+MEMOP READ_FROMBUF V36, V35, &8
+MEMOP TRANSFER_WITH_OFFSET V36, &1, V36, &0, &1 // TODO: get rid of hardcoding
+MEMOP TRANSFER_WITH_OFFSET V36, &2, V36, &0, &2
+MEMOP TRANSFER_WITH_OFFSET V36, &4, V36, &0, &4
+MEMOP TRANSFER_WITH_OFFSET V36, &8, V36, &0, &8
+MEMOP TRANSFER_WITH_OFFSET V36, &16, V36, &0, &16
+MEMOP TRANSFER_WITH_OFFSET V36, &32, V36, &0, &32
+MEMOP TRANSFER_WITH_OFFSET V36, &64, V36, &0, &36
+CMP NEQ V39, &0, INIT_STREAMS
+BUFREQ RELEASE V39
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 4: pass control onward                /////////////////////////////
+// uses V40-V63                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V20
+INVOKE LOCAL_BUF V0
+
