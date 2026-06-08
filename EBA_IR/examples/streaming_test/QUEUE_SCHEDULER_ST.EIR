@@ -12,29 +12,29 @@ MEMOP READ_FROMBUF V3, V6, &16 // head
 MEMOP READ_FROMBUF V4, V6, &24 // tail
 MEMOP READ_FROMBUF V5, V6, &32 // full
 
-///////////// logging
-
-LOG STRING stream.eirout DISPLAY_SCHEDULE_QUEUE
-LOG WORD stream.eirout V2
-LOG WORD stream.eirout V3
-LOG WORD stream.eirout V4
-LOG WORD stream.eirout V5
-
-BUFREQ ALLOC V41, &8
-MEMOP LOAD_LITERAL V41, @0
-START_LOG_1:
-CMP GEQ V41, V2, END_LOG_1
-
-MEMOP READ_FROMBUF V43, V1, V41
-LOG VAR stream.eirout V43
-MATHOP ADD_U64 V41, V41, &8
-CMP EQ &0, &0, START_LOG_1
-
-END_LOG_1:
-BUFREQ RELEASE V41
-
-
-/////////////done logging
+// ///////////// logging
+// 
+// LOG STRING stream.eirout DISPLAY_SCHEDULE_QUEUE
+// LOG WORD stream.eirout V2
+// LOG WORD stream.eirout V3
+// LOG WORD stream.eirout V4
+// LOG WORD stream.eirout V5
+// 
+// BUFREQ ALLOC V41, &8
+// MEMOP LOAD_LITERAL V41, @0
+// START_LOG_1:
+// CMP GEQ V41, V2, END_LOG_1
+// 
+// MEMOP READ_FROMBUF V43, V1, V41
+// LOG VAR stream.eirout V43
+// MATHOP ADD_U64 V41, V41, &8
+// CMP EQ &0, &0, START_LOG_1
+// 
+// END_LOG_1:
+// BUFREQ RELEASE V41
+// 
+// 
+// /////////////done logging
 
 BUFREQ ALLOC V7, &8 // available space
 MATHOP SUB_U64 V7, V4, V3 // available space = tail-head
