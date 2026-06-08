@@ -1,3 +1,6 @@
+gltest: gltest.c
+	gcc -Wall -Wpedantic -I ./glad/include -o gltest -g gltest.c glad/src/gl.c -lglfw -lGL
+
 triangle: glfw_triangle.c
 	gcc -Wall -g glfw_triangle.c -lglfw -lGLESv2 -lm
 
