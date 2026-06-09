@@ -49,6 +49,7 @@ int main( void ) {
       -0.5f, -0.8f, +0.0f,
       -0.9f, -0.7f, +0.0f,
    };
+   tri_points[3] += 0.5;
 
    // vertex buffer object
    GLuint vbo1 = 0;
@@ -65,6 +66,7 @@ int main( void ) {
    // not sure if that above line is needed either.
    // can remove it and things work fine!
    glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
+
 
    // second vertex buffer obj!
    GLuint vbo2 = 0;
@@ -148,8 +150,11 @@ int main( void ) {
    glLinkProgram(shader_program2);
    glClearColor(0.6f, 0.6f, 0.8f, 1.0f);
 
+   glfwSwapInterval(1);
+
    while(!glfwWindowShouldClose(window))
    {
+      glfwSwapBuffers(window);
       glfwPollEvents();
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -164,12 +169,12 @@ int main( void ) {
       // glDrawArrays(GL_LINES, 0, 6);
       // glDrawArrays(GL_POINTS, 0, 6);
 
-      glfwSwapBuffers(window);
    }
      
    // Close OpenGL window, context, and any other GLFW resources.
    free(vertex_shader);
    free(fragment_shader1);
+   free(fragment_shader2);
    glfwTerminate();
    return 0;
 }

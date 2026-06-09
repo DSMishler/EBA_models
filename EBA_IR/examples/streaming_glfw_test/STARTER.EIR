@@ -1,0 +1,283 @@
+// template starter code
+
+// args
+// 0 - this code buffer
+// 1 - the node we spawned on
+// 2 - the thread we spawned on
+
+
+// going to make some bufs here (scaffold for now)
+// V1 - code bufs
+   // 00 - QUEUE_SCHEDULER_ST
+   // 08 - SCHED_QUEUE_INIT
+   // 16 - SCHED_QUEUE_FREE
+   // 24 - RELEASE_BUF_STACK
+   // 32 - CODE_FREE_STACK
+   // 40 - EXIT
+   // 48 - SCHED_QUEUE_ADD
+   // 56 - SCHED_QUEUE_ADD_STACK
+   // 64 - STREAM
+   // 72 - ERROR
+   // 80 - GLFW_TERMINATE
+   // 88 - GLFW_UPDATE
+// V2 - utility buffers
+   // 00 - bufs to free
+   // 08 - codes to free
+   // 16 - queue scheduler st arg buf
+      // 00 - the code
+      // 08 - the sched queue
+      // 16 - code to call when done
+   // 24 - GLFW window
+   // 32 - closeEIRwindow - a buffer containing 1 if it's time to close up shop
+// V3 - streaming buffers
+   // 00 - node 0
+      // 0 - len of following data
+      // 8 - the data
+      // 16 - data currently being drawn (of size blocksize TODO: don't hardcode)
+      // 24 - vao for graphviz
+      // 32 - shader prog
+      // 40 - pointer to closeEIRwindow
+   // 08 - node 1
+   // 16 - node 2
+   // 24 - node 3
+   // 32 - node 4
+
+PRINT STRING "EIR streaming test:"
+LOG RESET stream.eirout
+LOG STRING stream.eirout CURRENTLY_RUNNING_STARTER
+
+MEMOP READ_FROMBUF V1, V0, &16
+BUFREQ RELEASE V1
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V1
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: set up buffers /////////////////////////////////////////////////
+// uses V0-V9                  /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ ALLOC V1, &104
+BUFREQ ALLOC V2, &104
+BUFREQ ALLOC V3, &40
+
+
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/QUEUE_SCHEDULER_ST.EIR"
+MEMOP WRITE_TOBUF V1, &0, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_INIT.EIR"
+MEMOP WRITE_TOBUF V1, &8, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_FREE.EIR"
+MEMOP WRITE_TOBUF V1, &16, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/RELEASE_BUF_STACK.EIR"
+MEMOP WRITE_TOBUF V1, &24, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/CODE_FREE_STACK.EIR"
+MEMOP WRITE_TOBUF V1, &32, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/EXIT.EIR"
+MEMOP WRITE_TOBUF V1, &40, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_ADD.EIR"
+MEMOP WRITE_TOBUF V1, &48, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_ADD_STACK.EIR"
+MEMOP WRITE_TOBUF V1, &56, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/STREAM.EIR"
+MEMOP WRITE_TOBUF V1, &64, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/ERROR.EIR"
+MEMOP WRITE_TOBUF V1, &72, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/GLFW_TERMINATE.EIR"
+MEMOP WRITE_TOBUF V1, &80, V9
+SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/GLFW_UPDATE.EIR"
+MEMOP WRITE_TOBUF V1, &88, V9
+
+
+
+BUFREQ ALLOC V9, &2008 // bufs to free
+MEMOP WRITE_TOBUF V2, &0, V9
+
+
+BUFREQ ALLOC V9, &208 // codes to free
+MEMOP WRITE_TOBUF V2, &8, V9
+
+BUFREQ ALLOC V4, &24 // queue scheduler st arg buf
+MEMOP TRANSFER_WITH_OFFSET V4, &0, V1, &0, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 0 (queue scheduler st)
+// to V9 (arg buf of queue scheduler st) at offset 0
+BUFREQ ALLOC V5, &40 // scheduler queue
+MEMOP WRITE_TOBUF V4, &8, V5 // add the scheduler queue to the arg buf
+MEMOP WRITE_TOBUF V2, &16, V4
+
+SCAFFOLD GLFW_INIT V9
+MEMOP WRITE_TOBUF V2, &24, V9
+
+BUFREQ ALLOC V9, &8
+MEMOP LOAD_LITERAL V9, @0
+MEMOP WRITE_TOBUF V2, &32, V9
+
+
+BUFREQ ALLOC V6, &8
+MEMOP LOAD_LITERAL V6, @40
+WRITE_TO_V3:
+MATHOP SUB_U64 V6, V6, &8
+BUFREQ ALLOC V9, &48
+BUFREQ ALLOC V7, &8
+MEMOP LOAD_LITERAL V7, @720
+BUFREQ ALLOC V8, V7
+MEMOP WRITE_TOBUF V9, &0, V7
+MEMOP WRITE_TOBUF V9, &8, V8
+MEMOP TRANSFER_WITH_OFFSET V9, &40, V2, &32, &8 // pointer to closeEIRwindow
+// 8 bytes
+// from V2 @ offset 32
+// to V9 @ offset 32
+BUFREQ ALLOC V8, &72 // TODO: unhardcode this
+MEMOP WRITE_TOBUF V9, &16, V8
+MEMOP WRITE_TOBUF V3, V6, V9
+CMP NEQ V6, &0, WRITE_TO_V3
+BUFREQ RELEASE V6
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: set entry squence    ///////////////////////////////////////////
+// uses V10-V19                /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// sched queue init --> populater
+
+
+BUFREQ ALLOC V10, &32 // sched queue init
+BUFREQ ALLOC V19, &8 // queue size
+MEMOP LOAD_LITERAL V19, @200
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &8, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 8 (sched queue init)
+// to V10 (arg buf of sched queue init) at offset 0
+
+MEMOP WRITE_TOBUF V10, &8, V19
+
+MEMOP WRITE_TOBUF V10, &16, V5 // sched queue
+
+BUFREQ ALLOC V11, &32 // populater
+MEMOP WRITE_TOBUF V10, &24, V11 // call it when done with sched queue init
+SCAFFOLD CODEREAD V18, "examples/streaming_glfw_test/POPULATER.EIR"
+MEMOP WRITE_TOBUF V11, &0, V18
+MEMOP WRITE_TOBUF V11, &8, V1
+MEMOP WRITE_TOBUF V11, &16, V2
+MEMOP WRITE_TOBUF V11, &24, V3
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 2: set exit squence     ///////////////////////////////////////////
+// uses V20-V29                /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+// sched queue free --> release buf stack --> code free stack --> exit
+
+//////////////////// sched queue free
+BUFREQ ALLOC V20, &24 // for sched queue free
+MEMOP WRITE_TOBUF V4, &16, V20 // call when done with queue scheduler st
+MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &16, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 16 (sched queue free)
+// to V20 (arg buf of sched queue free) at offset 0
+MEMOP WRITE_TOBUF V20, &8, V5 // give it the schedule queue to free
+
+///////////////////// glfw_terminate
+BUFREQ ALLOC V27, &16
+MEMOP WRITE_TOBUF V20, &16, V27 // call this when done with sched queue free
+MEMOP TRANSFER_WITH_OFFSET V27, &0, V1, &80, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 80 (glfw_terminate)
+// to V20 (arg buf of glfw_terminate) at offset 0
+
+
+///////////////////// release buf stack
+BUFREQ ALLOC V21, &24 // release buf stack
+MEMOP WRITE_TOBUF V27, &8, V21 // call this when done with glfw_terminate
+MEMOP TRANSFER_WITH_OFFSET V21, &0, V1, &24, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 24 (release buf stack)
+// to V21 (arg buf of release buf stack) at offset 0
+
+MEMOP READ_FROMBUF V29, V2, &0 // grab the buf stack
+MEMOP LOAD_LITERAL V29, @0 // load in zero
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
+MEMOP WRITE_TOBUF V29, V29, V1
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
+MEMOP WRITE_TOBUF V29, V29, V2
+MATHOP ADD_U64 V29, V29, &8 // add V1, V2, V3
+MEMOP WRITE_TOBUF V29, V29, V3
+MATHOP ADD_U64 V29, V29, &8
+MEMOP TRANSFER_WITH_OFFSET V29, V29, V2, &32, &8
+// add the buf of "closeEIRwindow" to free at the end
+BUFREQ ALLOC V25, &8
+MEMOP LOAD_LITERAL V25, @40
+ADD_VAO_DATABUFS:
+   MATHOP SUB_U64 V25, V25, &8
+   MEMOP READ_FROMBUF V28, V3, V25
+   MATHOP ADD_U64 V29, V29, &8
+   MEMOP TRANSFER_WITH_OFFSET V29, V29, V28, &16, &8
+   CMP NEQ V25, &0, ADD_VAO_DATABUFS
+BUFREQ RELEASE V25
+
+BUFREQ ALLOC V26, &8
+MEMOP LOAD_LITERAL V26, @40
+CLEANUP_V3:
+MATHOP SUB_U64 V26, V26, &8
+MEMOP READ_FROMBUF V25, V3, V26
+MATHOP ADD_U64 V29, V29, &8
+MEMOP TRANSFER_WITH_OFFSET V29, V29, V25, &0, &16 // add the two bufs to free
+MATHOP ADD_U64 V29, V29, &16
+MEMOP WRITE_TOBUF V29, V29, V25
+CMP NEQ V26, &0, CLEANUP_V3
+BUFREQ RELEASE V26
+
+
+MEMOP WRITE_TOBUF V21, &8, V29
+
+//////////////////////// code free stack
+BUFREQ ALLOC V22, &24
+MEMOP WRITE_TOBUF V21, &16, V22 // call this when done with release buf stack
+MEMOP TRANSFER_WITH_OFFSET V22, &0, V1, &32, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 32 (code free stack)
+// to V22 (arg buf of code free stack) at offset 0
+
+MEMOP READ_FROMBUF V29, V2, &8 // grab the code stack
+MEMOP LOAD_LITERAL V29, @0 // load in zero
+MEMOP TRANSFER_WITH_OFFSET V29, &8, V1, &0, &32
+// transfer 32 bytes
+// from V1 (code bufs) at offset 0 (up to buf release stack and exit)
+// to V29 (bufs to free) at offset 8 (where the codes to free begin)
+// EXIT will free code free stack and itself
+MEMOP TRANSFER_WITH_OFFSET V29, &40, V1, &48, &48
+// transfer 40 bytes
+// from V1 (code bufs) at offset 48 (after buf release stack and exit)
+// to V29 (bufs to free) at offset 40 (where the codes to free left off)
+MATHOP ADD_U64 V29, V29, &80
+MEMOP READ_FROMBUF V28, V0, &0 // also grab my code
+MATHOP ADD_U64 V29, V29, &8
+MEMOP WRITE_TOBUF V29, V29, V28 // and put it ready to free
+MATHOP ADD_U64 V29, V29, &8
+MEMOP WRITE_TOBUF V29, V29, V18 // and the populater
+
+MEMOP WRITE_TOBUF V22, &8, V29
+
+////////////////////////// exit
+BUFREQ ALLOC V23, &16
+MEMOP WRITE_TOBUF V22, &16, V23 // call this when done with code free stack
+MEMOP TRANSFER_WITH_OFFSET V23, &0, V1, &40, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 40 (exit)
+// to V23 (arg buf of exit) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V23, &8, V1, &32, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 32 (code free stack)
+// to V23 (arg buf of exit) at offset 8
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 3: pass control         ///////////////////////////////////////////
+// uses V30-V63                /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V10
+INVOKE LOCAL_BUF V0

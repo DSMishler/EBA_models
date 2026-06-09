@@ -9,6 +9,9 @@
 #include "interpreter.h"
 #include "reader.h"
 
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
+
 #define MAX_THREADS 16
 
 // global function pointer for the next operation to run (w/MAX_THREADS threads)
@@ -80,11 +83,28 @@ void* parse_var_buf(char *word, IR_state_t *IRstate)
    }
    else if (word[0] == '&')
    {
-      char *strend;
-      uint64_t myval = strtoull(word+1, &strend, 10);
-      assert(strend != NULL);
-      retval = malloc(sizeof(uint64_t));
-      *(uint64_t*)retval = myval;
+      if (word[strlen(word)-1] == 'f')
+      {
+         // it's a float, consider it a double precision float.
+         char *newstr = malloc(strlen(word)+1);
+         strcpy(newstr, word);
+         newstr[strlen(word)] = '\0';
+         // TODO: it's sloppy to change caller memory. Change this.
+         char *strend;
+         double myval = strtod(newstr+1, &strend);
+         assert(strend != NULL);
+         retval = malloc(sizeof(uint64_t));
+         *(double*)retval = myval;
+         free(newstr);
+      }
+      else
+      {
+         char *strend;
+         uint64_t myval = strtoull(word+1, &strend, 10);
+         assert(strend != NULL);
+         retval = malloc(sizeof(uint64_t));
+         *(uint64_t*)retval = myval;
+      }
    }
    else
    {
@@ -497,6 +517,70 @@ void run_mathop(IR_state_t *IRstate, char **line)
       uint64_t* op_b_adr = (uint64_t*) (op_b_buf);
 
       *dest_adr = *op_a_adr % *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
+   }
+   else if (match_second_word(line, "ADD_D64"))
+   {
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
+
+      double* dest_adr = (double*) (dest_buf);
+      double* op_a_adr = (double*) (op_a_buf);
+      double* op_b_adr = (double*) (op_b_buf);
+   
+      *dest_adr = *op_a_adr + *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
+   }
+   else if (match_second_word(line, "MUL_D64"))
+   {
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
+
+      double* dest_adr = (double*) (dest_buf);
+      double* op_a_adr = (double*) (op_a_buf);
+      double* op_b_adr = (double*) (op_b_buf);
+
+      *dest_adr = *op_a_adr * *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
+   }
+   else if (match_second_word(line, "SUB_D64"))
+   {
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
+
+      double* dest_adr = (double*) (dest_buf);
+      double* op_a_adr = (double*) (op_a_buf);
+      double* op_b_adr = (double*) (op_b_buf);
+
+      *dest_adr = *op_a_adr - *op_b_adr;
+
+      buf_free_if_shorthand(dest_buf, line[2]);
+      buf_free_if_shorthand(op_a_buf, line[3]);
+      buf_free_if_shorthand(op_b_buf, line[4]);
+   }
+   else if (match_second_word(line, "DIV_D64"))
+   {
+      void *dest_buf = parse_var_buf(line[2], IRstate);
+      void *op_a_buf = parse_var_buf(line[3], IRstate);
+      void *op_b_buf = parse_var_buf(line[4], IRstate);
+
+      double* dest_adr = (double*) (dest_buf);
+      double* op_a_adr = (double*) (op_a_buf);
+      double* op_b_adr = (double*) (op_b_buf);
+
+      *dest_adr = *op_a_adr / *op_b_adr;
 
       buf_free_if_shorthand(dest_buf, line[2]);
       buf_free_if_shorthand(op_a_buf, line[3]);
@@ -979,6 +1063,229 @@ void run_scaffold(IR_state_t *IRstate, char **line)
 
       buf_free_if_shorthand(avl_buf, line[2]);
       pthread_mutex_unlock(&interpreter_lock);
+   }
+   else if (match_second_word(line, "GLFW_INIT"))
+   {
+      int var_window = parse_variable(line[2]);
+      if (var_window < 0 || var_window >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_INIT", IRstate->next_line);
+      }
+
+      if (!glfwInit())
+      {
+         fprintf(stderr, "ERROR: GLFW3 init failed!\n");
+         IRstate->vars[var_window] = 0; // NULL
+         IRstate->next_line += 1;
+         return;
+      }
+
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+      glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+      glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+      GLFWwindow *window = glfwCreateWindow(800, 600, "EIRstream", NULL, NULL);
+
+      if (!window)
+      {
+         fprintf(stderr, "ERROR: GLFW3 window creation failed!\n");
+         IRstate->vars[var_window] = 0; // NULL
+         IRstate->next_line += 1;
+         return;
+      }
+
+      glfwMakeContextCurrent(window);
+      glfwSwapInterval(1);
+
+      int version_glad = gladLoadGL(glfwGetProcAddress);
+      if (version_glad == 0)
+      {
+         fprintf(stderr, "ERROR: failed to init OpenGL!\n");
+         IRstate->vars[var_window] = 0; // NULL
+         IRstate->next_line += 1;
+         return;
+      }
+
+      glClearColor(0.6f, 0.6f, 0.8f, 1.0f);
+
+      IRstate->vars[var_window] = (int64_t) window;
+   }
+   else if (match_second_word(line, "GLFW_TERMINATE"))
+   {
+      glfwTerminate();
+   }
+   else if (match_second_word(line, "GLFW_WINDOWSHOULDCLOSE"))
+   {
+      // following the dest, src convention
+      int var_shouldclose = parse_variable(line[2]);
+      int var_window = parse_variable(line[3]);
+      if (var_shouldclose < 0 || var_shouldclose >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_WINDOWSHOULDCLOSE", IRstate->next_line);
+      }
+      if (var_window < 0 || var_window >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_WINDOWSHOULDCLOSE", IRstate->next_line);
+      }
+      
+      GLFWwindow *window = (GLFWwindow *) IRstate->vars[var_window];
+      int64_t *shouldclose = (int64_t*) IRstate->vars[var_shouldclose];
+      *shouldclose = (int64_t) glfwWindowShouldClose(window);
+   }
+   else if (match_second_word(line, "GLFW_POLLEVENTS"))
+   {
+      glfwPollEvents();
+   }
+   else if (match_second_word(line, "GLFW_CLEAR"))
+   {
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+   }
+   else if (match_second_word(line, "GLFW_SWAPBUFFERS"))
+   {
+      int var_window = parse_variable(line[2]);
+      if (var_window < 0 || var_window >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_SWAPBUFFERS", IRstate->next_line);
+      }
+      GLFWwindow *window = (GLFWwindow *) IRstate->vars[var_window];
+      glfwSwapBuffers(window);
+
+   }
+   else if (match_second_word(line, "GLFW_MAKEVAO"))
+   {
+      int var_vao = parse_variable(line[2]);
+      int var_data = parse_variable(line[3]);
+      if (var_vao < 0 || var_vao >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_SWAPBUFFERS", IRstate->next_line);
+      }
+      if (var_data < 0 || var_data >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_SWAPBUFFERS", IRstate->next_line);
+      }
+
+      double *data = (double *) IRstate->vars[var_data];
+
+      GLuint vbo = 0;
+      glGenBuffers(1, &vbo);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo);
+      glBufferData(GL_ARRAY_BUFFER, 9*sizeof(double), data, GL_STATIC_DRAW);
+
+      // for(int i = 0; i < 3; i++)
+      // {
+         // printf("points[%d]: %lf %lf %lf\n", i, data[3*i+0], data[3*i+1], data[3*i+2]);
+      // }
+      // printf("\n");
+
+      GLuint vao = 0;
+      glGenVertexArrays(1, &vao);
+      glBindVertexArray(vao);
+      glEnableVertexAttribArray(0);
+      glBindBuffer(GL_ARRAY_BUFFER, vbo);
+      glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, NULL);
+
+      IRstate->vars[var_vao] = (int64_t) vao;
+   }
+   else if (match_second_word(line, "GLFW_MAKESHADERPROG"))
+   {
+      int var_prog = parse_variable(line[2]);
+      if (var_prog < 0 || var_prog >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_MAKESHADERPROG", IRstate->next_line);
+      }
+      long int flen;
+      FILE *fp;
+      int chars_read;
+
+      assert(line[3] != NULL);
+
+      fp = fopen(line[3], "rb"); // TODO: check with just "r" too, should be fine
+      if (fp == NULL)
+      {
+         fprintf(stderr, "error: '%s' not found\n", line[3]);
+         exit(1);
+      }
+      fseek(fp, 0, SEEK_END);
+      flen = ftell(fp);
+      fseek(fp, 0, SEEK_SET);
+      char *vertex_shader = malloc(flen+1);
+      chars_read = fread(vertex_shader, 1, flen, fp);
+      if (chars_read != flen)
+      {
+         fprintf(stderr, "error in reading vertex shader!\n");
+         exit(1);
+      }
+      fclose(fp);
+      vertex_shader[flen] = '\0';
+
+      assert(line[4] != NULL);
+
+      fp = fopen(line[4], "rb"); // TODO: check with just "r" too, should be fine
+      if (fp == NULL)
+      {
+         fprintf(stderr, "error: '%s' not found\n", line[4]);
+         exit(1);
+      }
+      fseek(fp, 0, SEEK_END);
+      flen = ftell(fp);
+      fseek(fp, 0, SEEK_SET);
+      char *fragment_shader = malloc(flen+1);
+      chars_read = fread(fragment_shader, 1, flen, fp);
+      if (chars_read != flen)
+      {
+         fprintf(stderr, "error in reading fragment shader!\n");
+         exit(1);
+      }
+      fclose(fp);
+      fragment_shader[flen] = '\0';
+
+      // printf("%s\n", vertex_shader);
+      // printf("%s\n", fragment_shader);
+
+      GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+      glShaderSource(vs, 1, (const char**) &vertex_shader, NULL);
+      glCompileShader(vs);
+
+      GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+      glShaderSource(fs, 1, (const char**) &fragment_shader, NULL);
+      glCompileShader(fs);
+
+      GLuint shader_program = glCreateProgram();
+      glAttachShader(shader_program, fs);
+      glAttachShader(shader_program, vs);
+      glLinkProgram(shader_program);
+
+      IRstate->vars[var_prog] = (int64_t) shader_program;
+      // printf("value of shader program? %d\n", shader_program);
+
+      free(vertex_shader);
+      free(fragment_shader);
+   }
+   else if (match_second_word(line, "GLFW_USESHADERPROG"))
+   {
+      int var_prog = parse_variable(line[2]);
+      if (var_prog < 0 || var_prog >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_USESHADERPROG", IRstate->next_line);
+      }
+
+      GLuint shader_program = (GLuint) IRstate->vars[var_prog];
+      // printf("size of GLuint? %lu\n", sizeof(GLuint));
+      // printf("value of shader program? %u\n", shader_program);
+      glUseProgram(shader_program);
+   }
+   else if (match_second_word(line, "GLFW_DRAWVAOTRIANGLES"))
+   {
+      int var_vao = parse_variable(line[2]);
+      if (var_vao < 0 || var_vao >= IR_STATE_SIZE)
+      {
+         var_errmsg("SCAFFOLD GLFW_DRAWVAOTRIANGLES", IRstate->next_line);
+      }
+
+      GLuint vao = (GLuint) IRstate->vars[var_vao];
+      glBindVertexArray(vao);
+      glDrawArrays(GL_TRIANGLES, 0, 3);
+      glDrawArrays(GL_POINTS, 0, 3);
    }
    else
    {

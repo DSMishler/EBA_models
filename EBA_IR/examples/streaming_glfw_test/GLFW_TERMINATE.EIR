@@ -1,0 +1,12 @@
+// glfw terminate
+// just calls scaffolding for glfw termiante
+// then moves on
+// args
+// 0 - this buf (always)
+// 1 - the next buf to call in the sequence
+
+SCAFFOLD GLFW_TERMINATE
+MEMOP READ_FROMBUF V1, V0, &8
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V1
+INVOKE LOCAL_BUF V0

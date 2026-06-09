@@ -19,7 +19,7 @@ int main(void)
    // glfwMakeContextCurrent(window);
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
-   test_solofile("examples/streaming_test/STARTER.EIR");
+   test_solofile("examples/streaming_glfw_test/STARTER.EIR");
    pthread_mutex_destroy(&interpreter_lock);
 
    // glfwTerminate();

@@ -1,0 +1,234 @@
+// populater
+// continuing the work of the starter
+// args
+// 0 - this code (always)
+// 1 - V1 from starter
+// 2 - V2 from starter
+// 3 - V3 from starter
+
+
+// needs to populate all five stream instances
+// then it will hand control to sched_queue_add_stack to add them all
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+MEMOP READ_FROMBUF V3, V0, &24
+MEMOP READ_FROMBUF V4, V2, &16
+MEMOP READ_FROMBUF V7, V4, &8
+
+BUFREQ ALLOC V5, &56 // for the sched queue add stack
+MEMOP LOAD_LITERAL V5, @0
+
+MEMOP READ_FROMBUF V6, V2, &0 // bufs to free
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 1: prepare the stream instances    ////////////////////////////////
+// uses V10-V19                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+BUFREQ ALLOC V19, &8
+MEMOP LOAD_LITERAL V19, @40
+PREP_STREAMS:
+MATHOP SUB_U64 V19, V19, &8
+BUFREQ ALLOC V10, &56 // STREAM.EIR
+MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &64, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 64 (stream code)
+// to V10 (stream code arg buf) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V10, &8, V3, V19, &8
+// transfer 8 bytes
+// from V3 (stream bufs) at offset V19 (grabs from the last to the first)
+// to V10 (stream code arg buf) at offset 8
+BUFREQ ALLOC V18, &8 // blocksize
+MEMOP LOAD_LITERAL V18, @72
+BUFREQ ALLOC V17, &8 // progress
+MEMOP LOAD_LITERAL V17, @0
+BUFREQ ALLOC V16, &8 // repeats
+MEMOP LOAD_LITERAL V16, @10
+MEMOP WRITE_TOBUF V10, &16, V18
+MEMOP WRITE_TOBUF V10, &24, V17
+MEMOP WRITE_TOBUF V10, &32, V16
+
+// when no more is left, do the schedule queue
+MEMOP WRITE_TOBUF V10, &48, V4
+
+BUFREQ ALLOC V11, &40 // sched queue add
+MEMOP WRITE_TOBUF V10, &40, V11 // is called when done with stream
+
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &48, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 48 (sched queue add)
+// to V11 (sched queue add arg buf) at offset 0
+MEMOP WRITE_TOBUF V11, &8, V7
+MEMOP WRITE_TOBUF V11, &16, V10 // and it adds stream back to the scheduler queue
+MEMOP WRITE_TOBUF V11, &24, V4 // calls scheduler on success
+BUFREQ ALLOC V15, &8 // error.eir buf
+MEMOP TRANSFER_WITH_OFFSET V15, &0, V1, &72, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 72 (error.eir)
+// to V15 (error.eir buf buf) at offset 0
+MEMOP WRITE_TOBUF V11, &32, V15 // calls error on failure
+
+MATHOP ADD_U64 V5, V5, &8 // add to the stack of bufs to schedule
+MEMOP WRITE_TOBUF V5, V5, V10
+
+CMP NEQ V19, &0, PREP_STREAMS
+BUFREQ RELEASE V19
+
+
+// now also add the GLFW_UPDATE code to the top of the stack (it runs first)
+BUFREQ ALLOC V12, &40
+MEMOP TRANSFER_WITH_OFFSET V12, &0, V1, &88, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 88 (window update code)
+// to V12 (glfw_update arg buf) at offset 0
+MEMOP TRANSFER_WITH_OFFSET V12, &8, V2, &24, &16
+// transfer 16 bytes
+// from V2 (utility bufs) at offset 24 (glfw window and closeEIRwindow buf)
+// to V12 (glfw_update arg buf) at offset 8
+
+MEMOP WRITE_TOBUF V12, &32, V4 // when no more is left, do schedule queue
+
+// but when more is left, get sched queue add involed
+BUFREQ ALLOC V11, &40 // sched queue add
+MEMOP WRITE_TOBUF V12, &24, V11 // is called when done with glfw_update
+MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &48, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 48 (sched queue add)
+// to V11 (sched queue add arg buf) at offset 0
+MEMOP WRITE_TOBUF V11, &8, V7
+MEMOP WRITE_TOBUF V11, &16, V12 // and it adds glfw_update to the scheduler queue
+MEMOP WRITE_TOBUF V11, &24, V4 // calls scheduler on success
+BUFREQ ALLOC V15, &8 // error.eir buf
+MEMOP TRANSFER_WITH_OFFSET V15, &0, V1, &72, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 72 (error.eir)
+// to V15 (error.eir buf buf) at offset 0
+MEMOP WRITE_TOBUF V11, &32, V15 // calls error on failure
+
+MATHOP ADD_U64 V5, V5, &8 // add to the stack of bufs to schedule
+MEMOP WRITE_TOBUF V5, V5, V12
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 2: prepare the sched queue add stack  /////////////////////////////
+// uses V20-V29                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+BUFREQ ALLOC V20, &40
+MEMOP TRANSFER_WITH_OFFSET V20, &0, V1, &56, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 56 (sched queue add stack)
+// to V20 (sched queue add stack arg buf) at offset 0
+MEMOP WRITE_TOBUF V20, &8, V7
+MEMOP WRITE_TOBUF V20, &16, V5
+MEMOP WRITE_TOBUF V20, &24, V4 // calls scheduler on success
+BUFREQ ALLOC V25, &8 // error.eir buf
+MEMOP TRANSFER_WITH_OFFSET V25, &0, V1, &72, &8
+// transfer 8 bytes
+// from V1 (code bufs) at offset 72 (error.eir)
+// to V25 (error.eir buf buf) at offset 0
+MEMOP WRITE_TOBUF V20, &32, V25 // calls error on failure
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 3: initialize the streams             /////////////////////////////
+// uses V30-V39                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+BUFREQ ALLOC V39, &8
+MEMOP LOAD_LITERAL V39, @40
+BUFREQ ALLOC V34, &8 // height difference for the streams
+MATHOP ADD_D64 V34, &0.0f, &0.0f
+INIT_STREAMS:
+   MATHOP SUB_U64 V39, V39, &8
+   MEMOP READ_FROMBUF V35, V3, V39
+
+
+
+
+   MEMOP READ_FROMBUF V36, V35, &8
+
+   BUFREQ ALLOC V38, &8 // placeholder to put into  V37, which goes into v36
+   BUFREQ ALLOC V37, &72
+
+   BUFREQ ALLOC V33, &8 // for tracking how deep we are in the streams
+   BUFREQ ALLOC V32, &8 // for adding x as you go across
+
+   INIT_BLOCK:
+
+      // X1
+      MATHOP ADD_D64 V38, &-0.1f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &0, V38, &0, &8
+      // Y1
+      MATHOP ADD_D64 V38, &-0.9f, V34
+      MEMOP TRANSFER_WITH_OFFSET V37, &8, V38, &0, &8
+      // Z1
+      MATHOP ADD_D64 V38, &0f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &16, V38, &0, &8
+      // X2
+      MATHOP ADD_D64 V38, &0f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &24, V38, &0, &8
+      // Y2
+      MATHOP ADD_D64 V38, &-0.7f, V34
+      MEMOP TRANSFER_WITH_OFFSET V37, &32, V38, &0, &8
+      // Z2
+      MATHOP ADD_D64 V38, &0f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &40, V38, &0, &8
+      // X3
+      MATHOP ADD_D64 V38, &0.1f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &48, V38, &0, &8
+      // Y3
+      MATHOP ADD_D64 V38, &-0.9f, V34
+      MEMOP TRANSFER_WITH_OFFSET V37, &56, V38, &0, &8
+      // Z3
+      MATHOP ADD_D64 V38, &0f, &0f
+      MEMOP TRANSFER_WITH_OFFSET V37, &64, V38, &0, &8
+
+      MEMOP TRANSFER_WITH_OFFSET V36, &0, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &72, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &144, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &216, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &288, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &360, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &432, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &504, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &576, V37, &0, &72
+      MEMOP TRANSFER_WITH_OFFSET V36, &648, V37, &0, &72
+
+
+   BUFREQ RELEASE V37
+   BUFREQ RELEASE V38
+
+   BUFREQ RELEASE V32
+   BUFREQ RELEASE V33
+
+
+   // SCAFFOLD GLFW_MAKEVAO V31, V30
+   SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader.frag"
+
+   MEMOP WRITE_TOBUF V35, &24, V31
+   MEMOP WRITE_TOBUF V35, &32, V32
+
+
+
+   MATHOP ADD_D64 V34, V34, &0.4f
+   CMP NEQ V39, &0, INIT_STREAMS
+BUFREQ RELEASE V39
+BUFREQ RELEASE V34
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// workspace 4: pass control onward                /////////////////////////////
+// uses V40-V63                                /////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V20
+INVOKE LOCAL_BUF V0
+
