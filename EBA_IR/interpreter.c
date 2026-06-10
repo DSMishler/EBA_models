@@ -12,7 +12,9 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
-#define MAX_THREADS 16
+
+
+#include <dlfcn.h>
 
 // global function pointer for the next operation to run (w/MAX_THREADS threads)
 void (*eba_states[MAX_THREADS])(void*);
@@ -873,7 +875,7 @@ void run_log(IR_state_t *IRstate, char **line)
    IRstate->next_line += 1;
 }
 
-void run_scaffold(IR_state_t *IRstate, char **line)
+void run_scaffoldold(IR_state_t *IRstate, char **line)
 {
    assert(confirm_first_word(line, "SCAFFOLD"));
 
@@ -1359,7 +1361,16 @@ void run_line(void* lcl_eba_arg)
    }
    else if (samestr(line[0], "SCAFFOLD"))
    {
+      void (*run_scaffold)(IR_state_t *IRstate, char **line);
+      // run_scaffold(IRstate, line);
+
+      void *handler = dlopen("libs/scaffold.so", RTLD_LAZY);
+      void *object = dlsym(handler, "run_scaffold");
+      memcpy(&run_scaffold, &object, sizeof(run_scaffold));
+
       run_scaffold(IRstate, line);
+      dlclose(handler);
+
    }
    else
    {

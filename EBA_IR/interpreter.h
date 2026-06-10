@@ -3,9 +3,19 @@
 
 #define IR_STATE_SIZE 64
 
+#include <pthread.h>
 #include <stdint.h>
 
+#define MAX_THREADS 16
+
+
 extern pthread_mutex_t interpreter_lock;
+
+extern void (*eba_states[MAX_THREADS])(void*);
+extern void *eba_args[MAX_THREADS];
+
+
+
 
 struct IR_state
 {
@@ -17,6 +27,22 @@ struct IR_state
    char ***code_buf;
 };
 typedef struct IR_state IR_state_t;
+
+
+int confirm_first_word(char **line, char *word);
+int match_second_word(char **line, char *word);
+int parse_variable(char *word);
+void* parse_var_buf(char *word, IR_state_t *IRstate);
+void buf_free_if_shorthand(void *buf, char *word);
+uint64_t parse_literal(char *word);
+void var_errmsg(char *func, int line);
+int get_avail_w_thread(void);
+int thread_is_avail(int w_thread);
+
+
+
+
+
 
 void run_code(void*);
 

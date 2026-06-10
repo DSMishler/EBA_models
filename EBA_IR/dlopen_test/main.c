@@ -2,6 +2,7 @@
 // taken from https://mprtmma.medium.com/c-shared-library-dynamic-loading-eps-2-28f0a109250a
 
 #include <stdio.h>
+#include <string.h>
 
 void printone(void)
 {
@@ -40,7 +41,8 @@ int main(void)
    }
 
    int (*thetargetfunc)(void);
-   thetargetfunc = object;
+   memcpy(&thetargetfunc, &object, sizeof(thetargetfunc));
+   // thetargetfunc = object;
 
    int myretval;
    myretval = thetargetfunc();
