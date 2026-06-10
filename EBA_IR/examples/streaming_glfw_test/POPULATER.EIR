@@ -30,50 +30,60 @@ MEMOP READ_FROMBUF V6, V2, &0 // bufs to free
 BUFREQ ALLOC V19, &8
 MEMOP LOAD_LITERAL V19, @40
 PREP_STREAMS:
-MATHOP SUB_U64 V19, V19, &8
-BUFREQ ALLOC V10, &56 // STREAM.EIR
-MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &64, &8
-// transfer 8 bytes
-// from V1 (code bufs) at offset 64 (stream code)
-// to V10 (stream code arg buf) at offset 0
-MEMOP TRANSFER_WITH_OFFSET V10, &8, V3, V19, &8
-// transfer 8 bytes
-// from V3 (stream bufs) at offset V19 (grabs from the last to the first)
-// to V10 (stream code arg buf) at offset 8
-BUFREQ ALLOC V18, &8 // blocksize
-MEMOP LOAD_LITERAL V18, @72
-BUFREQ ALLOC V17, &8 // progress
-MEMOP LOAD_LITERAL V17, @0
-BUFREQ ALLOC V16, &8 // repeats
-MEMOP LOAD_LITERAL V16, @10
-MEMOP WRITE_TOBUF V10, &16, V18
-MEMOP WRITE_TOBUF V10, &24, V17
-MEMOP WRITE_TOBUF V10, &32, V16
+   MATHOP SUB_U64 V19, V19, &8
+   BUFREQ ALLOC V10, &56 // STREAM.EIR
+   MEMOP TRANSFER_WITH_OFFSET V10, &0, V1, &64, &8
+   // transfer 8 bytes
+   // from V1 (code bufs) at offset 64 (stream code)
+   // to V10 (stream code arg buf) at offset 0
+   MEMOP TRANSFER_WITH_OFFSET V10, &8, V3, V19, &8
+   // transfer 8 bytes
+   // from V3 (stream bufs) at offset V19 (grabs from the last to the first)
+   // to V10 (stream code arg buf) at offset 8
+   BUFREQ ALLOC V18, &8 // blocksize
+   MEMOP LOAD_LITERAL V18, @72
+   BUFREQ ALLOC V17, &8 // progress
+   MEMOP LOAD_LITERAL V17, @0
+   BUFREQ ALLOC V16, &8 // repeats
+   MEMOP LOAD_LITERAL V16, @10
 
-// when no more is left, do the schedule queue
-MEMOP WRITE_TOBUF V10, &48, V4
+   BUFREQ ALLOC V15, &8 // helper for repeat setting
+   MATHOP DIV_U64 V15, V19, &8
+   MATHOP ADD_U64 V16, V16, V15 // add repeats: 0 for N0, 1 for N1, etc.
 
-BUFREQ ALLOC V11, &40 // sched queue add
-MEMOP WRITE_TOBUF V10, &40, V11 // is called when done with stream
+   CMP NEQ V19, &08, SKIP_N1_SPECIFIC
+      MEMOP LOAD_LITERAL V16, @15
 
-MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &48, &8
-// transfer 8 bytes
-// from V1 (code bufs) at offset 48 (sched queue add)
-// to V11 (sched queue add arg buf) at offset 0
-MEMOP WRITE_TOBUF V11, &8, V7
-MEMOP WRITE_TOBUF V11, &16, V10 // and it adds stream back to the scheduler queue
-MEMOP WRITE_TOBUF V11, &24, V4 // calls scheduler on success
-BUFREQ ALLOC V15, &8 // error.eir buf
-MEMOP TRANSFER_WITH_OFFSET V15, &0, V1, &72, &8
-// transfer 8 bytes
-// from V1 (code bufs) at offset 72 (error.eir)
-// to V15 (error.eir buf buf) at offset 0
-MEMOP WRITE_TOBUF V11, &32, V15 // calls error on failure
+   SKIP_N1_SPECIFIC:
 
-MATHOP ADD_U64 V5, V5, &8 // add to the stack of bufs to schedule
-MEMOP WRITE_TOBUF V5, V5, V10
-
-CMP NEQ V19, &0, PREP_STREAMS
+   MEMOP WRITE_TOBUF V10, &16, V18
+   MEMOP WRITE_TOBUF V10, &24, V17
+   MEMOP WRITE_TOBUF V10, &32, V16
+   
+   // when no more is left, do the schedule queue
+   MEMOP WRITE_TOBUF V10, &48, V4
+   
+   BUFREQ ALLOC V11, &40 // sched queue add
+   MEMOP WRITE_TOBUF V10, &40, V11 // is called when done with stream
+   
+   MEMOP TRANSFER_WITH_OFFSET V11, &0, V1, &48, &8
+   // transfer 8 bytes
+   // from V1 (code bufs) at offset 48 (sched queue add)
+   // to V11 (sched queue add arg buf) at offset 0
+   MEMOP WRITE_TOBUF V11, &8, V7
+   MEMOP WRITE_TOBUF V11, &16, V10 // and it adds stream back to the scheduler queue
+   MEMOP WRITE_TOBUF V11, &24, V4 // calls scheduler on success
+   BUFREQ ALLOC V15, &8 // error.eir buf
+   MEMOP TRANSFER_WITH_OFFSET V15, &0, V1, &72, &8
+   // transfer 8 bytes
+   // from V1 (code bufs) at offset 72 (error.eir)
+   // to V15 (error.eir buf buf) at offset 0
+   MEMOP WRITE_TOBUF V11, &32, V15 // calls error on failure
+   
+   MATHOP ADD_U64 V5, V5, &8 // add to the stack of bufs to schedule
+   MEMOP WRITE_TOBUF V5, V5, V10
+   
+   CMP NEQ V19, &0, PREP_STREAMS
 BUFREQ RELEASE V19
 
 
@@ -135,7 +145,7 @@ MEMOP WRITE_TOBUF V20, &32, V25 // calls error on failure
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 3: initialize the streams             /////////////////////////////
-// uses V30-V39                                /////////////////////////////////
+// uses V30-V49                                /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 BUFREQ ALLOC V39, &8
@@ -146,6 +156,20 @@ INIT_STREAMS:
    MATHOP SUB_U64 V39, V39, &8
    MEMOP READ_FROMBUF V35, V3, V39
 
+   // also: to mix things up: subtract a variable number of frames from each
+   // node. Except N1. We'll subtract several from it.
+   MEMOP READ_FROMBUF V49, V35, &0
+   BUFREQ ALLOC V48 , &8 // to sub frames, a helper
+   MATHOP MUL_U64 V48, V39, &9 // 9*8 is 72, so V48%72=0 is guaranteed
+   MATHOP MUL_U64 V48, V48, &3 // triple the rate
+   MATHOP SUB_U64 V49, V49, V48
+   BUFREQ RELEASE V48
+
+   CMP NEQ V39, &08, SKIP_N1_STREAM_SPECIFIC
+      MEMOP READ_FROMBUF V49, V35, &0
+      MEMOP LOAD_LITERAL V49, @10800
+
+   SKIP_N1_STREAM_SPECIFIC:
 
 
 
@@ -157,33 +181,87 @@ INIT_STREAMS:
    BUFREQ ALLOC V33, &8 // for tracking how deep we are in the streams
    BUFREQ ALLOC V32, &8 // for adding x as you go across
    MEMOP LOAD_LITERAL V33, @0
-   MATHOP ADD_D64 V32, &-1.0f, &0f
+   MATHOP ADD_D64 V32, &-1.2f, &0f
+
+   BUFREQ ALLOC V30, &8 // for node-specific x-additions
+   BUFREQ ALLOC V31, &8 // for node-speicfic y-additions
+   BUFREQ ALLOC V45, &8 // for additional mathematical manipulations
+   BUFREQ ALLOC V46, &8 // for additional mathematical manipulations
+   MATHOP ADD_D64 V30, &0f, &0f
+   MATHOP ADD_D64 V31, &0f, &0f
+   MATHOP ADD_D64 V45, &0f, &0f
+   MATHOP ADD_D64 V46, &0f, &0f
+
+
 
    INIT_BLOCK:
 
+      CMP EQ V39, &0, AM_N0
+      CMP EQ V39, &8, AM_N1
+      CMP EQ V39, &16, AM_N2
+      CMP EQ V39, &24, AM_N3
+      CMP EQ V39, &32, AM_N4
+
+      AM_N0:
+         MATHOP SUB_D64 V31, V31, &0.004f
+         MATHOP MUL_D64 V31, V31, &1.02f
+         CMP EQ &0, &0, DONE_WITH_NODE_SPECIFICS
+
+      AM_N1:
+         MATHOP ADD_D64 V30, V30, &0.01f
+         CMP EQ &0, &0, DONE_WITH_NODE_SPECIFICS
+
+      AM_N2:
+         MATHOP ADD_D64 V30, V30, &-0.005f
+         MATHOP ADD_D64 V31, V31, &0.0007f
+         CMP EQ &0, &0, DONE_WITH_NODE_SPECIFICS
+
+      AM_N3:
+         MATHOP ADD_D64 V30, V30, &0.001f
+         CMP EQ &0, &0, DONE_WITH_NODE_SPECIFICS
+
+      AM_N4:
+         MATHOP ADD_D64 V30, V30, &-0.002f
+         MATHOP SUB_D64 V45, V45, &0.005f
+         MATHOP MUL_D64 V45, V45, &1.01f
+         MATHOP ADD_D64 V46, V46, &0.002f
+         MATHOP MUL_D64 V46, V46, &1.03f
+         MATHOP ADD_D64 V31, V45, V46
+         CMP EQ &0, &0, DONE_WITH_NODE_SPECIFICS
+
+      DONE_WITH_NODE_SPECIFICS:
+
+
+
       // X1
       MATHOP ADD_D64 V38, &-0.1f, V32
+      MATHOP ADD_D64 V38, V38, V30
       MEMOP TRANSFER_WITH_OFFSET V37, &0, V38, &0, &8
       // Y1
       MATHOP ADD_D64 V38, &-0.9f, V34
+      MATHOP ADD_D64 V38, V38, V31
       MEMOP TRANSFER_WITH_OFFSET V37, &8, V38, &0, &8
       // Z1
       MATHOP ADD_D64 V38, &0f, &0f
       MEMOP TRANSFER_WITH_OFFSET V37, &16, V38, &0, &8
       // X2
       MATHOP ADD_D64 V38, &0f, V32
+      MATHOP ADD_D64 V38, V38, V30
       MEMOP TRANSFER_WITH_OFFSET V37, &24, V38, &0, &8
       // Y2
       MATHOP ADD_D64 V38, &-0.7f, V34
+      MATHOP ADD_D64 V38, V38, V31
       MEMOP TRANSFER_WITH_OFFSET V37, &32, V38, &0, &8
       // Z2
       MATHOP ADD_D64 V38, &0f, &0f
       MEMOP TRANSFER_WITH_OFFSET V37, &40, V38, &0, &8
       // X3
       MATHOP ADD_D64 V38, &0.1f, V32
+      MATHOP ADD_D64 V38, V38, V30
       MEMOP TRANSFER_WITH_OFFSET V37, &48, V38, &0, &8
       // Y3
       MATHOP ADD_D64 V38, &-0.9f, V34
+      MATHOP ADD_D64 V38, V38, V31
       MEMOP TRANSFER_WITH_OFFSET V37, &56, V38, &0, &8
       // Z3
       MATHOP ADD_D64 V38, &0f, &0f
@@ -194,21 +272,20 @@ INIT_STREAMS:
       MATHOP ADD_U64 V33, V33, &72
       MATHOP ADD_D64 V32, V32, &0.02f
 
-      CMP NEQ V33, &7200, INIT_BLOCK
+      CMP NEQ V33, &14400, INIT_BLOCK
 
 
    BUFREQ RELEASE V37
    BUFREQ RELEASE V38
 
+   BUFREQ RELEASE V30
+   BUFREQ RELEASE V31
    BUFREQ RELEASE V32
    BUFREQ RELEASE V33
+   BUFREQ RELEASE V45
+   BUFREQ RELEASE V46
 
 
-   // SCAFFOLD GLFW_MAKEVAO V31, V30
-   SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader.frag"
-
-   MEMOP WRITE_TOBUF V35, &24, V31
-   MEMOP WRITE_TOBUF V35, &32, V32
 
 
 
@@ -218,10 +295,27 @@ BUFREQ RELEASE V39
 BUFREQ RELEASE V34
 
 
+MEMOP READ_FROMBUF V35, V3, &32
+SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n4.frag"
+MEMOP WRITE_TOBUF V35, &32, V32
+MEMOP READ_FROMBUF V35, V3, &24
+SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n3.frag"
+MEMOP WRITE_TOBUF V35, &32, V32
+MEMOP READ_FROMBUF V35, V3, &16
+SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n2.frag"
+MEMOP WRITE_TOBUF V35, &32, V32
+MEMOP READ_FROMBUF V35, V3, &08
+SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n1.frag"
+MEMOP WRITE_TOBUF V35, &32, V32
+MEMOP READ_FROMBUF V35, V3, &00
+SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n0.frag"
+MEMOP WRITE_TOBUF V35, &32, V32
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // workspace 4: pass control onward                /////////////////////////////
-// uses V40-V63                                /////////////////////////////////
+// uses V50-V63                                /////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 
