@@ -1,3 +1,5 @@
+all: symbols w_glfw
+
 w_glfw: test.c reader.c reader.h interpreter.c interpreter.h
 	gcc -Wall -Wpedantic -rdynamic -pthread -g -I ./tools/graphics/glad/include -o test ./tools/graphics/glad/src/gl.c reader.c test.c interpreter.c -lglfw -lGL
 

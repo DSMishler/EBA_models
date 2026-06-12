@@ -60,9 +60,11 @@ BUFREQ ALLOC V1, &104
 BUFREQ ALLOC V2, &104
 BUFREQ ALLOC V3, &40
 
+PRINT STRING "pre-coderead"
 
 SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/QUEUE_SCHEDULER_ST.EIR"
 MEMOP WRITE_TOBUF V1, &0, V9
+PRINT STRING "post-coderead"
 SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_INIT.EIR"
 MEMOP WRITE_TOBUF V1, &8, V9
 SCAFFOLD CODEREAD V9, "examples/streaming_glfw_test/SCHED_QUEUE_FREE.EIR"
@@ -277,6 +279,8 @@ MEMOP TRANSFER_WITH_OFFSET V23, &8, V1, &32, &8
 // workspace 3: pass control         ///////////////////////////////////////////
 // uses V30-V63                /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+PRINT STRING "end starter"
 
 BUFREQ RELEASE V0
 MEMOP MOVE V0, V10
