@@ -12,7 +12,7 @@
 
 void run_scaffold(IR_state_t *IRstate, char **line)
 {
-   printf("actual scaffold function\n");
+   // printf("actual scaffold function\n");
    assert(confirm_first_word(line, "SCAFFOLD"));
 
    if (match_second_word(line, "SYSTEM"))
@@ -22,7 +22,6 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    }
    else if (match_second_word(line, "CODEREAD"))
    {
-      printf("I'm REAAAAAAADING\n");
       int var_dest = parse_variable(line[2]);
       if (var_dest < 0 || var_dest >= IR_STATE_SIZE)
       {
@@ -431,7 +430,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       fprintf(stderr, "error: option %s does not exist for SCAFFOLD\n", line[1]);
    }
    
-   printf("exiting scaffold func!\n");
+   // printf("exiting scaffold func!\n");
 
    IRstate->next_line += 1;
 }

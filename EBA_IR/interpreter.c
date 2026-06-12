@@ -12,8 +12,6 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
-
-
 #include <dlfcn.h>
 
 // global function pointer for the next operation to run (w/MAX_THREADS threads)
@@ -22,6 +20,8 @@ void (*eba_states[MAX_THREADS])(void*);
 void *eba_args[MAX_THREADS];
 
 pthread_mutex_t interpreter_lock;
+
+void (*run_scaffold)(IR_state_t *IRstate, char **line) = (void*)0;
 
 int confirm_first_word(char **line, char *word)
 {
@@ -940,18 +940,37 @@ void run_line(void* lcl_eba_arg)
    }
    else if (samestr(line[0], "SCAFFOLD"))
    {
-      printf("running scaffold!\n");
-      void (*run_scaffold)(IR_state_t *IRstate, char **line);
-      // run_scaffold(IRstate, line);
+      // printf("running scaffold!\n");
+      if (run_scaffold == (void*)0)
+      {
+         char *error;
+         void *handler = dlopen("libs/scaffold.so", RTLD_LAZY);
+         if (!handler)
+         {
+            // printf("handler error: %s\n", dlerror());
+         }
+         error = dlerror();
+         if (error != NULL)
+         {
+            printf("there was an error in the dlopen! '%s'\n", error);
+         }
+         void *object = dlsym(handler, "run_scaffold");
+         error = dlerror();
+         if (error != NULL)
+         {
+            printf("there was an error in the dlsym! '%s'\n", error);
+         }
+         if (object == NULL)
+         {
+            printf("there was no object returned!\n");
+         }
+         memcpy(&run_scaffold, &object, sizeof(run_scaffold));
 
-      void *handler = dlopen("libs/scaffold.so", RTLD_LAZY);
-      void *object = dlsym(handler, "run_scaffold");
-      memcpy(&run_scaffold, &object, sizeof(run_scaffold));
-
-      printf("running scaffold fr!\n");
+      }
+      // printf("running scaffold fr!\n");
       run_scaffold(IRstate, line);
-      dlclose(handler);
-      printf("all is well!\n");
+      // dlclose(handler);
+      // printf("all is well!\n");
 
    }
    else
