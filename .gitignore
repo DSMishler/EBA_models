@@ -23,6 +23,7 @@ EBA_IR/test
 
 # local files
 EBA_IR/local/
+EBA_IR/libs/
 
 # visualization temp files
 EBA_IR/tools/visualization/jpgs/
