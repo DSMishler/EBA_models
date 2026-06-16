@@ -17,10 +17,16 @@ int main(void)
 
    // GLFWwindow* window = glfwCreateWindow(1000, 1000, "MyWindow", NULL, NULL);
    // glfwMakeContextCurrent(window);
+
+   load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
+
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
-   test_solofile("examples/streaming_glfw_test/STARTER.EIR");
+   test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+   // test_solofile("examples/streaming_glfw_test/STARTER.EIR");
    pthread_mutex_destroy(&interpreter_lock);
+
+   free_dlhandlers();
 
    // glfwTerminate();
    return 0;

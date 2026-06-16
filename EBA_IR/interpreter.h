@@ -3,10 +3,16 @@
 
 #define IR_STATE_SIZE 64
 
+#include <semaphore.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
 #include <pthread.h>
 #include <stdint.h>
 
 #define MAX_THREADS 16
+#define MAX_MODULES 10
 
 
 extern pthread_mutex_t interpreter_lock;
@@ -39,6 +45,9 @@ void var_errmsg(char *func, int line);
 int get_avail_w_thread(void);
 int thread_is_avail(int w_thread);
 
+
+void load_dlhandlers(char *list);
+void free_dlhandlers(void);
 
 
 

@@ -3,12 +3,6 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <semaphore.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdint.h>
 
 void run_scaffold(IR_state_t *IRstate, char **line)
 {
