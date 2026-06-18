@@ -49,6 +49,7 @@ MATHOP ADD_U64 V3, V3, V10
 MATHOP MOD_U64 V3, V3, V2
 MATHOP SUB_U64 V11, V8, V10 // remaining reading = read size - working read size
 
+CMP EQ V11, &0, SKIP_SECOND_READ
 // now if V11 is greater than 0, we still have more reading to do
 // but if it's just zero, no worries. The code will have no effect
 // we could put a sanity check in here if we wanted (ensure head==0 if V11!=0)
@@ -60,6 +61,8 @@ MEMOP TRANSFER_WITH_OFFSET V7, V10, V1, V3, V11
 // head = (head+remaining_read_size) % buf size
 MATHOP ADD_U64 V3, V3, V11
 MATHOP MOD_U64 V3, V3, V2
+SKIP_SECOND_READ:
+
 CMP EQ V8, &0, SKIP_MARK_NOT_FULL
 // if anything was read, mark that we are not full
 MEMOP  LOAD_LITERAL V5, @0

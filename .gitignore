@@ -20,6 +20,8 @@ PyEBA/EBA_graphviz/testrun/*
 
 # executable test files
 EBA_IR/test
+EBA_IR/EIRtest
+EBA_IR/EBAtest
 
 # local files
 EBA_IR/local/
