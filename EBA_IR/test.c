@@ -22,14 +22,41 @@ int main(void)
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
-   test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
-   // test_solofile("examples/streaming_glfw_test/STARTER.EIR");
+   // test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+   test_solofile("examples/streaming_glfw_test/STARTER.EIR");
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
 
    // glfwTerminate();
    return 0;
+}
+
+void run_demo(void *which)
+{
+   char *dname = (char*) which;
+   load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
+
+   pthread_mutex_init(&interpreter_lock, NULL);
+   // printf("EBA tester\n");
+   if (!(strcmp(dname, "circ_buf_demo")))
+   {
+      test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+   }
+   else if (!(strcmp(dname, "stream_demo")))
+   {
+      test_solofile("examples/streaming_glfw_test/STARTER.EIR");
+   }
+   else
+   {
+      printf("I don't understand what demo to load: '%s'\n", dname);
+   }
+   pthread_mutex_destroy(&interpreter_lock);
+
+   free_dlhandlers();
+
+   free(dname);
+
 }
 
 void test_solofile(char *fname)

@@ -11,14 +11,13 @@
 #include <pthread.h>
 #include <stdint.h>
 
-#define MAX_THREADS 16
+#include "eba.h"
+
 #define MAX_MODULES 10
 
 
 extern pthread_mutex_t interpreter_lock;
 
-extern void (*eba_states[MAX_THREADS])(void*);
-extern void *eba_args[MAX_THREADS];
 
 
 
@@ -54,8 +53,6 @@ void free_dlhandlers(void);
 
 
 void run_code(void*);
-
-void * EBA_run(void *arg);
 
 IR_state_t * init_IR_state(void);
 void print_IR_state(IR_state_t *IRstate);

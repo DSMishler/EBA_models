@@ -1,10 +1,10 @@
-all: modules EIRtools EIRtest EBAtest
+all: modules EIRtools test
 
-EBAtest: eba.c
-	gcc -g -Wall -Wpedantic -rdynamic -pthread -o EBAtest eba.c
+test: eba.c eba.h
+	gcc -g -Wall -Wpedantic -rdynamic -pthread -o test eba.c
 
-EIRtest: test.c reader.c reader.h interpreter.c interpreter.h
-	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -o EIRtest reader.c test.c interpreter.c
+# EIRtest: test.c reader.c reader.h interpreter.c interpreter.h eba.h
+	# gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -o EIRtest reader.c test.c interpreter.c
 
 modules: libs/bufreq.so libs/memop.so libs/invoke.so libs/mathop.so libs/cmp.so libs/print.so libs/log.so libs/scaffold.so
 
@@ -32,10 +32,13 @@ libs/log.so: modules/log.c
 libs/scaffold.so: modules/scaffold.c
 	gcc -g -I. -Wpedantic -Wall -rdynamic -pthread -I ./tools/graphics/glad/include -fpic -shared -o libs/scaffold.so modules/scaffold.c ./tools/graphics/glad/src/gl.c -lglfw -lGL
 
-EIRtools: libs/EIRtest.so
+EIRtools: libs/EIRtest.so libs/eshell.so
 
 libs/EIRtest.so: test.c reader.c reader.h interpreter.c interpreter.h
 	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/EIRtest.so reader.c test.c interpreter.c
+
+libs/eshell.so: eshell.c eshell.h
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/eshell.so eshell.c
 
 
 clean:

@@ -3,11 +3,6 @@
 
 #include <dlfcn.h>
 
-// global function pointer for the next operation to run (w/MAX_THREADS threads)
-void (*eba_states[MAX_THREADS])(void*);
-// global arg pointer for EBA's arg (w/MAX_THREADS threads)
-void *eba_args[MAX_THREADS];
-
 pthread_mutex_t interpreter_lock;
 
 void (*run_bufreq)(IR_state_t *IRstate, char **line) = (void*)0;
@@ -448,28 +443,6 @@ void run_code(void* lcl_eba_arg)
 
    eba_args[IRstate->w_thread] = (void*)(IRstate);
    eba_states[IRstate->w_thread] = &run_line;
-}
-
-void* EBA_run(void *arg)
-{
-   uint64_t w_thread = 0;
-   if (arg != NULL)
-   {
-      w_thread = *((uint64_t*)arg);
-      free(arg);
-   }
-   while(1)
-   {
-      // NOTE: void*0 (nullptr) is guaranteed to compare unequal
-      // to any object or function, so this can only happen
-      // via the intential setting of eba_state to 0
-      if (eba_states[w_thread] == (void*)0)
-      {
-         break;
-      }
-      (*eba_states[w_thread])(eba_args[w_thread]);
-   }
-   return NULL;
 }
 
 IR_state_t * init_IR_state(void)
