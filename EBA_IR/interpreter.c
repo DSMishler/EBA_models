@@ -29,7 +29,7 @@ void module_loader(void (**func)(IR_state_t *, char **), char *module_file, char
    void *handler = dlopen(module_file, RTLD_LAZY);
    if (!handler)
    {
-      printf("handler error: %s\n", dlerror());
+      printf("interpreter handler error: %s\n", dlerror());
    }
    error = dlerror();
    if (error != NULL)

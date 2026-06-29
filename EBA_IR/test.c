@@ -76,5 +76,5 @@ void test_solofile(char *fname)
 
    eba_states[0] = &run_code;
    eba_args[0] = (void*)arg_buf;
-   EBA_run(NULL);
+   EBA_run_wrap(NULL);
 }

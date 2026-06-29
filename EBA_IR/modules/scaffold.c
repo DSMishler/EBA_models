@@ -157,7 +157,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       eba_args[w_thread] = arg_buf;
 
       // printf("creating thread with targ pointing to %lu\n", w_thread);
-      pthread_create(tids, NULL, EBA_run, targ);
+      pthread_create(tids, NULL, EBA_run_wrap, targ);
       pthread_detach(tids[0]);
 
 
