@@ -10,6 +10,17 @@ void (*eba_states[MAX_THREADS])(void*);
 void *eba_args[MAX_THREADS];
 
 
+struct op_loader
+{
+   char *op_name;
+   char *fname;
+   void (*op)(void*);
+};
+typedef struct op_loader op_loader_t;
+
+op_loader_t eba_ops[10];
+
+
 void* EBA_run(uint64_t w_thread)
 {
    while(1)
@@ -96,7 +107,7 @@ int main(void)
 {
    void (*eshell)(void*) = (void*)0;
    void *handler;
-
+   
    handler = dl_loader_voidvoidstar(&eshell, "./libs/eshell.so", "blocking_get_cmd");
    
    eba_states[0] = eshell;
