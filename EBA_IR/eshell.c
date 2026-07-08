@@ -30,7 +30,9 @@ void echo_and_block(void *eba_arg)
 
 void blocking_get_cmd(void *eba_arg)
 {
-   uint64_t w_thread = *((uint64_t*)eba_arg);
+   void *adj_eba_arg = (char*)eba_arg + sizeof(op_loader_t*);
+   // casting to char* to keep compiler happy
+   uint64_t w_thread = *((uint64_t*)adj_eba_arg);
    free(eba_arg); //TODO: this is really, really sloppy but for now it will do
    printf("EBA_shell: ");
    char line[MAX_LINE_LEN+1];

@@ -1,7 +1,7 @@
 all: lib modules EIRtools test
 
-test: eba.c eba.h
-	gcc -g -Wall -Wpedantic -rdynamic -pthread -o test eba.c
+test: eba.c eba.h external_ops.h
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -o test eba.c
 
 lib:
 ifeq ("$(wildcard ./libs/)","")

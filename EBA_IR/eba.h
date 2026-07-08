@@ -1,4 +1,6 @@
+#pragma once
 #include <stdint.h>
+#include "external_ops.h"
 
 #define MAX_THREADS 16
 
