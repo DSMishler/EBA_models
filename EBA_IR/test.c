@@ -5,6 +5,7 @@
 #include "interpreter.h"
 // #include <GLFW/glfw3.h>
 
+
 extern void (*eba_states[16])(void*);
 extern void *eba_args[16];
 
@@ -34,7 +35,8 @@ int main(void)
 
 void run_demo(void *which)
 {
-   char *dname = (char*) which;
+   char *dname = *(char**)((char*) (which) + sizeof(void*));
+   // TODO: instad of a void*, make it an op_loader_t* and include eba.h?
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
    pthread_mutex_init(&interpreter_lock, NULL);
@@ -54,9 +56,12 @@ void run_demo(void *which)
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
+   printf("almost done!\n");
 
    free(dname);
+   free(which);
 
+   printf("now freed!\n");
 }
 
 void test_solofile(char *fname)

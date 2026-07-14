@@ -10,9 +10,6 @@ void (*eba_states[MAX_THREADS])(void*);
 void *eba_args[MAX_THREADS];
 
 
-
-extern op_loader_t eba_ops[10];
-
 op_loader_t op_loader_eshell;
 
 void load_op(void *arg)
@@ -24,7 +21,8 @@ void load_op(void *arg)
    // to avoid redundant loads. This may be changed in what
    // is likely an imminent redesign
    op_ds->fn = (void*)0;
-   dl_loader_voidvoidstar(&(op_ds->fn), op_ds->fname, op_ds->op_name);
+   op_ds->handler = dl_loader_voidvoidstar(&(op_ds->fn), op_ds->fname, op_ds->op_name);
+   printf("handler is 0x%lx\n", (uint64_t)op_ds->handler);
    // then call the just-loaded op
    (*op_ds->fn)(arg);
 }
@@ -141,21 +139,23 @@ int main(void)
    opl->fname =  "./libs/eshell.so";
    opl->op_name = "blocking_get_cmd";
    opl->fn = load_op;
+   op_loader_t *opl2;
+   op_loader_t **oplp2 = &opl2;
 
-   // void (*eshell)(void*) = (void*)0;
-   // void *handler;
-   
-   // handler = dl_loader_voidvoidstar(&eshell, "./libs/eshell.so", "blocking_get_cmd");
+   printf("0x%lx to 0x%lx\n", (uint64_t)opl, (uint64_t)&opl->handler);
 
    eba_states[0] = eba_op;
-   void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(uint64_t));
+   void *my_eba_arg = malloc(2*sizeof(op_loader_t*)+sizeof(uint64_t));
    memcpy(my_eba_arg, &opl, sizeof(op_loader_t*));
    *((uint64_t*)((char*)my_eba_arg+sizeof(op_loader_t*))) = 0;
+   memcpy((char*)my_eba_arg+sizeof(op_loader_t*)+sizeof(uint64_t), &oplp2, sizeof(op_loader_t*));
    eba_args[0] = my_eba_arg;
    printf("it's all set up!\n");
    EBA_run(0);
 
-   // dlclose(handler);
+   dlclose(opl->handler);
+   printf("just opl2 left - almost done!\n");
+   dlclose(opl2->handler);
 
    return 0;
 }

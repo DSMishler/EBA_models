@@ -7,6 +7,9 @@
 extern void (*eba_states[MAX_THREADS])(void*);
 extern void *eba_args[MAX_THREADS];
 
+void load_op(void *arg);
+void eba_op(void *arg);
+
 void * EBA_run(uint64_t w_thread);
 void * EBA_run_wrap(void *arg_thread);
 
