@@ -139,7 +139,7 @@ int main(void)
    opl->fname =  "./libs/eshell.so";
    opl->op_name = "blocking_get_cmd";
    opl->fn = load_op;
-   op_loader_t *opl2;
+   op_loader_t *opl2 = NULL;
    op_loader_t **oplp2 = &opl2;
 
    // printf("0x%lx to 0x%lx\n", (uint64_t)opl, (uint64_t)&opl->handler);

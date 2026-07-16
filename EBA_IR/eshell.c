@@ -92,22 +92,35 @@ void blocking_get_cmd(void *eba_arg)
       }
       else if(!(strcmp(secondword, "circ_buf_demo")) || !(strcmp(secondword, "stream_demo")))
       {
-         op_loader_t *opl = malloc(sizeof(op_loader_t));
-         opl->fname = "./libs/EIRtest.so";
-         opl->op_name = "run_demo";
-         opl->fn = load_op;
-
-         // printf("opl2 in eshell is 0x%lx\n", (uint64_t)opl);
+         op_loader_t *opl;
          op_loader_t **oplp2;
          oplp2 = (op_loader_t**)     *(void**)((char*)eba_arg+sizeof(uint64_t)+sizeof(op_loader_t*));
-         memcpy(oplp2, &opl, sizeof(op_loader_t*));
+         if (*oplp2 == NULL)
+         {
+            opl = malloc(sizeof(op_loader_t));
+            opl->fname = "./libs/EIRtest.so";
+            opl->op_name = "run_demo";
+            opl->fn = load_op;
+
+            // printf("opl2 in eshell is 0x%lx\n", (uint64_t)opl);
+            memcpy(oplp2, &opl, sizeof(op_loader_t*));
+         }
+         else
+         {
+            opl = *oplp2;
+         }
 
          eba_states[w_thread] = eba_op;
          char *eba_secondword = malloc((strlen(secondword)+1)*sizeof(char));
          strcpy(eba_secondword, secondword);
-         void *eir_arg = malloc(sizeof(op_loader_t*)+sizeof(char*));
+         void *eir_arg = malloc(sizeof(op_loader_t*)+sizeof(void*)+sizeof(char*));
+         // next eba arg:
+            // A - the op loader
+            // B - the eba arg after it
+            // C - arg to the op in question (string of which op to exec)
          memcpy(eir_arg, &opl, sizeof(op_loader_t*));
-         memcpy((char*)eir_arg+sizeof(op_loader_t*), &eba_secondword, sizeof(char*));
+         memcpy((char*)eir_arg+sizeof(op_loader_t*), &eba_arg, sizeof(op_loader_t*));
+         memcpy((char*)eir_arg+sizeof(op_loader_t*)+sizeof(void*), &eba_secondword, sizeof(char*));
          eba_args[w_thread] = eir_arg;
          // printf("eshell v opl is 0x%lx\n", (uint64_t)opl);
          // printf("handler of opl is 0x%lx\n", (uint64_t)&opl->handler);

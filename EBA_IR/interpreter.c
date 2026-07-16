@@ -123,8 +123,18 @@ void free_dlhandlers(void)
       if (dlhandlers[i] != NULL)
       {
          dlclose(dlhandlers[i]);
+         dlhandlers[i] = NULL;
       }
    }
+   // TODO: this is... really sloppy. Consider a rewrite.
+   run_bufreq = (void*)0;
+   run_memop  = (void*)0;
+   run_invoke = (void*)0;
+   run_mathop = (void*)0;
+   run_cmp    = (void*)0;
+   run_print  = (void*)0;
+   run_log    = (void*)0;
+   run_scaffold = (void*)0;
 }
 
 int confirm_first_word(char **line, char *word)
