@@ -13,12 +13,6 @@ void test_solofile(char *);
 
 int main(void)
 {
-   // if (!glfwInit())
-      // return -1;
-
-   // GLFWwindow* window = glfwCreateWindow(1000, 1000, "MyWindow", NULL, NULL);
-   // glfwMakeContextCurrent(window);
-
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
    pthread_mutex_init(&interpreter_lock, NULL);
@@ -56,12 +50,10 @@ void run_demo(void *which)
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
-   printf("almost done!\n");
 
    free(dname);
    free(which);
 
-   printf("now freed!\n");
 }
 
 void test_solofile(char *fname)

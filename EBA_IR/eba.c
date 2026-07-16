@@ -22,7 +22,7 @@ void load_op(void *arg)
    // is likely an imminent redesign
    op_ds->fn = (void*)0;
    op_ds->handler = dl_loader_voidvoidstar(&(op_ds->fn), op_ds->fname, op_ds->op_name);
-   printf("handler is 0x%lx\n", (uint64_t)op_ds->handler);
+   // // printf("handler is 0x%lx\n", (uint64_t)op_ds->handler);
    // then call the just-loaded op
    (*op_ds->fn)(arg);
 }
@@ -142,20 +142,24 @@ int main(void)
    op_loader_t *opl2;
    op_loader_t **oplp2 = &opl2;
 
-   printf("0x%lx to 0x%lx\n", (uint64_t)opl, (uint64_t)&opl->handler);
+   // printf("0x%lx to 0x%lx\n", (uint64_t)opl, (uint64_t)&opl->handler);
 
    eba_states[0] = eba_op;
-   void *my_eba_arg = malloc(2*sizeof(op_loader_t*)+sizeof(uint64_t));
+   void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(uint64_t)+sizeof(op_loader_t**));
    memcpy(my_eba_arg, &opl, sizeof(op_loader_t*));
    *((uint64_t*)((char*)my_eba_arg+sizeof(op_loader_t*))) = 0;
-   memcpy((char*)my_eba_arg+sizeof(op_loader_t*)+sizeof(uint64_t), &oplp2, sizeof(op_loader_t*));
+   memcpy((char*)my_eba_arg+sizeof(op_loader_t*)+sizeof(uint64_t), &oplp2, sizeof(op_loader_t**));
    eba_args[0] = my_eba_arg;
-   printf("it's all set up!\n");
+   // printf("it's all set up!\n");
    EBA_run(0);
 
+   free(my_eba_arg);
    dlclose(opl->handler);
-   printf("just opl2 left - almost done!\n");
+   // printf("just opl2 left - almost done!\n");
+   // printf("opl2 in main is 0x%lx\n", (uint64_t)opl2);
+   // printf("handler adr=0x%lx\n", (uint64_t)opl2->handler);
    dlclose(opl2->handler);
+   free(opl2);
 
    return 0;
 }
