@@ -414,14 +414,10 @@ void run_line(void* lcl_eba_arg)
    {
       if (run_scaffold == (void*)0)
       {
-         printf("error: module SCAFFOLDnot loaded\n");
+         printf("error: module SCAFFOLD not loaded\n");
          return;
       }
-      // printf("running scaffold!\n");
-      // printf("running scaffold fr!\n");
       run_scaffold(IRstate, line);
-      // dlclose(handler);
-      // printf("all is well!\n");
 
    }
    else
@@ -432,9 +428,10 @@ void run_line(void* lcl_eba_arg)
    }
 }
 
-void run_code(void* lcl_eba_arg)
+void run_code(void* eba_arg)
 {
-   char ****arg_buf = (char****)lcl_eba_arg;
+   //                            casting        op loader     next eba_arg
+   void *lcl_eba_arg = *(void**)((char*)eba_arg+sizeof(void*)+sizeof(void*));
    char*** code_buf = ((char****)(lcl_eba_arg))[0];
    uint64_t* p_w_node = ((uint64_t**)(lcl_eba_arg))[1];
    uint64_t w_node = *p_w_node;
@@ -447,7 +444,7 @@ void run_code(void* lcl_eba_arg)
    // Advocate against: doing this makes things less minimal
    IRstate->w_node = w_node;
    IRstate->w_thread = w_thread;
-   IRstate->vars[0] = (int64_t) (arg_buf);
+   IRstate->vars[0] = (int64_t) (lcl_eba_arg);
    IRstate->next_line = 0;
    IRstate->code_buf = code_buf;
 

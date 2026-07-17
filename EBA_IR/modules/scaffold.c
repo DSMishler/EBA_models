@@ -132,6 +132,10 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    {
       pthread_mutex_lock(&interpreter_lock);
       void *arg_buf = parse_var_buf(line[2], IRstate);
+      void **eba_arg = malloc(3*sizeof(void*));
+      eba_arg[0] = NULL;
+      eba_arg[1] = NULL;
+      eba_arg[2] = arg_buf;
 
       uint64_t *p_w_thread = ((uint64_t **)arg_buf)[2];
       uint64_t w_thread = *p_w_thread;
@@ -154,7 +158,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       pthread_t tids[1];
 
       eba_states[w_thread] = &run_code;
-      eba_args[w_thread] = arg_buf;
+      eba_args[w_thread] = eba_arg;
 
       // printf("creating thread with targ pointing to %lu\n", w_thread);
       pthread_create(tids, NULL, EBA_run_wrap, targ);

@@ -8,7 +8,7 @@
 #include "eba.h"
 
 
-void test_solofile(char *);
+void test_solofile(char *, void*);
 
 int main(void)
 {
@@ -17,7 +17,7 @@ int main(void)
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
    // test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
-   test_solofile("examples/streaming_glfw_test/STARTER.EIR");
+   test_solofile("examples/streaming_glfw_test/STARTER.EIR", NULL);
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
@@ -26,21 +26,21 @@ int main(void)
    return 0;
 }
 
-void run_demo(void *which)
+void run_demo(void *eba_arg)
 {
-   void *next_eba_arg = *(void**)((char*) (which) + sizeof(op_loader_t*));
-   char *dname = *(char**)((char*) (which) + sizeof(op_loader_t*) + sizeof(void*));
+   void *next_eba_arg = *(void**)((char*) (eba_arg) + sizeof(op_loader_t*));
+   char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
    if (!(strcmp(dname, "circ_buf_demo")))
    {
-      test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
+      test_solofile("examples/par_sched_circ_buf/STARTER.EIR", eba_arg);
    }
    else if (!(strcmp(dname, "stream_demo")))
    {
-      test_solofile("examples/streaming_glfw_test/STARTER.EIR");
+      test_solofile("examples/streaming_glfw_test/STARTER.EIR", eba_arg);
    }
    else
    {
@@ -51,14 +51,14 @@ void run_demo(void *which)
    free_dlhandlers();
 
    free(dname);
-   free(which);
+   free(eba_arg);
 
    eba_args[0] = next_eba_arg;
    eba_states[0] = eba_op;
 
 }
 
-void test_solofile(char *fname)
+void test_solofile(char *fname, void *eba_arg)
 {
    char ***IRcode;
    IRcode = full_read(fname);
@@ -68,12 +68,21 @@ void test_solofile(char *fname)
    uint64_t *p_w_thread = malloc(sizeof(uint64_t));
    *p_w_thread = 0;
 
+   if(sizeof(op_loader_t*) != sizeof(void*))
+   {
+      printf("compatibility error!\n");
+      // TODO: rewrite so we have no issues like this
+      exit(1);
+   }
    void **arg_buf = malloc(3*sizeof(void*));
-   arg_buf[0] = (void*)IRcode;
-   arg_buf[1] = (void*)p_w_node;
-   arg_buf[2] = (void*)p_w_thread;
+   memcpy(arg_buf, eba_arg, 2*sizeof(void*));
+   void **eir_arg = malloc(3*sizeof(void*));
+   eir_arg[0] = (void*)IRcode;
+   eir_arg[1] = (void*)p_w_node;
+   eir_arg[2] = (void*)p_w_thread;
+   arg_buf[2] = (void*)eir_arg;
 
-   eba_states[0] = &run_code;
+   eba_states[0] = eba_op;
    eba_args[0] = (void*)arg_buf;
    EBA_run_wrap(NULL);
 }
