@@ -126,7 +126,7 @@ void blocking_get_cmd(void *eba_arg)
          // printf("handler of opl is 0x%lx\n", (uint64_t)&opl->handler);
       }
       else
-      {
+     {
          printf("error: I don't have that module '%s' to load.\n", secondword);
       }
    }

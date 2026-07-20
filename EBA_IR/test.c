@@ -29,9 +29,10 @@ int main(void)
 void run_demo(void *eba_arg)
 {
    printf("running run demo!\n");
-   void *next_eba_arg = *(void**)((char*) (eba_arg) + sizeof(op_loader_t*));
+   void *end_eba_arg = *(void**)((char*) (eba_arg) + sizeof(op_loader_t*));
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
+
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
@@ -55,7 +56,7 @@ void run_demo(void *eba_arg)
    free(dname);
    free(eba_arg);
 
-   eba_args[0] = next_eba_arg;
+   eba_args[0] = end_eba_arg;
    eba_states[0] = eba_op;
 
 }
@@ -83,6 +84,16 @@ void test_solofile(char *fname, void *eba_arg)
    eir_arg[1] = (void*)p_w_node;
    eir_arg[2] = (void*)p_w_thread;
    arg_buf[2] = (void*)eir_arg;
+
+
+   op_loader_t *op_loader_eir = malloc(sizeof(op_loader_t));
+   op_loader_eir->fname = "./libs/EIRtest.so";
+   op_loader_eir->op_name = "run_code";
+   op_loader_eir->fn = load_op;
+   arg_buf[0] = op_loader_eir;
+
+
+
 
    eba_states[0] = eba_op;
    eba_args[0] = (void*)arg_buf;
