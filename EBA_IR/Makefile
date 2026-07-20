@@ -1,4 +1,4 @@
-all: lib modules EIRtools test
+all: lib modules EIRtools test boot.so
 
 test: eba.c eba.h external_ops.h
 	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -o test eba.c
@@ -42,6 +42,8 @@ libs/EIRtest.so: test.c reader.c reader.h interpreter.c interpreter.h
 libs/eshell.so: eshell.c eshell.h
 	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/eshell.so eshell.c
 
+boot.so: eba_prog.c
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o boot.so eba_prog.c
 
 clean:
 	rm test libs/*.so

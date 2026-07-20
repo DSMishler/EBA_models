@@ -28,6 +28,7 @@ int main(void)
 
 void run_demo(void *eba_arg)
 {
+   printf("running run demo!\n");
    void *next_eba_arg = *(void**)((char*) (eba_arg) + sizeof(op_loader_t*));
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
@@ -36,6 +37,7 @@ void run_demo(void *eba_arg)
    // printf("EBA tester\n");
    if (!(strcmp(dname, "circ_buf_demo")))
    {
+      printf("running circ buf demo!\n");
       test_solofile("examples/par_sched_circ_buf/STARTER.EIR", eba_arg);
    }
    else if (!(strcmp(dname, "stream_demo")))
