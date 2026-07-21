@@ -98,8 +98,20 @@ void test_solofile(char *fname, void *eba_arg)
    op_loader_eir->fn = load_op;
    arg_buf[0] = op_loader_eir;
 
+   op_loader_t *op_loader_run_line = malloc(sizeof(op_loader_t));
+   op_loader_run_line->fname = "./libs/EIRtest.so";
+   op_loader_run_line->op_name = "run_line";
+   op_loader_run_line->fn = load_op;
+
+   op_loader_t *op_loader_free_IRstate = malloc(sizeof(op_loader_t));
+   op_loader_free_IRstate->fname = "./libs/EIRtest.so";
+   op_loader_free_IRstate->op_name = "eba_free_IR_state";
+   op_loader_free_IRstate->fn = load_op;
+
    global_data_t *gd = arg_buf[1];
    gd->opls[2] = op_loader_eir;
+   gd->opls[3] = op_loader_run_line;
+   gd->opls[4] = op_loader_free_IRstate;
    gd->frargs[1] = (void*)arg_buf;
 
 

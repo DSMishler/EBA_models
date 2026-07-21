@@ -38,13 +38,15 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    }
    else if (match_second_word(line, "TERMINATE_WITH_CODEFREE"))
    {
+      pthread_mutex_lock(&interpreter_lock);
       int var_dest = parse_variable(line[2]);
       if (var_dest < 0 || var_dest >= IR_STATE_SIZE)
       {
          var_errmsg("SCAFFOLD TERMINATE_WITH_CODEFREE", IRstate->next_line);
       }
       full_free((char***)IRstate->vars[var_dest]);
-      eba_states[IRstate->w_thread] = &eba_free_IR_state;
+      global_data_t *gd = (global_data_t*)(((void**)eba_args[IRstate->w_thread])[1]);
+      ((void**)eba_args[IRstate->w_thread])[0] = gd->opls[4];
    }
    else if (match_second_word(line, "P_SEM_INIT"))
    {
@@ -133,16 +135,16 @@ void run_scaffold(IR_state_t *IRstate, char **line)
    else if (match_second_word(line, "PTHREAD_SPAWN_HEAVY"))
    {
       pthread_mutex_lock(&interpreter_lock);
-      void *arg_buf = parse_var_buf(line[2], IRstate);
-      void **eba_arg = malloc(3*sizeof(void*));
-      eba_arg[0] = NULL;
-      eba_arg[1] = NULL;
-      eba_arg[2] = arg_buf;
-
+      // it's assumed that only thread 0 spawns (for now)
       // now, this new arg buf which we have malloc-ed will need free-ed
       // so we grab the global struct:
       global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
-      // it's also assumed that only thread 0 spawns (for now)
+      void *arg_buf = parse_var_buf(line[2], IRstate);
+      void **eba_arg = malloc(3*sizeof(void*));
+      eba_arg[0] = gd->opls[2];
+      eba_arg[1] = gd;
+      eba_arg[2] = arg_buf;
+
       int i;
       for(i = 0; i < gd->nfrargs; i++)
       {
@@ -179,7 +181,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       
       pthread_t tids[1];
 
-      eba_states[w_thread] = &run_code;
+      eba_states[w_thread] = eba_op;
       eba_args[w_thread] = eba_arg;
 
       // printf("creating thread with targ pointing to %lu\n", w_thread);

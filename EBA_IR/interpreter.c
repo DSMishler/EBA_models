@@ -2,6 +2,7 @@
 #include "reader.h"
 
 #include <dlfcn.h>
+#include "prog1_glob.h"
 
 pthread_mutex_t interpreter_lock;
 
@@ -315,12 +316,14 @@ void run_noop(IR_state_t *IRstate)
 
 void run_line(void* lcl_eba_arg)
 {
-   IR_state_t *IRstate = (IR_state_t*)lcl_eba_arg;
+   IR_state_t *IRstate = (IR_state_t*)(((void**)lcl_eba_arg)[2]);
+   global_data_t *gd = (global_data_t*)(((void**)lcl_eba_arg)[1]);
    char **line = IRstate->code_buf[IRstate->next_line];
    if (line == NULL)
    {
+      pthread_mutex_lock(&interpreter_lock);
       // printf("thread %lu detecting termination\n", IRstate->w_thread);
-      eba_states[IRstate->w_thread] = &eba_free_IR_state;
+      ((void**)eba_args[IRstate->w_thread])[0] = gd->opls[4];
       // do no work, and return here
       return;
    }
@@ -448,8 +451,33 @@ void run_code(void* eba_arg)
    IRstate->next_line = 0;
    IRstate->code_buf = code_buf;
 
-   eba_args[IRstate->w_thread] = (void*)(IRstate);
-   eba_states[IRstate->w_thread] = &run_line;
+   global_data_t *gd = (global_data_t*)(((void**)eba_arg)[1]);
+
+   void **new_eba_arg = malloc(3*sizeof(void*));
+   // op_loader_t *
+   // global_data_t *
+   // IR_state_t *
+   new_eba_arg[0] = (void*) gd->opls[3];
+   new_eba_arg[1] = (void*) gd;
+   new_eba_arg[2] = (void*) IRstate;
+
+   int i;
+   for(i = 0; i < gd->nfrargs; i++)
+   {
+      if(gd->frargs[i] == NULL)
+      {
+         gd->frargs[i] = new_eba_arg;
+         break;
+      }
+   }
+   if (i == gd->nfrargs)
+   {
+      printf("error - out of space in nfrargs! Stop.\n");
+      exit(1);
+   }
+
+   eba_args[IRstate->w_thread] = new_eba_arg;
+   eba_states[IRstate->w_thread] = eba_op;
 }
 
 IR_state_t * init_IR_state(void)
@@ -479,10 +507,11 @@ void print_IR_state(IR_state_t *IRstate)
 
 void eba_free_IR_state(void* lcl_eba_arg)
 {
-   IR_state_t *IRstate = (IR_state_t *)lcl_eba_arg;
+   IR_state_t *IRstate = (IR_state_t *)(((void**)lcl_eba_arg)[2]);
    eba_args[IRstate->w_thread] = NULL;
    eba_states[IRstate->w_thread] = (void*)0;
    free_IR_state(IRstate);
+   pthread_mutex_unlock(&interpreter_lock);
 }
 
 void free_IR_state(IR_state_t *IRstate)

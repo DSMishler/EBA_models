@@ -14,6 +14,10 @@ void cleanup(void* eba_arg)
    free(gd->opls[0]);
    dlclose(gd->opls[2]->handler);
    free(gd->opls[2]);
+   dlclose(gd->opls[3]->handler);
+   free(gd->opls[3]);
+   dlclose(gd->opls[4]->handler);
+   free(gd->opls[4]);
 
 
    int i;
