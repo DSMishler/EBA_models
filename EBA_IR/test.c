@@ -59,6 +59,7 @@ void run_demo(void *eba_arg)
 
    void *next_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
    memcpy(next_eba_arg, &(gd->opls[1]), sizeof(op_loader_t*));
+   memcpy((char*)next_eba_arg+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
 
 
    eba_states[0] = eba_op;
@@ -97,6 +98,9 @@ void test_solofile(char *fname, void *eba_arg)
    op_loader_eir->fn = load_op;
    arg_buf[0] = op_loader_eir;
 
+   global_data_t *gd = arg_buf[1];
+   gd->opls[2] = op_loader_eir;
+   gd->frargs[1] = (void*)arg_buf;
 
 
 

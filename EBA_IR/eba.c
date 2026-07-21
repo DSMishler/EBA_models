@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "eba.h"
 
+#include "prog1_glob.h"
+
 // global function pointer for the next operation to run (w/MAX_THREADS threads)
 void (*eba_states[MAX_THREADS])(void*);
 // global arg pointer for EBA's arg (w/MAX_THREADS threads)
@@ -129,7 +131,14 @@ int main(void)
    eba_args[0] = my_eba_arg;
    EBA_run(0);
 
-   free(my_eba_arg);
-
    dlclose(opl1->handler);
+
+   // scaffold code to free the rest of the cleanup code
+   global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+   dlclose(gd->opls[1]->handler);
+   free(gd->opls[1]);
+   free(gd->opls);
+   free(gd);
+   free(eba_args[0]);
+
 }

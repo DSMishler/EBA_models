@@ -1,6 +1,8 @@
 #include "interpreter.h"
 #include "reader.h"
 
+#include "prog1_glob.h"
+
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 
@@ -136,6 +138,26 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       eba_arg[0] = NULL;
       eba_arg[1] = NULL;
       eba_arg[2] = arg_buf;
+
+      // now, this new arg buf which we have malloc-ed will need free-ed
+      // so we grab the global struct:
+      global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+      // it's also assumed that only thread 0 spawns (for now)
+      int i;
+      for(i = 0; i < gd->nfrargs; i++)
+      {
+         if (gd->frargs[i] == NULL)
+         {
+            gd->frargs[i] = eba_arg;
+            break;
+         }
+      }
+      if (i == gd->nfrargs)
+      {
+         printf("error - out of space in nfrargs! Stop.\n");
+         exit(1);
+      }
+
 
       uint64_t *p_w_thread = ((uint64_t **)arg_buf)[2];
       uint64_t w_thread = *p_w_thread;

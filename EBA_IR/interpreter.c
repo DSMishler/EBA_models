@@ -430,7 +430,7 @@ void run_line(void* lcl_eba_arg)
 
 void run_code(void* eba_arg)
 {
-   //                            casting        op loader     next eba_arg
+   //                            casting        op loader     global data struct
    void *lcl_eba_arg = *(void**)((char*)eba_arg+sizeof(void*)+sizeof(void*));
    char*** code_buf = ((char****)(lcl_eba_arg))[0];
    uint64_t* p_w_node = ((uint64_t**)(lcl_eba_arg))[1];

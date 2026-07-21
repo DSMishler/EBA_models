@@ -14,6 +14,15 @@ void boot(void *eba_arg)
    global_data_t *gd = malloc(sizeof(global_data_t));
    gd->nopls = 32;
    gd->opls = malloc(gd->nopls*sizeof(op_loader_t*));
+   gd->nfrargs = 32;
+   gd->frargs = malloc(gd->nfrargs*sizeof(void*));
+   int i;
+   for(i = 0; i < gd->nfrargs; i++)
+   {
+      gd->frargs[i] = NULL;
+   }
+
+   gd->frargs[0] = eba_arg;
 
 
    uint64_t w_thread = 0;
@@ -28,9 +37,6 @@ void boot(void *eba_arg)
    op_loader_cleanup->op_name = "cleanup";
    op_loader_cleanup->fn = load_op;
    gd->opls[1] = op_loader_cleanup;
-
-   void *cleanup_arg = malloc(sizeof(op_loader_t*));
-   memcpy(cleanup_arg, &op_loader_cleanup, sizeof(op_loader_t*));
 
 
 

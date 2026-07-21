@@ -4,10 +4,9 @@
 struct global_data
 {
    uint64_t nopls; // number of op loaders (will be a uint64_t)
-   void **opls; // op loaders
-   void *b;
-   void *c;
-   void *d;
+   op_loader_t **opls; // op loaders
+   uint64_t nfrargs; // number of args to free (will be a uint64_t)
+   void **frargs; // args that need freed
 };
 
 typedef struct global_data global_data_t;
