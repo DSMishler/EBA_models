@@ -6,6 +6,7 @@
 // #include <GLFW/glfw3.h>
 
 #include "eba.h"
+#include "prog1_glob.h"
 
 
 void test_solofile(char *, void*);
@@ -29,7 +30,7 @@ int main(void)
 void run_demo(void *eba_arg)
 {
    printf("running run demo!\n");
-   void *end_eba_arg = *(void**)((char*) (eba_arg) + sizeof(op_loader_t*));
+   global_data_t *gd = *(global_data_t**)((char*) (eba_arg) + sizeof(op_loader_t*));
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
@@ -56,8 +57,12 @@ void run_demo(void *eba_arg)
    free(dname);
    free(eba_arg);
 
-   eba_args[0] = end_eba_arg;
+   void *next_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
+   memcpy(next_eba_arg, &(gd->opls[1]), sizeof(op_loader_t*));
+
+
    eba_states[0] = eba_op;
+   eba_args[0] = next_eba_arg; // cleanup
 
 }
 
