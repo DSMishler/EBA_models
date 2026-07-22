@@ -7,6 +7,7 @@ struct global_data
    op_loader_t **opls; // op loaders
    uint64_t nfrargs; // number of args to free (will be a uint64_t)
    void **frargs; // args that need freed
+   uint64_t my_thread;
 };
 
 typedef struct global_data global_data_t;

@@ -138,23 +138,43 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       // it's assumed that only thread 0 spawns (for now)
       // now, this new arg buf which we have malloc-ed will need free-ed
       // so we grab the global struct:
-      global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+      global_data_t *gd_old = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+      // check that we are thread 0
+      if (gd_old->my_thread != 0)
+      {
+         printf("error: thread spawning called from illegal thread!\n");
+         exit(1);
+      }
       void *arg_buf = parse_var_buf(line[2], IRstate);
       void **eba_arg = malloc(3*sizeof(void*));
-      eba_arg[0] = gd->opls[2];
-      eba_arg[1] = gd;
+      global_data_t *gd_new = malloc(sizeof(global_data_t));
+      // same pointers to what op loaders and frargs. But new thread.
+      memcpy(gd_new, gd_old, sizeof(global_data_t));
+      eba_arg[0] = gd_new->opls[2];
+      eba_arg[1] = gd_new;
+      gd_new->my_thread = 0xdeadbeef;
+      // set the thread for the new one as an illegal sentinel value (it will
+      // be set property later in this block of code)
       eba_arg[2] = arg_buf;
 
       int i;
-      for(i = 0; i < gd->nfrargs; i++)
+      for(i = 0; i < gd_new->nfrargs; i++)
       {
-         if (gd->frargs[i] == NULL)
+         if (gd_new->frargs[i] == NULL)
          {
-            gd->frargs[i] = eba_arg;
+            gd_new->frargs[i] = eba_arg;
             break;
          }
       }
-      if (i == gd->nfrargs)
+      for(; i < gd_new->nfrargs; i++)
+      {
+         if (gd_new->frargs[i] == NULL)
+         {
+            gd_new->frargs[i] = gd_new;
+            break;
+         }
+      }
+      if (i == gd_new->nfrargs)
       {
          printf("error - out of space in nfrargs! Stop.\n");
          exit(1);
@@ -181,6 +201,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       
       pthread_t tids[1];
 
+      gd_new->my_thread = w_thread; // remember, gd_new is in eba_arg
       eba_states[w_thread] = eba_op;
       eba_args[w_thread] = eba_arg;
 

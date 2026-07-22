@@ -34,6 +34,22 @@ void run_demo(void *eba_arg)
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
+   int i;
+   for(i = 0; i < gd->nfrargs; i++)
+   {
+      if (gd->frargs[i] == NULL)
+      {
+         gd->frargs[i] = eba_arg;
+         // printf("giving it i=%d\n", i);
+         // printf("match: 0x%lx\n", (uint64_t) eba_arg);
+         break;
+      }
+   }
+   if(i == gd->nfrargs)
+   {
+      printf("too many args stacked up to free!\n");
+      exit(1);
+   }
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
@@ -50,12 +66,12 @@ void run_demo(void *eba_arg)
    {
       printf("I don't understand what demo to load: '%s'\n", dname);
    }
+   free(dname);
+
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
 
-   free(dname);
-   free(eba_arg);
 
    void *next_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
    memcpy(next_eba_arg, &(gd->opls[1]), sizeof(op_loader_t*));
@@ -96,23 +112,33 @@ void test_solofile(char *fname, void *eba_arg)
    op_loader_eir->fname = "./libs/EIRtest.so";
    op_loader_eir->op_name = "run_code";
    op_loader_eir->fn = load_op;
+   op_loader_eir->handler = NULL;
    arg_buf[0] = op_loader_eir;
 
    op_loader_t *op_loader_run_line = malloc(sizeof(op_loader_t));
    op_loader_run_line->fname = "./libs/EIRtest.so";
    op_loader_run_line->op_name = "run_line";
    op_loader_run_line->fn = load_op;
+   op_loader_run_line->handler = NULL;
 
    op_loader_t *op_loader_free_IRstate = malloc(sizeof(op_loader_t));
    op_loader_free_IRstate->fname = "./libs/EIRtest.so";
    op_loader_free_IRstate->op_name = "eba_free_IR_state";
    op_loader_free_IRstate->fn = load_op;
+   op_loader_free_IRstate->handler = NULL;
+
+   op_loader_t *op_loader_cleanup_demo = malloc(sizeof(op_loader_t));
+   op_loader_cleanup_demo->fname = "./libs/EIRtest.so";
+   op_loader_cleanup_demo->op_name = "cleanup_demo";
+   op_loader_cleanup_demo->fn = load_op;
+   op_loader_cleanup_demo->handler = NULL;
 
    global_data_t *gd = arg_buf[1];
    gd->opls[2] = op_loader_eir;
    gd->opls[3] = op_loader_run_line;
    gd->opls[4] = op_loader_free_IRstate;
-   gd->frargs[1] = (void*)arg_buf;
+   gd->opls[5] = op_loader_cleanup_demo;
+   gd->frargs[2] = (void*)arg_buf; // TODO: replace me with the macro
 
 
 
