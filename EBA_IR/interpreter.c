@@ -508,8 +508,9 @@ void print_IR_state(IR_state_t *IRstate)
 void eba_free_IR_state(void* lcl_eba_arg)
 {
    IR_state_t *IRstate = (IR_state_t *)(((void**)lcl_eba_arg)[2]);
-   eba_args[IRstate->w_thread] = NULL;
-   eba_states[IRstate->w_thread] = (void*)0;
+   global_data_t *gd = (global_data_t*)(((void**)lcl_eba_arg)[1]);
+   eba_args[IRstate->w_thread] = (void*) gd->stored_arg;
+   // eba_states[IRstate->w_thread] = (void*)0;
    free_IR_state(IRstate);
    pthread_mutex_unlock(&interpreter_lock);
 }

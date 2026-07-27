@@ -52,4 +52,4 @@ libs/cleanup.so: ops/cleanup.c
 
 
 clean:
-	rm -rf test libs/ ops/
+	rm -rf test libs/

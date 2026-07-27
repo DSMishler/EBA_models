@@ -24,6 +24,7 @@ void boot(void *eba_arg)
 
    gd->frargs[0] = eba_arg;
    gd->my_thread = 0;
+   gd->stored_arg = NULL;
 
 
    uint64_t w_thread = 0;

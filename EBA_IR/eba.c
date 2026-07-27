@@ -113,6 +113,11 @@ void *dl_loader_voidvoidstar(void (**func)(void*), char *function_file, char *ra
 
 void eba_op(void *arg)
 {
+   if (arg == NULL)
+   {
+      printf("exiting!\n");
+      exit(0);
+   }
    op_loader_t *opl = *((op_loader_t **) arg);
    (opl->fn)(arg);
 }
