@@ -149,10 +149,12 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       void **eba_arg = malloc(3*sizeof(void*));
       global_data_t *gd_new = malloc(sizeof(global_data_t));
       // same pointers to what op loaders and frargs. But new thread.
+      // And afterward, there will be no cleanup arg called. Just nothing.
       memcpy(gd_new, gd_old, sizeof(global_data_t));
       eba_arg[0] = gd_new->opls[2];
       eba_arg[1] = gd_new;
       gd_new->my_thread = 0xdeadbeef;
+      gd_new->stored_arg = NULL;
       // set the thread for the new one as an illegal sentinel value (it will
       // be set property later in this block of code)
       eba_arg[2] = arg_buf;

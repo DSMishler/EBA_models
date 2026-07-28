@@ -7,6 +7,7 @@
 
 #include "eba.h"
 #include "prog1_glob.h"
+#include "eba_utils.h"
 
 
 void test_solofile(char *, void*);
@@ -34,22 +35,7 @@ void run_demo(void *eba_arg)
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
-   int i;
-   for(i = 0; i < gd->nfrargs; i++)
-   {
-      if (gd->frargs[i] == NULL)
-      {
-         gd->frargs[i] = eba_arg;
-         // printf("giving it i=%d\n", i);
-         // printf("match: 0x%lx\n", (uint64_t) eba_arg);
-         break;
-      }
-   }
-   if(i == gd->nfrargs)
-   {
-      printf("too many args stacked up to free!\n");
-      exit(1);
-   }
+   free_later(gd, eba_arg);
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
@@ -67,6 +53,12 @@ void run_demo(void *eba_arg)
       printf("I don't understand what demo to load: '%s'\n", dname);
    }
    free(dname);
+}
+
+void cleanup_demo(void *eba_arg)
+{
+   global_data_t *gd = *((global_data_t**) ((char*)eba_arg+sizeof(op_loader_t*)));
+
 
    pthread_mutex_destroy(&interpreter_lock);
 
@@ -80,11 +72,6 @@ void run_demo(void *eba_arg)
 
    eba_states[0] = eba_op;
    eba_args[0] = next_eba_arg; // cleanup
-
-}
-
-void cleanup_demo(void *eba_arg)
-{
 }
 
 void test_solofile(char *fname, void *eba_arg)
@@ -142,11 +129,16 @@ void test_solofile(char *fname, void *eba_arg)
    gd->opls[3] = op_loader_run_line;
    gd->opls[4] = op_loader_free_IRstate;
    gd->opls[5] = op_loader_cleanup_demo;
-   gd->frargs[2] = (void*)arg_buf; // TODO: replace me with the macro
+   free_later(gd, arg_buf);
+
+   gd->stored_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
+   memcpy(gd->stored_arg, &gd->opls[5], sizeof(op_loader_t*));
+   memcpy(((char*)gd->stored_arg)+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
+   free_later(gd, gd->stored_arg);
 
 
 
    eba_states[0] = eba_op;
    eba_args[0] = (void*)arg_buf;
-   EBA_run_wrap(NULL);
+   // EBA_run_wrap(NULL);
 }

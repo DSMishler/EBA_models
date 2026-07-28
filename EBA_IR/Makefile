@@ -37,13 +37,13 @@ libs/scaffold.so: modules/scaffold.c
 EIRtools: libs/EIRtest.so libs/eshell.so
 
 libs/EIRtest.so: test.c reader.c reader.h interpreter.c interpreter.h
-	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/EIRtest.so reader.c test.c interpreter.c
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/EIRtest.so reader.c test.c interpreter.c eba_utils.c
 
 libs/eshell.so: eshell.c eshell.h
-	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/eshell.so eshell.c
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o libs/eshell.so eshell.c eba_utils.c
 
 boot.so: eba_prog.c
-	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o boot.so eba_prog.c
+	gcc -g -I. -Wall -Wpedantic -rdynamic -pthread -fpic -shared -o boot.so eba_prog.c eba_utils.c
 
 ops: libs/cleanup.so
 
