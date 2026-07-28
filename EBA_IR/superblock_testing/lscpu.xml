@@ -1,0 +1,142 @@
+<system>
+   <CPU>
+      <Architecture>
+          x86_64
+      </Architecture>
+      <CPU op-mode(s)>
+          32-bit, 64-bit
+      </CPU op-mode(s)>
+      <Address sizes>
+          39 bits physical, 48 bits virtual
+      </Address sizes>
+      <Byte Order>
+          Little Endian
+      </Byte Order>
+      <CPU(s)>
+          4
+      </CPU(s)>
+      <On-line CPU(s) list>
+          0-3
+      </On-line CPU(s) list>
+      <Vendor ID>
+          GenuineIntel
+      </Vendor ID>
+      <Model name>
+          Intel(R) Core(TM) i7-7600U CPU @ 2.80GHz
+      </Model name>
+      <CPU family>
+          6
+      </CPU family>
+      <Model>
+          142
+      </Model>
+      <Thread(s) per core>
+          2
+      </Thread(s) per core>
+      <Core(s) per socket>
+          2
+      </Core(s) per socket>
+      <Socket(s)>
+          1
+      </Socket(s)>
+      <Stepping>
+          9
+      </Stepping>
+      <CPU(s) scaling MHz>
+          44%
+      </CPU(s) scaling MHz>
+      <CPU max MHz>
+          3900.0000
+      </CPU max MHz>
+      <CPU min MHz>
+          400.0000
+      </CPU min MHz>
+      <BogoMIPS>
+          5799.77
+      </BogoMIPS>
+      <Flags>
+          fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb pti ssbd ibrs ibpb stibp tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp vnmi md_clear flush_l1d arch_capabilities
+      </Flags>
+      <Virtualization>
+          VT-x
+      </Virtualization>
+      <L1d cache>
+          64 KiB (2 instances)
+      </L1d cache>
+      <L1i cache>
+          64 KiB (2 instances)
+      </L1i cache>
+      <L2 cache>
+          512 KiB (2 instances)
+      </L2 cache>
+      <L3 cache>
+          4 MiB (1 instance)
+      </L3 cache>
+      <NUMA node(s)>
+          1
+      </NUMA node(s)>
+      <NUMA node0 CPU(s)>
+          0-3
+      </NUMA node0 CPU(s)>
+      <Vulnerability Gather data sampling>
+          Vulnerable
+      </Vulnerability Gather data sampling>
+      <Vulnerability Ghostwrite>
+          Not affected
+      </Vulnerability Ghostwrite>
+      <Vulnerability Indirect target selection>
+          Not affected
+      </Vulnerability Indirect target selection>
+      <Vulnerability Itlb multihit>
+          KVM: Mitigation: Split huge pages
+      </Vulnerability Itlb multihit>
+      <Vulnerability L1tf>
+          Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+      </Vulnerability L1tf>
+      <Vulnerability Mds>
+          Mitigation; Clear CPU buffers; SMT vulnerable
+      </Vulnerability Mds>
+      <Vulnerability Meltdown>
+          Mitigation; PTI
+      </Vulnerability Meltdown>
+      <Vulnerability Mmio stale data>
+          Mitigation; Clear CPU buffers; SMT vulnerable
+      </Vulnerability Mmio stale data>
+      <Vulnerability Old microcode>
+          Not affected
+      </Vulnerability Old microcode>
+      <Vulnerability Reg file data sampling>
+          Not affected
+      </Vulnerability Reg file data sampling>
+      <Vulnerability Retbleed>
+          Mitigation; IBRS
+      </Vulnerability Retbleed>
+      <Vulnerability Spec rstack overflow>
+          Not affected
+      </Vulnerability Spec rstack overflow>
+      <Vulnerability Spec store bypass>
+          Mitigation; Speculative Store Bypass disabled via prctl
+      </Vulnerability Spec store bypass>
+      <Vulnerability Spectre v1>
+          Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+      </Vulnerability Spectre v1>
+      <Vulnerability Spectre v2>
+          Mitigation; IBRS; IBPB conditional; STIBP conditional; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+      </Vulnerability Spectre v2>
+      <Vulnerability Srbds>
+          Mitigation; Microcode
+      </Vulnerability Srbds>
+      <Vulnerability Tsa>
+          Not affected
+      </Vulnerability Tsa>
+      <Vulnerability Tsx async abort>
+          Mitigation; TSX disabled
+      </Vulnerability Tsx async abort>
+      <Vulnerability Vmscape>
+          Mitigation; IBPB before exit to userspace
+      </Vulnerability Vmscape>
+   </CPU>
+   <hard_drive>
+      100GB
+   </hard_drive>
+</system>
