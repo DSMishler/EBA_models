@@ -42,7 +42,6 @@ void cleanup(void* eba_arg)
 
    free(eba_args[0]);
    eba_args[0] = NULL;
-   // eba_states[0] = (void*)0;
 
    return;
 

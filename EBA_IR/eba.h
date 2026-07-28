@@ -4,7 +4,6 @@
 
 #define MAX_THREADS 16
 
-extern void (*eba_states[MAX_THREADS])(void*);
 extern void *eba_args[MAX_THREADS];
 
 void load_op(void *arg);

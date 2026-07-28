@@ -70,7 +70,6 @@ void cleanup_demo(void *eba_arg)
    memcpy((char*)next_eba_arg+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
 
 
-   eba_states[0] = eba_op;
    eba_args[0] = next_eba_arg; // cleanup
 }
 
@@ -138,7 +137,6 @@ void test_solofile(char *fname, void *eba_arg)
 
 
 
-   eba_states[0] = eba_op;
    eba_args[0] = (void*)arg_buf;
    // EBA_run_wrap(NULL);
 }

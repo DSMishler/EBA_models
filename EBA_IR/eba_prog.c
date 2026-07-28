@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "eba.h"
 #include "prog1_glob.h"
+#include "eba_utils.h"
 
 op_loader_t op_loader_eshell;
 op_loader_t op_loader_eir;
@@ -22,7 +23,7 @@ void boot(void *eba_arg)
       gd->frargs[i] = NULL;
    }
 
-   gd->frargs[0] = eba_arg;
+   free_later(gd, eba_arg);
    gd->my_thread = 0;
    gd->stored_arg = NULL;
    gd->dlclose_after = (void**)((void**)eba_arg)[1];
@@ -44,7 +45,6 @@ void boot(void *eba_arg)
 
 
    char *which_op = "circ_buf_demo";
-   eba_states[w_thread] = eba_op;
    char *eba_secondword = malloc((strlen(which_op)+1)*sizeof(char));
    strcpy(eba_secondword, which_op);
    void *eir_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*)+sizeof(char*));

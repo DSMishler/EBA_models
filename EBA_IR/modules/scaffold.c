@@ -2,6 +2,7 @@
 #include "reader.h"
 
 #include "prog1_glob.h"
+#include "eba_utils.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -159,29 +160,9 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       // be set property later in this block of code)
       eba_arg[2] = arg_buf;
 
-      int i;
-      for(i = 0; i < gd_new->nfrargs; i++)
-      {
-         if (gd_new->frargs[i] == NULL)
-         {
-            gd_new->frargs[i] = eba_arg;
-            break;
-         }
-      }
-      for(; i < gd_new->nfrargs; i++)
-      {
-         if (gd_new->frargs[i] == NULL)
-         {
-            gd_new->frargs[i] = gd_new;
-            break;
-         }
-      }
-      if (i == gd_new->nfrargs)
-      {
-         printf("error - out of space in nfrargs! Stop.\n");
-         exit(1);
-      }
-
+      // gd_new and gd_old have the same frargs, so either would work here.
+      free_later(gd_new, eba_arg);
+      free_later(gd_new, gd_new);
 
       uint64_t *p_w_thread = ((uint64_t **)arg_buf)[2];
       uint64_t w_thread = *p_w_thread;
@@ -204,7 +185,6 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       pthread_t tids[1];
 
       gd_new->my_thread = w_thread; // remember, gd_new is in eba_arg
-      eba_states[w_thread] = eba_op;
       eba_args[w_thread] = eba_arg;
 
       // printf("creating thread with targ pointing to %lu\n", w_thread);

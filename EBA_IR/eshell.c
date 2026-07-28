@@ -80,7 +80,7 @@ void blocking_get_cmd(void *eba_arg)
    if (!(strcmp(firstword, "exit")))
    {
       printf("exiting!\n");
-      eba_states[w_thread] = (void*)0;
+      eba_args[w_thread] = NULL;
    }
 
    else if (!(strcmp(firstword, "load")))
@@ -110,7 +110,6 @@ void blocking_get_cmd(void *eba_arg)
             opl = *oplp2;
          }
 
-         eba_states[w_thread] = eba_op;
          char *eba_secondword = malloc((strlen(secondword)+1)*sizeof(char));
          strcpy(eba_secondword, secondword);
          void *eir_arg = malloc(sizeof(op_loader_t*)+sizeof(void*)+sizeof(char*));

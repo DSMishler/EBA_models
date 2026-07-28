@@ -3,6 +3,7 @@
 
 #include <dlfcn.h>
 #include "prog1_glob.h"
+#include "eba_utils.h"
 
 pthread_mutex_t interpreter_lock;
 
@@ -461,23 +462,9 @@ void run_code(void* eba_arg)
    new_eba_arg[1] = (void*) gd;
    new_eba_arg[2] = (void*) IRstate;
 
-   int i;
-   for(i = 0; i < gd->nfrargs; i++)
-   {
-      if(gd->frargs[i] == NULL)
-      {
-         gd->frargs[i] = new_eba_arg;
-         break;
-      }
-   }
-   if (i == gd->nfrargs)
-   {
-      printf("error - out of space in nfrargs! Stop.\n");
-      exit(1);
-   }
+   free_later(gd, new_eba_arg);
 
    eba_args[IRstate->w_thread] = new_eba_arg;
-   eba_states[IRstate->w_thread] = eba_op;
 }
 
 IR_state_t * init_IR_state(void)
@@ -510,7 +497,6 @@ void eba_free_IR_state(void* lcl_eba_arg)
    IR_state_t *IRstate = (IR_state_t *)(((void**)lcl_eba_arg)[2]);
    global_data_t *gd = (global_data_t*)(((void**)lcl_eba_arg)[1]);
    eba_args[IRstate->w_thread] = (void*) gd->stored_arg;
-   // eba_states[IRstate->w_thread] = (void*)0;
    free_IR_state(IRstate);
    pthread_mutex_unlock(&interpreter_lock);
 }

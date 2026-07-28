@@ -6,8 +6,6 @@
 
 #include "prog1_glob.h"
 
-// global function pointer for the next operation to run (w/MAX_THREADS threads)
-void (*eba_states[MAX_THREADS])(void*);
 // global arg pointer for EBA's arg (w/MAX_THREADS threads)
 void *eba_args[MAX_THREADS];
 
@@ -39,11 +37,6 @@ void* EBA_run(uint64_t w_thread)
       // via the intential setting of eba_state to 0
       if (eba_args[w_thread] == NULL)
       {
-         break;
-      }
-      if (eba_states[w_thread] == (void*)0)
-      {
-         printf("deprecated! Somehow someone set eba states.\n");
          break;
       }
       eba_op(eba_args[w_thread]);
@@ -134,7 +127,6 @@ int main(void)
    memcpy(my_eba_arg, &opl1, sizeof(op_loader_t*));
    memcpy(((char*)my_eba_arg)+sizeof(void**), &SCAFFOLD_dlcloseme, sizeof(void**));
 
-   eba_states[0] = eba_op;
    eba_args[0] = my_eba_arg;
    EBA_run(0);
 
