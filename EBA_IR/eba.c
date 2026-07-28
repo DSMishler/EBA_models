@@ -28,7 +28,7 @@ void* EBA_run(uint64_t w_thread)
       {
          break;
       }
-      eba_op(eba_args[w_thread]);
+      eba_op(eba_args[w_thread]); // this can go into boot.so
    }
    return NULL;
 }

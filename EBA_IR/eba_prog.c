@@ -29,22 +29,16 @@ void boot(void *eba_arg)
    gd->dlclose_after = (void**)get_eba_arg(eba_arg, 1);
 
 
-   uint64_t w_thread = 0;
-   op_loader_t *op_loader_demo = malloc(sizeof(op_loader_t));
-   op_loader_demo->fname = "./libs/EIRtest.so";
-   op_loader_demo->op_name = "run_demo";
-   op_loader_demo->fn = load_op;
+   op_loader_t *op_loader_demo = opl_init("./libs/EIRtest.so", "run_demo");
+   op_loader_t *op_loader_cleanup = opl_init("./libs/cleanup.so", "cleanup");
+   
    gd->opls[0] = op_loader_demo;
-
-   op_loader_t *op_loader_cleanup = malloc(sizeof(op_loader_t));
-   op_loader_cleanup->fname = "./libs/cleanup.so";
-   op_loader_cleanup->op_name = "cleanup";
-   op_loader_cleanup->fn = load_op;
    gd->opls[1] = op_loader_cleanup;
 
 
 
-   char *which_op = "circ_buf_demo";
+   // char *which_op = "circ_buf_demo";
+   char *which_op = "stream_demo";
    char *eba_secondword = malloc((strlen(which_op)+1)*sizeof(char));
    strcpy(eba_secondword, which_op);
    void *eir_arg = init_eba_arg(3);
@@ -55,6 +49,7 @@ void boot(void *eba_arg)
    set_eba_arg(eir_arg, 0, op_loader_demo);
    set_eba_arg(eir_arg, 1, gd);
    set_eba_arg(eir_arg, 2, eba_secondword);
+   uint64_t w_thread = 0;
    eba_args[w_thread] = eir_arg;
 
    return;
