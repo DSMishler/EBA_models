@@ -83,6 +83,10 @@ void run_demo(void *eba_arg)
 
 }
 
+void cleanup_demo(void *eba_arg)
+{
+}
+
 void test_solofile(char *fname, void *eba_arg)
 {
    char ***IRcode;

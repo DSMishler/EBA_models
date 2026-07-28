@@ -37,11 +37,16 @@ void* EBA_run(uint64_t w_thread)
       // NOTE: void*0 (nullptr) is guaranteed to compare unequal
       // to any object or function, so this can only happen
       // via the intential setting of eba_state to 0
-      if (eba_states[w_thread] == (void*)0)
+      if (eba_args[w_thread] == NULL)
       {
          break;
       }
-      (*eba_states[w_thread])(eba_args[w_thread]);
+      if (eba_states[w_thread] == (void*)0)
+      {
+         printf("deprecated! Somehow someone set eba states.\n");
+         break;
+      }
+      eba_op(eba_args[w_thread]);
    }
    return NULL;
 }
@@ -113,11 +118,6 @@ void *dl_loader_voidvoidstar(void (**func)(void*), char *function_file, char *ra
 
 void eba_op(void *arg)
 {
-   if (arg == NULL)
-   {
-      printf("exiting!\n");
-      exit(0);
-   }
    op_loader_t *opl = *((op_loader_t **) arg);
    (opl->fn)(arg);
 }
@@ -129,8 +129,10 @@ int main(void)
    opl1->op_name = "boot";
    opl1->fn = load_op;
 
-   void *my_eba_arg = malloc(sizeof(op_loader_t*));
+   void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(void**));
+   void **SCAFFOLD_dlcloseme = malloc(sizeof(void*));
    memcpy(my_eba_arg, &opl1, sizeof(op_loader_t*));
+   memcpy(((char*)my_eba_arg)+sizeof(void**), &SCAFFOLD_dlcloseme, sizeof(void**));
 
    eba_states[0] = eba_op;
    eba_args[0] = my_eba_arg;
@@ -139,11 +141,13 @@ int main(void)
    dlclose(opl1->handler);
 
    // scaffold code to free the rest of the cleanup code
-   global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
-   dlclose(gd->opls[1]->handler);
-   free(gd->opls[1]);
-   free(gd->opls);
-   free(gd);
-   free(eba_args[0]);
+   dlclose(*SCAFFOLD_dlcloseme);
+   free(SCAFFOLD_dlcloseme);
+   // global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+   // dlclose(gd->opls[1]->handler);
+   // free(gd->opls[1]);
+   // free(gd->opls);
+   // free(gd);
+   // free(eba_args[0]);
 
 }

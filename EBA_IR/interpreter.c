@@ -277,7 +277,7 @@ int get_avail_w_thread(void)
    int i;
    for (i = 0; i < MAX_THREADS; i++)
    {
-      if (eba_states[i] == (void*)0)
+      if (eba_args[i] == NULL)
       {
          break;
       }
@@ -297,7 +297,7 @@ int thread_is_avail(int w_thread)
    {
       return 0;
    }
-   if (eba_states[w_thread] == (void*)0)
+   if (eba_args[w_thread] == NULL)
    {
       return 1;
    }

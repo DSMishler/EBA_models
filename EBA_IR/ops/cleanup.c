@@ -12,12 +12,18 @@ void cleanup(void* eba_arg)
 
    dlclose(gd->opls[0]->handler);
    free(gd->opls[0]);
+   // NOTE: CAN'T dlclose our handler (opls1) because that's us!
+   *(gd->dlclose_after) = gd->opls[1]->handler;
+   free(gd->opls[1]);
    dlclose(gd->opls[2]->handler);
    free(gd->opls[2]);
    dlclose(gd->opls[3]->handler);
    free(gd->opls[3]);
    dlclose(gd->opls[4]->handler);
    free(gd->opls[4]);
+   // not implemented yet, but the cleaner-upper of the demo
+   free(gd->opls[5]);
+   free(gd->opls);
 
 
    int i;
@@ -31,8 +37,12 @@ void cleanup(void* eba_arg)
 
 
    free(gd->frargs);
+   free(gd);
 
-   eba_states[0] = (void*) 0;
+
+   free(eba_args[0]);
+   eba_args[0] = NULL;
+   // eba_states[0] = (void*)0;
 
    return;
 
