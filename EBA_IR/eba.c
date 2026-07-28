@@ -5,26 +5,17 @@
 #include "eba.h"
 
 #include "prog1_glob.h"
+#include "eba_utils.h"
 
 // global arg pointer for EBA's arg (w/MAX_THREADS threads)
 void *eba_args[MAX_THREADS];
 
-
 op_loader_t op_loader_boot;
 
-void load_op(void *arg)
+void eba_op(void *arg)
 {
-   op_loader_t *op_ds = *((op_loader_t **)arg);
-   printf("loading op %s\n", op_ds->op_name);
-   // to try to keep some sanity here, we will set it to a
-   // void* because (for now) the loader spits out non void*s
-   // to avoid redundant loads. This may be changed in what
-   // is likely an imminent redesign
-   op_ds->fn = (void*)0;
-   op_ds->handler = dl_loader_voidvoidstar(&(op_ds->fn), op_ds->fname, op_ds->op_name);
-   // // printf("handler is 0x%lx\n", (uint64_t)op_ds->handler);
-   // then call the just-loaded op
-   (*op_ds->fn)(arg);
+   op_loader_t *opl = *((op_loader_t **) arg);
+   (opl->fn)(arg);
 }
 
 
@@ -32,9 +23,6 @@ void* EBA_run(uint64_t w_thread)
 {
    while(1)
    {
-      // NOTE: void*0 (nullptr) is guaranteed to compare unequal
-      // to any object or function, so this can only happen
-      // via the intential setting of eba_state to 0
       if (eba_args[w_thread] == NULL)
       {
          break;
@@ -67,60 +55,24 @@ void *dl_loader_voidvoidstar_nochecks(void (**func)(void*), char *function_file,
    return handler;
 }
 
-void *dl_loader_voidvoidstar(void (**func)(void*), char *function_file, char *raw_name)
+void load_op(void *arg)
 {
-   if (*func != (void*)0)
-   {
-      // function is already loaded. Throw a warning and stop!
-      printf("loader called to load %s, but it's already loaded\n", raw_name);
-      return NULL;
-   }
-   void *object;
-   char *error;
-   void *handler;
-
-   handler = dlopen(function_file, RTLD_LAZY | RTLD_GLOBAL);
-
-   if (!handler)
-   {
-      printf("%s\n", dlerror());
-      return NULL;
-   }
-
-   error = dlerror();
-   if (error != NULL)
-   {
-      printf("there was an error! %s\n", error);
-   }
-
-   object = dlsym(handler, raw_name);
-   error = dlerror();
-   if (error != NULL)
-   {
-      printf("there was an error! %s\n", error);
-   }
-   if (object == NULL)
-   {
-      printf("there is no object!\n");
-   }
-
-   memcpy(func, &object, sizeof(*func));
-
-   return handler;
+   op_loader_t *op_ds = *((op_loader_t **)arg);
+   // printf("loading op %s\n", op_ds->op_name);
+   // to try to keep some sanity here, we will set it to a
+   // void* because (for now) the loader spits out non void*s
+   // to avoid redundant loads. This may be changed in what
+   // is likely an imminent redesign
+   op_ds->fn = (void*)0;
+   op_ds->handler = dl_loader_voidvoidstar_withchecks(&(op_ds->fn), op_ds->fname, op_ds->op_name);
+   // our work is done. control will pass back to eba_op,
+   // and since eba_arg hasn't changed, it'll just call the same op again!
 }
 
-void eba_op(void *arg)
-{
-   op_loader_t *opl = *((op_loader_t **) arg);
-   (opl->fn)(arg);
-}
 
 int main(void)
 {
-   op_loader_t *opl1 = &op_loader_boot;
-   opl1->fname =  "./boot.so";
-   opl1->op_name = "boot";
-   opl1->fn = load_op;
+   op_loader_t *opl1 = opl_init("./boot.so", "boot");
 
    void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(void**));
    void **SCAFFOLD_dlcloseme = malloc(sizeof(void*));
@@ -135,11 +87,5 @@ int main(void)
    // scaffold code to free the rest of the cleanup code
    dlclose(*SCAFFOLD_dlcloseme);
    free(SCAFFOLD_dlcloseme);
-   // global_data_t *gd = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
-   // dlclose(gd->opls[1]->handler);
-   // free(gd->opls[1]);
-   // free(gd->opls);
-   // free(gd);
-   // free(eba_args[0]);
-
+   free(opl1);
 }

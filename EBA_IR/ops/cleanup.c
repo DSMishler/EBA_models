@@ -6,8 +6,6 @@
 
 void cleanup(void* eba_arg)
 {
-   printf("cleanup called!\n");
-
    global_data_t *gd = *(global_data_t**)((char*)eba_arg+sizeof(op_loader_t*));
 
    dlclose(gd->opls[0]->handler); // run_demo

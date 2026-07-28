@@ -30,7 +30,6 @@ int main(void)
 
 void run_demo(void *eba_arg)
 {
-   printf("running run demo!\n");
    global_data_t *gd = *(global_data_t**)((char*) (eba_arg) + sizeof(op_loader_t*));
    char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
@@ -41,7 +40,6 @@ void run_demo(void *eba_arg)
    // printf("EBA tester\n");
    if (!(strcmp(dname, "circ_buf_demo")))
    {
-      printf("running circ buf demo!\n");
       test_solofile("examples/par_sched_circ_buf/STARTER.EIR", eba_arg);
    }
    else if (!(strcmp(dname, "stream_demo")))
@@ -98,30 +96,12 @@ void test_solofile(char *fname, void *eba_arg)
    arg_buf[2] = (void*)eir_arg;
 
 
-   op_loader_t *op_loader_eir = malloc(sizeof(op_loader_t));
-   op_loader_eir->fname = "./libs/EIRtest.so";
-   op_loader_eir->op_name = "run_code";
-   op_loader_eir->fn = load_op;
-   op_loader_eir->handler = NULL;
+   op_loader_t *op_loader_eir = opl_init("./libs/EIRtest.so", "run_code");
    arg_buf[0] = op_loader_eir;
 
-   op_loader_t *op_loader_run_line = malloc(sizeof(op_loader_t));
-   op_loader_run_line->fname = "./libs/EIRtest.so";
-   op_loader_run_line->op_name = "run_line";
-   op_loader_run_line->fn = load_op;
-   op_loader_run_line->handler = NULL;
-
-   op_loader_t *op_loader_free_IRstate = malloc(sizeof(op_loader_t));
-   op_loader_free_IRstate->fname = "./libs/EIRtest.so";
-   op_loader_free_IRstate->op_name = "eba_free_IR_state";
-   op_loader_free_IRstate->fn = load_op;
-   op_loader_free_IRstate->handler = NULL;
-
-   op_loader_t *op_loader_cleanup_demo = malloc(sizeof(op_loader_t));
-   op_loader_cleanup_demo->fname = "./libs/EIRtest.so";
-   op_loader_cleanup_demo->op_name = "cleanup_demo";
-   op_loader_cleanup_demo->fn = load_op;
-   op_loader_cleanup_demo->handler = NULL;
+   op_loader_t *op_loader_run_line = opl_init("./libs/EIRtest.so", "run_line");
+   op_loader_t *op_loader_free_IRstate = opl_init("./libs/EIRtest.so", "eba_free_IR_state");
+   op_loader_t *op_loader_cleanup_demo = opl_init("./libs/EIRtest.so", "cleanup_demo");
 
    global_data_t *gd = arg_buf[1];
    gd->opls[2] = op_loader_eir;
