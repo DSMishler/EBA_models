@@ -1,4 +1,5 @@
 #include "eba.h"
+#include "eba_utils.h"
 #include "prog1_glob.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +7,7 @@
 
 void cleanup(void* eba_arg)
 {
-   global_data_t *gd = *(global_data_t**)((char*)eba_arg+sizeof(op_loader_t*));
+   global_data_t *gd = get_eba_arg(eba_arg, 1);
 
    dlclose(gd->opls[0]->handler); // run_demo
    free(gd->opls[0]);

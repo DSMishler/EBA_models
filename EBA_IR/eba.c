@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "eba.h"
 
 #include "prog1_glob.h"
@@ -72,12 +73,14 @@ void load_op(void *arg)
 
 int main(void)
 {
+   check_eba_assumptions();
+
    op_loader_t *opl1 = opl_init("./boot.so", "boot");
 
    void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(void**));
    void **SCAFFOLD_dlcloseme = malloc(sizeof(void*));
-   memcpy(my_eba_arg, &opl1, sizeof(op_loader_t*));
-   memcpy(((char*)my_eba_arg)+sizeof(void**), &SCAFFOLD_dlcloseme, sizeof(void**));
+   set_eba_arg(my_eba_arg, 0, opl1);
+   set_eba_arg(my_eba_arg, 1, SCAFFOLD_dlcloseme);
 
    eba_args[0] = my_eba_arg;
    EBA_run(0);

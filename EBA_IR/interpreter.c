@@ -317,14 +317,14 @@ void run_noop(IR_state_t *IRstate)
 
 void run_line(void* lcl_eba_arg)
 {
-   IR_state_t *IRstate = (IR_state_t*)(((void**)lcl_eba_arg)[2]);
-   global_data_t *gd = (global_data_t*)(((void**)lcl_eba_arg)[1]);
+   global_data_t *gd = get_eba_arg(lcl_eba_arg, 1);
+   IR_state_t *IRstate = get_eba_arg(lcl_eba_arg, 2);
    char **line = IRstate->code_buf[IRstate->next_line];
    if (line == NULL)
    {
       pthread_mutex_lock(&interpreter_lock);
-      // printf("thread %lu detecting termination\n", IRstate->w_thread);
-      ((void**)eba_args[IRstate->w_thread])[0] = gd->opls[4];
+      // opls[4] is eba_free_IRstate. Just set the global eba arg to it.
+      set_eba_arg(eba_args[IRstate->w_thread], 0, gd->opls[4]);
       // do no work, and return here
       return;
    }
@@ -434,12 +434,12 @@ void run_line(void* lcl_eba_arg)
 
 void run_code(void* eba_arg)
 {
-   //                            casting        op loader     global data struct
-   void *lcl_eba_arg = *(void**)((char*)eba_arg+sizeof(void*)+sizeof(void*));
-   char*** code_buf = ((char****)(lcl_eba_arg))[0];
-   uint64_t* p_w_node = ((uint64_t**)(lcl_eba_arg))[1];
+   global_data_t *gd = get_eba_arg(eba_arg, 1);
+   void *lcl_eba_arg = get_eba_arg(eba_arg, 2);
+   char*** code_buf = get_eba_arg(lcl_eba_arg, 0);
+   uint64_t* p_w_node = get_eba_arg(lcl_eba_arg, 1);
    uint64_t w_node = *p_w_node;
-   uint64_t* p_w_thread = ((uint64_t**)(lcl_eba_arg))[2];
+   uint64_t* p_w_thread = get_eba_arg(lcl_eba_arg, 2);
    uint64_t w_thread = *p_w_thread;
    IR_state_t *IRstate = init_IR_state();
 
@@ -452,15 +452,14 @@ void run_code(void* eba_arg)
    IRstate->next_line = 0;
    IRstate->code_buf = code_buf;
 
-   global_data_t *gd = (global_data_t*)(((void**)eba_arg)[1]);
 
-   void **new_eba_arg = malloc(3*sizeof(void*));
+   void **new_eba_arg = init_eba_arg(3);
    // op_loader_t *
    // global_data_t *
    // IR_state_t *
-   new_eba_arg[0] = (void*) gd->opls[3];
-   new_eba_arg[1] = (void*) gd;
-   new_eba_arg[2] = (void*) IRstate;
+   set_eba_arg(new_eba_arg, 0, gd->opls[3]);
+   set_eba_arg(new_eba_arg, 1, gd);
+   set_eba_arg(new_eba_arg, 2, IRstate);
 
    free_later(gd, new_eba_arg);
 
@@ -494,8 +493,8 @@ void print_IR_state(IR_state_t *IRstate)
 
 void eba_free_IR_state(void* lcl_eba_arg)
 {
-   IR_state_t *IRstate = (IR_state_t *)(((void**)lcl_eba_arg)[2]);
-   global_data_t *gd = (global_data_t*)(((void**)lcl_eba_arg)[1]);
+   global_data_t *gd = get_eba_arg(lcl_eba_arg, 1);
+   IR_state_t *IRstate = get_eba_arg(lcl_eba_arg, 2);
    eba_args[IRstate->w_thread] = (void*) gd->stored_arg;
    free_IR_state(IRstate);
    pthread_mutex_unlock(&interpreter_lock);

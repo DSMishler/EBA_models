@@ -30,8 +30,8 @@ int main(void)
 
 void run_demo(void *eba_arg)
 {
-   global_data_t *gd = *(global_data_t**)((char*) (eba_arg) + sizeof(op_loader_t*));
-   char *dname = *(char**)((char*) (eba_arg) + sizeof(op_loader_t*) + sizeof(void*));
+   global_data_t *gd = get_eba_arg(eba_arg, 1);
+   char *dname = get_eba_arg(eba_arg, 2);
    load_dlhandlers("bufreq memop invoke mathop cmp print log scaffold");
 
    free_later(gd, eba_arg);
@@ -55,7 +55,7 @@ void run_demo(void *eba_arg)
 
 void cleanup_demo(void *eba_arg)
 {
-   global_data_t *gd = *((global_data_t**) ((char*)eba_arg+sizeof(op_loader_t*)));
+   global_data_t *gd = get_eba_arg(eba_arg, 1);
 
 
    pthread_mutex_destroy(&interpreter_lock);
@@ -63,9 +63,9 @@ void cleanup_demo(void *eba_arg)
    free_dlhandlers();
 
 
-   void *next_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
-   memcpy(next_eba_arg, &(gd->opls[1]), sizeof(op_loader_t*));
-   memcpy((char*)next_eba_arg+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
+   void *next_eba_arg = init_eba_arg(2);
+   set_eba_arg(next_eba_arg, 0, gd->opls[1]);
+   set_eba_arg(next_eba_arg, 1, gd);
 
 
    eba_args[0] = next_eba_arg; // cleanup
@@ -73,6 +73,7 @@ void cleanup_demo(void *eba_arg)
 
 void test_solofile(char *fname, void *eba_arg)
 {
+   global_data_t *gd = get_eba_arg(eba_arg, 1);
    char ***IRcode;
    IRcode = full_read(fname);
 
@@ -81,42 +82,32 @@ void test_solofile(char *fname, void *eba_arg)
    uint64_t *p_w_thread = malloc(sizeof(uint64_t));
    *p_w_thread = 0;
 
-   if(sizeof(op_loader_t*) != sizeof(void*))
-   {
-      printf("compatibility error!\n");
-      // TODO: rewrite so we have no issues like this
-      exit(1);
-   }
-   void **arg_buf = malloc(3*sizeof(void*));
-   memcpy(arg_buf, eba_arg, 2*sizeof(void*));
-   void **eir_arg = malloc(3*sizeof(void*));
-   eir_arg[0] = (void*)IRcode;
-   eir_arg[1] = (void*)p_w_node;
-   eir_arg[2] = (void*)p_w_thread;
-   arg_buf[2] = (void*)eir_arg;
-
+   void **eir_arg = init_eba_arg(3);
+   set_eba_arg(eir_arg, 0, IRcode);
+   set_eba_arg(eir_arg, 1, p_w_node);
+   set_eba_arg(eir_arg, 2, p_w_thread);
 
    op_loader_t *op_loader_eir = opl_init("./libs/EIRtest.so", "run_code");
-   arg_buf[0] = op_loader_eir;
-
    op_loader_t *op_loader_run_line = opl_init("./libs/EIRtest.so", "run_line");
    op_loader_t *op_loader_free_IRstate = opl_init("./libs/EIRtest.so", "eba_free_IR_state");
    op_loader_t *op_loader_cleanup_demo = opl_init("./libs/EIRtest.so", "cleanup_demo");
-
-   global_data_t *gd = arg_buf[1];
    gd->opls[2] = op_loader_eir;
    gd->opls[3] = op_loader_run_line;
    gd->opls[4] = op_loader_free_IRstate;
    gd->opls[5] = op_loader_cleanup_demo;
+
+   void **arg_buf = init_eba_arg(3);
+   set_eba_arg(arg_buf, 0, op_loader_eir);
+   set_eba_arg(arg_buf, 1, gd);
+   set_eba_arg(arg_buf, 2, eir_arg);
+
    free_later(gd, arg_buf);
 
-   gd->stored_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*));
-   memcpy(gd->stored_arg, &gd->opls[5], sizeof(op_loader_t*));
-   memcpy(((char*)gd->stored_arg)+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
+   gd->stored_arg = init_eba_arg(2);
+   set_eba_arg(gd->stored_arg, 0, op_loader_cleanup_demo);
+   set_eba_arg(gd->stored_arg, 1, gd);
+
    free_later(gd, gd->stored_arg);
 
-
-
    eba_args[0] = (void*)arg_buf;
-   // EBA_run_wrap(NULL);
 }

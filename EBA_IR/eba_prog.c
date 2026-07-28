@@ -26,7 +26,7 @@ void boot(void *eba_arg)
    free_later(gd, eba_arg);
    gd->my_thread = 0;
    gd->stored_arg = NULL;
-   gd->dlclose_after = (void**)((void**)eba_arg)[1];
+   gd->dlclose_after = (void**)get_eba_arg(eba_arg, 1);
 
 
    uint64_t w_thread = 0;
@@ -47,14 +47,14 @@ void boot(void *eba_arg)
    char *which_op = "circ_buf_demo";
    char *eba_secondword = malloc((strlen(which_op)+1)*sizeof(char));
    strcpy(eba_secondword, which_op);
-   void *eir_arg = malloc(sizeof(op_loader_t*)+sizeof(global_data_t*)+sizeof(char*));
+   void *eir_arg = init_eba_arg(3);
    // next eba arg:
       // A - the op loader
       // B - the global data structure
       // C - arg to the op in question (string of which op to exec)
-   memcpy(eir_arg, &op_loader_demo, sizeof(op_loader_t*));
-   memcpy((char*)eir_arg+sizeof(op_loader_t*), &gd, sizeof(global_data_t*));
-   memcpy((char*)eir_arg+sizeof(op_loader_t*)+sizeof(global_data_t*), &eba_secondword, sizeof(char*));
+   set_eba_arg(eir_arg, 0, op_loader_demo);
+   set_eba_arg(eir_arg, 1, gd);
+   set_eba_arg(eir_arg, 2, eba_secondword);
    eba_args[w_thread] = eir_arg;
 
    return;

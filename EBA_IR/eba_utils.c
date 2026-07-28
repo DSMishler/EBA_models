@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <assert.h>
 
 
 void free_later(global_data_t *gd, void *free_me)
@@ -73,4 +74,29 @@ op_loader_t * opl_init(char *fname, char *op_name)
    opl->fn = load_op;
    opl->handler = NULL;
    return opl;
+}
+
+void check_eba_assumptions(void)
+{
+   // necessary error check: EBA ASSUMES these are the same size:
+   assert(sizeof(void*) == sizeof(op_loader_t*));
+   assert(sizeof(void*) == sizeof(global_data_t*));
+   assert(sizeof(void*) == sizeof(void**));
+   assert(sizeof(void*) == sizeof(char*));
+   assert(sizeof(void*) == sizeof(uint64_t*));
+}
+
+void *init_eba_arg(int nargs)
+{
+   return malloc(nargs*sizeof(void*));
+}
+
+void *get_eba_arg(void *eba_args, int which_arg)
+{
+   return ((void**)eba_args)[which_arg];
+}
+
+void set_eba_arg(void *eba_args, int which_arg, void *value)
+{
+   ((void**)eba_args)[which_arg] = value;
 }

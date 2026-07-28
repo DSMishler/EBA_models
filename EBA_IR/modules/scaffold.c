@@ -46,8 +46,8 @@ void run_scaffold(IR_state_t *IRstate, char **line)
          var_errmsg("SCAFFOLD TERMINATE_WITH_CODEFREE", IRstate->next_line);
       }
       full_free((char***)IRstate->vars[var_dest]);
-      global_data_t *gd = (global_data_t*)(((void**)eba_args[IRstate->w_thread])[1]);
-      ((void**)eba_args[IRstate->w_thread])[0] = gd->opls[4];
+      global_data_t *gd = get_eba_arg(eba_args[IRstate->w_thread], 1);
+      set_eba_arg(eba_args[IRstate->w_thread], 0, gd->opls[4]);
    }
    else if (match_second_word(line, "P_SEM_INIT"))
    {
@@ -139,7 +139,7 @@ void run_scaffold(IR_state_t *IRstate, char **line)
       // it's assumed that only thread 0 spawns (for now)
       // now, this new arg buf which we have malloc-ed will need free-ed
       // so we grab the global struct:
-      global_data_t *gd_old = *(global_data_t**)((char*)eba_args[0]+sizeof(op_loader_t*));
+      global_data_t *gd_old = get_eba_arg(eba_args[IRstate->w_thread], 1);
       // check that we are thread 0
       if (gd_old->my_thread != 0)
       {
@@ -147,24 +147,24 @@ void run_scaffold(IR_state_t *IRstate, char **line)
          exit(1);
       }
       void *arg_buf = parse_var_buf(line[2], IRstate);
-      void **eba_arg = malloc(3*sizeof(void*));
+      void *eba_arg = init_eba_arg(3);
       global_data_t *gd_new = malloc(sizeof(global_data_t));
-      // same pointers to what op loaders and frargs. But new thread.
-      // And afterward, there will be no cleanup arg called. Just nothing.
+      // same pointers to op loaders and frargs. But new stored arg and thread.
       memcpy(gd_new, gd_old, sizeof(global_data_t));
-      eba_arg[0] = gd_new->opls[2];
-      eba_arg[1] = gd_new;
-      gd_new->my_thread = 0xdeadbeef;
-      gd_new->stored_arg = NULL;
       // set the thread for the new one as an illegal sentinel value (it will
       // be set property later in this block of code)
-      eba_arg[2] = arg_buf;
+      gd_new->my_thread = 0xdeadbeef;
+      // And afterward, there will be no cleanup arg called. Just nothing.
+      gd_new->stored_arg = NULL;
+      set_eba_arg(eba_arg, 0, gd_new->opls[2]);
+      set_eba_arg(eba_arg, 1, gd_new);
+      set_eba_arg(eba_arg, 2, arg_buf);
 
       // gd_new and gd_old have the same frargs, so either would work here.
       free_later(gd_new, eba_arg);
       free_later(gd_new, gd_new);
 
-      uint64_t *p_w_thread = ((uint64_t **)arg_buf)[2];
+      uint64_t *p_w_thread = get_eba_arg(arg_buf, 2);
       uint64_t w_thread = *p_w_thread;
       if (w_thread >= MAX_THREADS)
       {
