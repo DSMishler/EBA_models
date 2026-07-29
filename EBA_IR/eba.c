@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "eba.h"
 
 #include "prog1_glob.h"
@@ -54,7 +53,7 @@ int main(void)
 
    op_loader_t *opl1 = opl_init("./boot.so", "boot");
 
-   void *my_eba_arg = malloc(sizeof(op_loader_t*)+sizeof(void**));
+   void *my_eba_arg = init_eba_arg(2);
    void **SCAFFOLD_dlcloseme = malloc(sizeof(void*));
    set_eba_arg(my_eba_arg, 0, opl1);
    set_eba_arg(my_eba_arg, 1, SCAFFOLD_dlcloseme);
