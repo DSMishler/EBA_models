@@ -9,8 +9,13 @@
 op_loader_t op_loader_eshell;
 op_loader_t op_loader_eir;
 
+// global arg pointer for EBA's arg (w/MAX_THREADS threads)
+void *eba_args[MAX_THREADS];
+
+
 void boot(void *eba_arg)
 {
+   printf("enter EBA_boot!\n");
 
    global_data_t *gd = malloc(sizeof(global_data_t));
    gd->nopls = 32;
@@ -37,8 +42,8 @@ void boot(void *eba_arg)
 
 
 
-   // char *which_op = "circ_buf_demo";
-   char *which_op = "stream_demo";
+   char *which_op = "circ_buf_demo";
+   // char *which_op = "stream_demo";
    char *eba_secondword = malloc((strlen(which_op)+1)*sizeof(char));
    strcpy(eba_secondword, which_op);
    void *eir_arg = init_eba_arg(3);
@@ -52,5 +57,32 @@ void boot(void *eba_arg)
    uint64_t w_thread = 0;
    eba_args[w_thread] = eir_arg;
 
+   EBA_run(0);
+
    return;
 }
+
+void* EBA_run(uint64_t w_thread)
+{
+   while(1)
+   {
+      if (eba_args[w_thread] == NULL)
+      {
+         break;
+      }
+      eba_op(eba_args[w_thread]); // this can go into boot.so
+   }
+   return NULL;
+}
+
+void* EBA_run_wrap(void *arg_thread)
+{
+   uint64_t w_thread = 0;
+   if (arg_thread != NULL)
+   {
+      w_thread = *((uint64_t*)arg_thread);
+      free(arg_thread);
+   }
+   return EBA_run(w_thread);
+}
+

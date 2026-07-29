@@ -1,7 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-#define MAX_THREADS 16
 
 struct op_loader
 {
@@ -16,10 +15,6 @@ struct op_loader
 };
 typedef struct op_loader op_loader_t;
 
-extern void *eba_args[MAX_THREADS];
-
 void load_op(void *arg);
-void eba_op(void *arg);
 
-void * EBA_run(uint64_t w_thread);
-void * EBA_run_wrap(void *arg_thread);
+void eba_op(void *arg);

@@ -8,9 +8,6 @@
 #include "prog1_glob.h"
 #include "eba_utils.h"
 
-// global arg pointer for EBA's arg (w/MAX_THREADS threads)
-void *eba_args[MAX_THREADS];
-
 op_loader_t op_loader_boot;
 
 void eba_op(void *arg)
@@ -19,31 +16,8 @@ void eba_op(void *arg)
    (opl->fn)(arg);
 }
 
-
-void* EBA_run(uint64_t w_thread)
-{
-   while(1)
-   {
-      if (eba_args[w_thread] == NULL)
-      {
-         break;
-      }
-      eba_op(eba_args[w_thread]); // this can go into boot.so
-   }
-   return NULL;
-}
-
-void* EBA_run_wrap(void *arg_thread)
-{
-   uint64_t w_thread = 0;
-   if (arg_thread != NULL)
-   {
-      w_thread = *((uint64_t*)arg_thread);
-      free(arg_thread);
-   }
-   return EBA_run(w_thread);
-}
-
+// no checks verison, but a version with checks can be found in eba_utils.c
+// and is very useful for debugging. Set it in `load_op` as needed
 void *dl_loader_voidvoidstar_nochecks(void (**func)(void*), char *function_file, char *raw_name)
 {
    void *object;
@@ -66,8 +40,11 @@ void load_op(void *arg)
    // is likely an imminent redesign
    op_ds->fn = (void*)0;
    op_ds->handler = dl_loader_voidvoidstar_withchecks(&(op_ds->fn), op_ds->fname, op_ds->op_name);
-   // our work is done. control will pass back to eba_op,
-   // and since eba_arg hasn't changed, it'll just call the same op again!
+   // now, it is not guaranteed what kind of structure this was called in.
+   // EBA puts this as the initial function pointer for everything.
+   // For simplicity, we will not force the user to keep track of whether their
+   // op is loaded - we'll just run it after loading quietly
+   (*op_ds->fn)(arg);
 }
 
 
@@ -82,12 +59,10 @@ int main(void)
    set_eba_arg(my_eba_arg, 0, opl1);
    set_eba_arg(my_eba_arg, 1, SCAFFOLD_dlcloseme);
 
-   eba_args[0] = my_eba_arg;
-   EBA_run(0);
-
-   dlclose(opl1->handler);
+   eba_op(my_eba_arg); // boot!
 
    // scaffold code to free the rest of the cleanup code
+   dlclose(opl1->handler);
    dlclose(*SCAFFOLD_dlcloseme);
    free(SCAFFOLD_dlcloseme);
    free(opl1);

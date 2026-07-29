@@ -2,6 +2,9 @@
 #include <unistd.h>
 #include "eba.h"
 
+#define MAX_THREADS 16
+extern void *eba_args[MAX_THREADS];
+
 struct global_data
 {
    uint64_t nopls; // number of op loaders (will be a uint64_t)
@@ -14,3 +17,7 @@ struct global_data
 };
 
 typedef struct global_data global_data_t;
+
+
+void * EBA_run(uint64_t w_thread);
+void * EBA_run_wrap(void *arg_thread);
