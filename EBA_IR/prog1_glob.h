@@ -1,5 +1,6 @@
 #pragma once
 #include <unistd.h>
+#include <stdint.h>
 #include "eba.h"
 
 #define MAX_THREADS 16

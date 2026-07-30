@@ -15,8 +15,6 @@ void *eba_args[MAX_THREADS];
 
 void boot(void *eba_arg)
 {
-   printf("enter EBA_boot!\n");
-
    global_data_t *gd = malloc(sizeof(global_data_t));
    gd->nopls = 32;
    gd->opls = malloc(gd->nopls*sizeof(op_loader_t*));

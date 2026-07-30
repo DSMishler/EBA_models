@@ -1,13 +1,5 @@
-#include <dlfcn.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "eba.h"
-
-#include "prog1_glob.h"
 #include "eba_utils.h"
-
-op_loader_t op_loader_boot;
 
 void eba_op(void *arg)
 {

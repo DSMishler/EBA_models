@@ -1,6 +1,19 @@
 #include "eba.h"
 
 
+// main idea
+// Keep a queue of continuations
+// mark some as ready, not ready, etc.
+// possibly accept signals
+// When called, take the first continuation,
+//    push it to the back of the queue, and run it
+// for compatability, require that one of the elements
+// of its eba arg is the scheduler to call back when done,
+// and we can just put ourselves.
+// how should I interject the "next_op" in a nested scheduler
+// system?
+
+
 void *sched_run_wrap(void *arg_thread)
 {
    uint64_t w_thread = 0;
