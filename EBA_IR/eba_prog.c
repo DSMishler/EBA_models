@@ -5,6 +5,7 @@
 #include "eba.h"
 #include "prog1_glob.h"
 #include "eba_utils.h"
+#define MAX_LINE_LEN 80
 
 op_loader_t op_loader_eshell;
 op_loader_t op_loader_eir;
@@ -39,9 +40,56 @@ void boot(void *eba_arg)
    gd->opls[1] = op_loader_cleanup;
 
 
+   // blocking load. Yes, it's a little unpolished for now, but this enables
+   // different demos without the requirement of needing to change the code
+   // before the demo is loaded.
+   char *which_op;
+   while (1)
+   {
+      printf("currently installed demos: [circ_buf_demo, stream_demo]\n");
+      printf("which demo should run?\n");
+      printf("demo: ");
+      char line[MAX_LINE_LEN+1];
 
-   char *which_op = "circ_buf_demo";
-   // char *which_op = "stream_demo";
+      fgets(line, MAX_LINE_LEN+1, stdin);
+
+      // ensure the line is "legal"
+      if (((line[strlen(line)-1]) != EOF) && ((line[strlen(line)-1]) != '\n'))
+      {
+         printf("warning: the line read beginning with '%s' is not valid. "
+                "Perhaps it is longer than %d characters?\n\n",
+                line, MAX_LINE_LEN);
+         while(getchar() != '\n')
+         {
+            ;
+         }
+         continue;
+      }
+      // trim the newline
+      line[strlen(line)-1] = '\0';
+
+      if (!(strcmp(line, "circ_buf_demo")))
+      {
+         which_op = "circ_buf_demo";
+         break;
+      }
+      else if (!(strcmp(line, "stream_demo")))
+      {
+         which_op = "stream_demo";
+         break;
+      }
+      else if (!(strcmp(line, "exit")))
+      {
+         exit(0);
+         break;
+      }
+      else
+      {
+         printf("I didn't understand '%s'. Must be one of the listed demos.\n", line);
+      }
+   }
+
+
    char *eba_secondword = malloc((strlen(which_op)+1)*sizeof(char));
    strcpy(eba_secondword, which_op);
    void *eir_arg = init_eba_arg(3);
