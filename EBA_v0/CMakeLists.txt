@@ -9,3 +9,5 @@ target_sources(eba_boot
       eba.c
       eba_utils.c
 )
+
+add_subdirectory(eba_programs)
