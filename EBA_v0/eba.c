@@ -43,18 +43,14 @@ int main(void)
 {
    check_eba_assumptions();
 
-   op_loader_t *opl1 = opl_init("./boot.so", "boot");
+   op_loader_t *opl1 = opl_init("./eba_programs/boot.so", "boot");
 
-   void *my_eba_arg = init_eba_arg(2);
-   void **SCAFFOLD_dlcloseme = malloc(sizeof(void*));
+   void *my_eba_arg = init_eba_arg(1);
    set_eba_arg(my_eba_arg, 0, opl1);
-   set_eba_arg(my_eba_arg, 1, SCAFFOLD_dlcloseme);
 
    eba_op(my_eba_arg); // boot!
 
    // scaffold code to free the rest of the cleanup code
    dlclose(opl1->handler);
-   dlclose(*SCAFFOLD_dlcloseme);
-   free(SCAFFOLD_dlcloseme);
    free(opl1);
 }

@@ -14,3 +14,4 @@ void check_eba_assumptions(void);
 void *get_eba_arg(void *eba_args, int which_arg);
 void set_eba_arg(void *eba_args, int which_arg, void *value);
 void *init_eba_arg(int nargs);
+void free_eba_arg(void *eba_args);
