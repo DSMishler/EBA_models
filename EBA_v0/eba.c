@@ -1,56 +1,19 @@
-#include "eba.h"
-#include "eba_utils.h"
-
-void eba_op(void *arg)
-{
-   op_loader_t *opl = *((op_loader_t **) arg);
-   (opl->fn)(arg);
-}
-
-// no checks verison, but a version with checks can be found in eba_utils.c
-// and is very useful for debugging. Set it in `load_op` as needed
-void *dl_loader_voidvoidstar_nochecks(void (**func)(void*), char *function_file, char *raw_name)
-{
-   void *object;
-   void *handler;
-
-   handler = dlopen(function_file, RTLD_LAZY | RTLD_GLOBAL);
-   object = dlsym(handler, raw_name);
-   memcpy(func, &object, sizeof(*func));
-
-   return handler;
-}
-
-void load_op(void *arg)
-{
-   op_loader_t *op_ds = *((op_loader_t **)arg);
-   // printf("loading op %s\n", op_ds->op_name);
-   // to try to keep some sanity here, we will set it to a
-   // void* because (for now) the loader spits out non void*s
-   // to avoid redundant loads. This may be changed in what
-   // is likely an imminent redesign
-   op_ds->fn = (void*)0;
-   op_ds->handler = dl_loader_voidvoidstar_withchecks(&(op_ds->fn), op_ds->fname, op_ds->op_name);
-   // now, it is not guaranteed what kind of structure this was called in.
-   // EBA puts this as the initial function pointer for everything.
-   // For simplicity, we will not force the user to keep track of whether their
-   // op is loaded - we'll just run it after loading quietly
-   (*op_ds->fn)(arg);
-}
-
+#include "eba_common.h"
 
 int main(void)
 {
    check_eba_assumptions();
 
-   op_loader_t *opl1 = opl_init("./eba_programs/boot.so", "boot");
+   op_loader_t *opl1 = opl_init("./eba_boot/boot.so", "boot");
 
    void *my_eba_arg = init_eba_arg(1);
    set_eba_arg(my_eba_arg, 0, opl1);
 
    eba_op(my_eba_arg); // boot!
 
-   // scaffold code to free the rest of the cleanup code
+   // scaffold code to free the code we allocated so valgrind is happy.
+   // of course, in production, this wouldn't be needed. It would be freed
+   // when the OS shuts down
    dlclose(opl1->handler);
    free(opl1);
 }
