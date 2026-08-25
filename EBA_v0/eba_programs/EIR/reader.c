@@ -1,0 +1,466 @@
+#include "reader.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <assert.h>
+
+int is_ir_wspace(char a)
+{
+   if (a == ' '  || a == ','  || a == '\t' ||
+       a == '\v' || a == '\f' || a == '\r')
+   {
+      return 1;
+   }
+   else
+   {
+      return 0;
+   }
+}
+
+char * modify_and_shorten(char *line)
+{
+   int i;
+   for(i = 0; line[i] != '\0'; i++)
+   {
+      if (line[i] == '\n')
+      {
+         line[i] = '\0';
+         break;
+      }
+   }
+   return line;
+}
+
+char *** full_read(char *fname)
+{
+   FILE *f;
+   int flen;
+   char *fbuf;
+   f = fopen(fname, "r");
+   if (f==NULL)
+   {
+      fprintf(stderr, "error: no file named %s\n", fname);
+      exit(1);
+   }
+
+   fseek(f, 0, SEEK_END);
+   flen = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   fbuf = malloc(flen*sizeof(char));
+   fread(fbuf, sizeof(char), flen, f);
+
+   fclose(f);
+
+
+   int newlines = 0;
+   int i;
+   for(i = 0; i < flen; i++)
+   {
+      // printf("fbuf[%d] = %d\n", i, (int)fbuf[i]);
+      if (fbuf[i] == '\n')
+      {
+         newlines += 1;
+      }
+   }
+
+   char ***IRcode;
+   IRcode = malloc((newlines+1)*sizeof(char**));
+   // printf("malloc-ed 0x%0lx\n", (long int)IRcode);
+   IRcode[newlines] = NULL;
+   int offset = 0;
+   int j;
+   for (i = 0; i < newlines; i++)
+   {
+      IRcode[i] = line_to_words(fbuf+offset);
+      for(j = 0; j+offset < flen && fbuf[j+offset] != '\n'; j++)
+      {
+         ; // advances j until the next newline
+      }
+      offset += (j+1); //advances to right after the next newline
+   }
+
+   free(fbuf);
+
+   labels_to_lines(IRcode);
+
+   // print_code(IRcode);
+
+   return IRcode;
+}
+
+// turn a line of code (within a larger body) into an array of words
+char ** line_to_words(char *line)
+{
+   // simple finite state machine
+   int state = 0; // 0: in whitespace, 1: in word, 2: in string-word
+   int i; // index through the line
+   int zw; // index of which word we're on
+   int zi; // index of which character in the word we're on
+
+   int lens[10] = {0,0,0,0,0,0,0,0,0,0};
+   // limit of 10 words per line.
+   char next;
+
+   // first pass: find out how much needs malloc-ed
+   state = zi = i = zw = 0;
+   while (1)
+   {
+      next = line[i];
+      // check for comments, newlines, or eof
+      if (next == '#' || next == '\n' || next == '\0')
+      {
+         if (state == 2)
+         {
+            fprintf(stderr, "error in '%s', unfinished string '#' in string\n", modify_and_shorten(line));
+            return NULL;
+         }
+         zw += state; // possibly add 1 to nwords
+         break;
+      }
+      if (next == '/' && line[i+1] == '/')
+      {
+         if (state == 2)
+         {
+            fprintf(stderr, "error in '%s', comments in strings not allowed\n", modify_and_shorten(line));
+            return NULL;
+         }
+         // printf("comment detected\n");
+         zw += state; // possibly add 1 to nwords
+         break;
+      }
+
+      if (state == 1)
+      {
+         if (is_ir_wspace(next))
+         {
+            state = 0;
+            zw++;
+            zi = 0;
+            if (zw == 10)
+            {
+               fprintf(stderr, "error: too many words on line '%s'\n", modify_and_shorten(line));
+               return NULL;
+            }
+         }
+         else if (next == '"')
+         {
+            fprintf(stderr, "error on line '%s', quote begins during word\n", modify_and_shorten(line));
+            return NULL;
+         }
+         else
+         {
+            zi++;
+            lens[zw] = zi;
+         }
+      }
+      else if (state == 0)
+      {
+         if (is_ir_wspace(next))
+         {
+            ; // pass
+         }
+         else if (next == '"')
+         {
+            state = 2;
+            // no zi++, we won't be storing the quote marks
+         }
+         else
+         {
+            state = 1;
+            zi++;
+         }
+      }
+      else if (state == 2)
+      {
+         if (next == '"')
+         {
+            if (!(is_ir_wspace(line[i+1]) || 
+                  line[i+1] == '\n' || line[i+1] == '\0' ||
+                  line[i+1] == '#' || (line[i+1] == '/' && line[i+2] == '/')))
+            {
+               fprintf(stderr, "error on line '%s', quote ends during word\n", modify_and_shorten(line));
+               return NULL;
+            }
+            state = 1; // state 1 will take care of the cleanup
+         }
+         else
+         {
+            zi++;
+            lens[zw] = zi;
+         }
+      }
+
+      i++;
+   }
+   // safe to malloc
+   // for(i = 0; i < 10; i++)
+   // {
+      // printf("lens[%d] = %d\n", i, lens[i]);
+   // }
+
+   char **words = malloc((zw+1)*(sizeof(char*)));
+   // printf("  malloc-ed 0x%0lx\n", (long int)words);
+   for(i = 0; i < zw; i++)
+   {
+      words[i] = malloc((lens[i]+1)*sizeof(char));
+      // printf("    malloc-ed 0x%0lx\n", (long int)words[i]);
+      words[i][lens[i]] = '\0';
+   }
+   words[i] = NULL;
+
+   // now actually write the data
+   state = zi = i = zw = 0;
+   while (1)
+   {
+      next = line[i];
+      // check for comments, newlines, or eof
+      if (next == '#' || next == '\n' || next == '\0')
+      {
+         break;
+      }
+      if (next == '/' && line[i+1] == '/')
+      {
+         break;
+      }
+
+      if (state == 1)
+      {
+         if (is_ir_wspace(next))
+         {
+            state = 0;
+            zw++;
+            zi = 0;
+         }
+         else
+         {
+            words[zw][zi] = line[i];
+            zi++;
+         }
+      }
+      else if (state == 0)
+      {
+         if (is_ir_wspace(next))
+         {
+            ; // pass
+         }
+         else if (next == '"')
+         {
+            state = 2;
+         }
+         else
+         {
+            state = 1;
+            words[zw][zi] = line[i];
+            zi++;
+         }
+      }
+      else if (state == 2)
+      {
+         if (next == '"')
+         {
+            state = 1;
+         }
+         else
+         {
+            words[zw][zi] = line[i];
+            zi++;
+         }
+      }
+
+      i++;
+   }
+
+   return words;
+}
+
+
+void full_free(char ***IRcode)
+{
+   if (IRcode == NULL)
+   {
+      printf("warning: attempt to free NULL code\n");
+      return;
+   }
+   int i, j;
+   for(i = 0; IRcode[i] != NULL; i++) // free the lines
+   {
+      for(j = 0; IRcode[i][j] != NULL; j++) // free the words
+      {
+         // printf("free i=%d, j=%d\n", i, j);
+         // printf("    address 0x%0lx\n", (long int)IRcode[i][j]);
+         free(IRcode[i][j]);
+      }
+      // printf("free i=%d\n", i);
+      // printf("  address 0x%0lx\n", (long int)IRcode[i]);
+      free(IRcode[i]);
+   }
+   // printf("free entire array\n");
+   // printf("address 0x%0lx\n", (long int)IRcode);
+   free(IRcode);
+}
+
+void print_code(char ***IRcode)
+{
+   if (IRcode == NULL)
+   {
+      printf("warning: attempt to print NULL code\n");
+      return;
+   }
+   int i, j;
+   for(i = 0; IRcode[i] != NULL; i++)
+   {
+      printf("line %d:", i);
+      for(j = 0; IRcode[i][j] != NULL; j++)
+      {
+         printf(" %s", IRcode[i][j]);
+      }
+      printf("\n");
+   }
+}
+
+int samestr(char *a, char *b)
+{
+   return !(strcmp(a,b));
+}
+
+int is_label(char *a)
+{
+   return ((a[strlen(a)-1]) == ':');
+}
+
+// basically itoa but I malloc as well and only do base 10.
+// and give one extra byte of space
+static char * get_numstr(int num)
+{
+   int needed_space = 2; // start with the string terminator and extra byte.
+   // to fix the corner case, we will (sloppily) shoehorn 0 into 1 for space
+   // calculation purposes
+   int tnum = num + (num == 0);
+   if (num < 0)
+   {
+      printf("invalid argument passed for 'num'. Must be nonnegative.\n");
+      return NULL;
+   }
+   while(tnum > 0)
+   {
+      tnum /= 10;
+      needed_space += 1;
+   }
+
+   char *newword = malloc(needed_space*sizeof(char));
+
+   newword[needed_space-1] = '\0';
+   newword[needed_space-2] = '\0';
+   int i;
+   int vnum = num;
+   // a colon is going to go here                      x
+   // ideal string is something like ['a', 'c', 'e', '\0', '\0', '?']
+   // now '?' would be unalloc-ed                                 ^
+   // we need -3 because `needed_space` points here               |
+   for(i = needed_space-3; i >= 0; i--)
+   {
+      int val = vnum % 10;
+      vnum /= 10;
+      newword[i] = ((char) val) + '0';
+   }
+
+   // printf("just sent numstr with num=%d to %s\n", num, newword);
+
+   return newword;
+}
+
+static char* get_literal(int num)
+{
+   char *numstr = get_numstr(num);
+   int i;
+   int numlen = strlen(numstr);
+   for(i = numlen; i > 0; i--)
+   {
+      numstr[i] = numstr[i-1]; // safe because there are two string terms
+   }
+   numstr[i] = '@';
+   return numstr;
+}
+
+static char* get_label(int num)
+{
+   char *numstr = get_numstr(num);
+   numstr[strlen(numstr)] = ':'; // safe because there are two string terms
+   return numstr;
+}
+
+// possible TODO: add a final check that no CMP lines point to nonexistent
+// labels
+void labels_to_lines(char ***IRcode)
+{
+   int i;
+   for(i = 0; IRcode[i] != NULL; i++)
+   {
+      char *first_word_i = IRcode[i][0];
+      // printf("processing line %d with first word %s\n", i, first_word_i);
+      if (first_word_i == NULL)
+      {
+         ;
+      }
+      else if (!(is_label(first_word_i)))
+      {
+         ;
+      }
+      else
+      {
+         // the line is not blank and the first word is a label
+         // we're about to change it anyway, so let's just go ahead and
+         // make them match
+         char *label = first_word_i;
+         // printf("label detected: %s\n", label);
+         int label_loc = i;
+         label[strlen(label)-1] = '\0';
+         int j;
+         for(j = 0; IRcode[j] != NULL; j++)
+         {
+            char *first_word_j = IRcode[j][0];
+            if (first_word_j == NULL)
+            {
+               ; // ingore empty line
+            }
+            else if (is_label(first_word_j))
+            {
+               // make sure they don't match!
+               if (strcmp(label, first_word_j) == -':')
+               {
+                  // the labels match (eg. label="END", first_word_j="END:")
+                  printf("You have multiple labels for '%s'\n", label);
+                  printf("refusing to read this file.\n");
+                  exit(0);
+               }
+            }
+            else if (!(samestr(first_word_j, "CMP")))
+            {
+               ; // ignore non-labels
+            }
+            else
+            {
+               // cmp line.
+               // then we've got to check if the label is a match
+               if(IRcode[j][1] && IRcode[j][2] && IRcode[j][3] && IRcode[j][4])
+               {
+                  if (samestr(IRcode[j][4], label))
+                  {
+                     free(IRcode[j][4]);
+                     IRcode[j][4] = get_literal(label_loc);
+                  }
+               }
+               else
+               {
+                  printf("warning: incorrect syntax on CMP line %d\n", j);
+                  printf("requires 5 arguments\n.");
+               }
+            }
+         }
+
+         free(IRcode[i][0]);
+         IRcode[i][0] = get_label(label_loc);
+      }
+   }
+}

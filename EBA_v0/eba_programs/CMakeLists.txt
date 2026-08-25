@@ -1,9 +1,4 @@
-# add_executable(test_hello)
-# 
-# target_sources(test_hello
-   # PRIVATE
-      # test_hello.c
-# )
+add_subdirectory(EIR)
 
 add_library(hello_world
    SHARED

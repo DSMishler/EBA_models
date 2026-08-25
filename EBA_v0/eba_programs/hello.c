@@ -3,5 +3,6 @@
 
 void prog_entry(void* args)
 {
+   free_eba_arg(args);
    printf("hello!\n");
 }
