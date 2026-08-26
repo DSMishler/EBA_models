@@ -1,0 +1,45 @@
+// glfw update
+// meant to handle the "drawing" loop of an eir code
+// args
+// 0 - this code (always)
+// 1 - the glfw window
+// 2 - note on whether the window should close
+// 3 - who to call when done if more is left (sched queue add into scheduler)
+// 4 - who to call when done if no more is left (just scheduler)
+
+
+
+MEMOP READ_FROMBUF V1, V0, &8
+MEMOP READ_FROMBUF V2, V0, &16
+MEMOP READ_FROMBUF V3, V0, &24
+MEMOP READ_FROMBUF V4, V0, &32
+
+
+CMP EQ V2, &1, SHOULD_CLOSE
+SCAFFOLD GLFW_WINDOWSHOULDCLOSE V2, V1
+CMP EQ V2, &1, SHOULD_CLOSE
+
+// if we're good to keep running
+SCAFFOLD GLFW_SWAPBUFFERS, V1
+SCAFFOLD GLFW_POLLEVENTS
+SCAFFOLD GLFW_CLEAR
+
+
+
+
+MEMOP MOVE V0, V3
+INVOKE LOCAL_BUF V0
+
+
+
+
+
+SHOULD_CLOSE:
+// sloppy, but reach into the failure code (sched queue add)
+//and free the error buf
+MEMOP READ_FROMBUF V7, V3, &32
+BUFREQ RELEASE V7
+BUFREQ RELEASE V3
+BUFREQ RELEASE V0
+MEMOP MOVE V0, V4
+INVOKE LOCAL_BUF V0

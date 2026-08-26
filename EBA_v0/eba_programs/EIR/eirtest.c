@@ -17,8 +17,8 @@ int main(void)
 
    pthread_mutex_init(&interpreter_lock, NULL);
    // printf("EBA tester\n");
-   // test_solofile("examples/par_sched_circ_buf/STARTER.EIR");
-   test_solofile("examples/streaming_glfw_test/STARTER.EIR", NULL);
+   // test_solofile("eba_programs/EIR/EIR_code/par_sched_circ_buf/STARTER.EIR");
+   test_solofile("eba_programs/EIR/EIR_code/streaming_glfw_test/STARTER.EIR", NULL);
    pthread_mutex_destroy(&interpreter_lock);
 
    free_dlhandlers();
@@ -39,11 +39,11 @@ void run_demo(void *eba_arg)
    // printf("EBA tester\n");
    if (!(strcmp(dname, "circ_buf_demo")))
    {
-      test_solofile("examples/par_sched_circ_buf/STARTER.EIR", eba_arg);
+      test_solofile("eba_programs/EIR/EIR_code/par_sched_circ_buf/STARTER.EIR", eba_arg);
    }
    else if (!(strcmp(dname, "stream_demo")))
    {
-      test_solofile("examples/streaming_glfw_test/STARTER.EIR", eba_arg);
+      test_solofile("eba_programs/EIR/EIR_code/streaming_glfw_test/STARTER.EIR", eba_arg);
    }
    else
    {
@@ -74,6 +74,7 @@ void test_solofile(char *fname, void *eba_arg)
 {
    EIR_data_t *gd = get_eba_arg(eba_arg, 1);
    char ***IRcode;
+   system("pwd");
    IRcode = full_read(fname);
 
    uint64_t *p_w_node = malloc(sizeof(uint64_t));
@@ -86,10 +87,10 @@ void test_solofile(char *fname, void *eba_arg)
    set_eba_arg(eir_arg, 1, p_w_node);
    set_eba_arg(eir_arg, 2, p_w_thread);
 
-   op_loader_t *op_loader_eir = opl_init("./libs/EIRtest.so", "run_code");
-   op_loader_t *op_loader_run_line = opl_init("./libs/EIRtest.so", "run_line");
-   op_loader_t *op_loader_free_IRstate = opl_init("./libs/EIRtest.so", "eba_free_IR_state");
-   op_loader_t *op_loader_cleanup_demo = opl_init("./libs/EIRtest.so", "cleanup_demo");
+   op_loader_t *op_loader_eir = opl_init("./eba_programs/EIR/EIR.so", "run_code");
+   op_loader_t *op_loader_run_line = opl_init("./eba_programs/EIR/EIR.so", "run_line");
+   op_loader_t *op_loader_free_IRstate = opl_init("./eba_programs/EIR/EIR.so", "eba_free_IR_state");
+   op_loader_t *op_loader_cleanup_demo = opl_init("./eba_programs/EIR/EIR.so", "cleanup_demo");
    gd->opls[2] = op_loader_eir;
    gd->opls[3] = op_loader_run_line;
    gd->opls[4] = op_loader_free_IRstate;

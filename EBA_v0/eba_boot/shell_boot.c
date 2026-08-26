@@ -103,6 +103,8 @@ void boot(void *eba_arg)
    eba_op(prog_arg);
 
    free(prog_fname);
+   dlclose(op_loader_prog->handler);
+   free(op_loader_prog);
 
    return;
 }

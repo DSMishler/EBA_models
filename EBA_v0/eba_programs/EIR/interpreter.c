@@ -75,35 +75,35 @@ void load_dlhandlers(char *line)
    {
       if (samestr(words[i], "bufreq"))
       {
-         module_loader(&run_bufreq, "./libs/bufreq.so", "run_bufreq");
+         module_loader(&run_bufreq, "./eba_programs/EIR/libs/bufreq.so", "run_bufreq");
       }
       else if (samestr(words[i], "memop"))
       {
-         module_loader(&run_memop, "./libs/memop.so", "run_memop");
+         module_loader(&run_memop, "./eba_programs/EIR/libs/memop.so", "run_memop");
       }
       else if (samestr(words[i], "invoke"))
       {
-         module_loader(&run_invoke, "./libs/invoke.so", "run_invoke");
+         module_loader(&run_invoke, "./eba_programs/EIR/libs/invoke.so", "run_invoke");
       }
       else if (samestr(words[i], "mathop"))
       {
-         module_loader(&run_mathop, "./libs/mathop.so", "run_mathop");
+         module_loader(&run_mathop, "./eba_programs/EIR/libs/mathop.so", "run_mathop");
       }
       else if (samestr(words[i], "cmp"))
       {
-         module_loader(&run_cmp, "./libs/cmp.so", "run_cmp");
+         module_loader(&run_cmp, "./eba_programs/EIR/libs/cmp.so", "run_cmp");
       }
       else if (samestr(words[i], "print"))
       {
-         module_loader(&run_print, "./libs/print.so", "run_print");
+         module_loader(&run_print, "./eba_programs/EIR/libs/print.so", "run_print");
       }
       else if (samestr(words[i], "log"))
       {
-         module_loader(&run_log, "./libs/log.so", "run_log");
+         module_loader(&run_log, "./eba_programs/EIR/libs/log.so", "run_log");
       }
       else if (samestr(words[i], "scaffold"))
       {
-         module_loader(&run_scaffold, "./libs/scaffold.so", "run_scaffold");
+         module_loader(&run_scaffold, "./eba_programs/EIR/libs/scaffold.so", "run_scaffold");
       }
    }
 

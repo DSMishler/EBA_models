@@ -1,0 +1,12 @@
+// exit code
+// to call when done
+// args
+// 0 - this buf (always)
+// 1 - one more code buf to free
+
+MEMOP READ_FROMBUF V1, V0, &8
+SCAFFOLD CODEFREE V1
+MEMOP READ_FROMBUF V1, V0, &0
+BUFREQ RELEASE V0
+PRINT STRING "Success!"
+SCAFFOLD TERMINATE_WITH_CODEFREE V1

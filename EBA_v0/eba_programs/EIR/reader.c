@@ -40,7 +40,7 @@ char *** full_read(char *fname)
    f = fopen(fname, "r");
    if (f==NULL)
    {
-      fprintf(stderr, "error: no file named %s\n", fname);
+      fprintf(stderr, "EIR reader error: no file named %s\n", fname);
       exit(1);
    }
 

@@ -1,0 +1,10 @@
+// error code
+// just flagging that an error occurred
+// args
+// 0 - this buf (always)
+
+PRINT STRING CURRENTLY_RUNNING_ERROR_CODE
+
+PRINT BYTES &4022250974, &8 // little endian-ish for 0xdeadbeef
+MEMOP READ_FROMBUF V1, V0, &0
+INVOKE LOCAL V1

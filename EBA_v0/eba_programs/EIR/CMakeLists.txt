@@ -1,3 +1,17 @@
+# copy over all the example code
+file(COPY
+   "${CMAKE_CURRENT_SOURCE_DIR}/EIR_code"
+   DESTINATION
+      "${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+# file(GLOB
+   # EIR_CODE
+   # CONFIGURE_DEPENDS
+      # "${CMAKE_CURRENT_SOURCE_DIR}/EIR_code/*/*.EIR"
+# )
+
+
 add_library(eir_common
    SHARED
       eir_common.c
@@ -25,6 +39,25 @@ target_link_libraries(eir_common
 
 
 
+add_library(eir_cleanup
+   SHARED
+      eir_cleanup.c
+)
+
+set_target_properties(eir_cleanup
+   PROPERTIES
+      OUTPUT_NAME "eir_cleanup"
+      PREFIX ""
+      SUFFIX ".so"
+)
+
+target_link_libraries(eir_cleanup
+   PRIVATE
+      eir_common
+      eba_common
+      ${CMAKE_DL_LIBS}
+)
+
 add_library(EIR
    SHARED
       eirtest.c
@@ -43,6 +76,213 @@ set_target_properties(EIR
 
 target_link_libraries(EIR
    PRIVATE
-      eir_common # links to eba_common
+      eir_common
+      eba_common
+      ${CMAKE_DL_LIBS}
+)
+
+################################################################################
+
+add_library(EIR_bufreq
+   SHARED
+      modules/bufreq.c
+)
+
+target_include_directories(EIR_bufreq
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_bufreq
+   PROPERTIES
+      OUTPUT_NAME "bufreq"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_bufreq
+   PRIVATE
       eba_common # links to eba_common
+      eir_common
       ${CMAKE_DL_LIBS})
+
+add_library(EIR_memop
+   SHARED
+      modules/memop.c
+)
+
+target_include_directories(EIR_memop
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_memop
+   PROPERTIES
+      OUTPUT_NAME "memop"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_memop
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_invoke
+   SHARED
+      modules/invoke.c
+)
+
+target_include_directories(EIR_invoke
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_invoke
+   PROPERTIES
+      OUTPUT_NAME "invoke"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_invoke
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_mathop
+   SHARED
+      modules/mathop.c
+)
+
+target_include_directories(EIR_mathop
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_mathop
+   PROPERTIES
+      OUTPUT_NAME "mathop"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_mathop
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_cmp
+   SHARED
+      modules/cmp.c
+)
+
+target_include_directories(EIR_cmp
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_cmp
+   PROPERTIES
+      OUTPUT_NAME "cmp"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_cmp
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_print
+   SHARED
+      modules/print.c
+)
+
+target_include_directories(EIR_print
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_print
+   PROPERTIES
+      OUTPUT_NAME "print"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_print
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_log
+   SHARED
+      modules/log.c
+)
+
+target_include_directories(EIR_log
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(EIR_log
+   PROPERTIES
+      OUTPUT_NAME "log"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_log
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      ${CMAKE_DL_LIBS})
+
+add_library(EIR_scaffold
+   SHARED
+      modules/scaffold.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/tools/graphics/glad/src/gl.c
+)
+
+target_include_directories(EIR_scaffold
+   PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/tools/graphics/glad/include
+)
+
+find_package(OpenGL REQUIRED)
+find_package(glfw3 REQUIRED)
+
+set_target_properties(EIR_scaffold
+   PROPERTIES
+      OUTPUT_NAME "scaffold"
+      PREFIX ""
+      SUFFIX ".so"
+      LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs
+)
+
+target_link_libraries(EIR_scaffold
+   PRIVATE
+      eba_common # links to eba_common
+      eir_common
+      glfw
+      OpenGL::GL
+      ${CMAKE_DL_LIBS})
+
+# target_link_options(EIR_scaffold
+   # PRIVATE
+      # "-lglfw -lGL"
+# )

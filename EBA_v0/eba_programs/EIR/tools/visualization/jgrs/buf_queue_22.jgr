@@ -1,0 +1,489 @@
+newgraph
+xaxis min -70 max 70 nodraw
+yaxis min -20 max 20 nodraw
+newstring font Time-Roman fontsize 25 x 0 y 95 hjc vjc :
+Status of buffer:
+newstring font Time-Roman fontsize 18 x -200 y 0 hjc vjc :
+l
+newstring font Time-Roman fontsize 18 x 200 y 0 hjc vjc :
+l
+newstring font Time-Roman fontsize 18 x 0 y -60 hjc vjc :
+l
+newline poly pfill 1 pts
+-140 40 -140 90
+newline poly pfill 1 pts
+-126 40 -126 90
+newline poly pfill 1 pts
+-112 40 -112 90
+newline poly pfill 1 pts
+-98 40 -98 90
+newline poly pfill 1 pts
+-84 40 -84 90
+newline poly pfill 1 pts
+-70 40 -70 90
+newline poly pfill 1 pts
+-56 40 -56 90
+newline poly pfill 1 pts
+-42 40 -42 90
+newline poly pfill 1 pts
+-28 40 -28 90
+newline poly pfill 1 pts
+-14 40 -14 90
+newline poly pfill 1 pts
+0 40 0 90
+newline poly pfill 1 pts
+14 40 14 90
+newline poly pfill 1 pts
+28 40 28 90
+newline poly pfill 1 pts
+42 40 42 90
+newline poly pfill 1 pts
+56 40 56 90
+newline poly pfill 1 pts
+70 40 70 90
+newline poly pfill 1 pts
+84 40 84 90
+newline poly pfill 1 pts
+98 40 98 90
+newline poly pfill 1 pts
+112 40 112 90
+newline poly pfill 1 pts
+126 40 126 90
+newline poly pfill 1 pts
+140 40 140 90
+newline poly pfill 1 pts
+-140 40 140 40
+newline poly pfill 1 pts
+-140 45 140 45
+newline poly pfill 1 pts
+-140 50 140 50
+newline poly pfill 1 pts
+-140 55 140 55
+newline poly pfill 1 pts
+-140 60 140 60
+newline poly pfill 1 pts
+-140 65 140 65
+newline poly pfill 1 pts
+-140 70 140 70
+newline poly pfill 1 pts
+-140 75 140 75
+newline poly pfill 1 pts
+-140 80 140 80
+newline poly pfill 1 pts
+-140 85 140 85
+newline poly pfill 1 pts
+-140 90 140 90
+newline poly color 0.0 1.0 0.0 pfill 1 pts
+-92 57                              -94 59                              -96 57                              -94 55
+newline poly color 0.0 0.0 1.0 pfill 1 pts
+82 52                              80 54                              78 52                              80 50
+newstring font Time-Roman fontsize 18 x -133 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -119 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -105 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -91 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -77 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -63 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -49 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -35 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -21 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -7 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 7 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 21 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 35 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 49 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 63 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 77 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 91 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 105 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 119 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 133 y 87 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -133 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -119 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -105 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -91 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -77 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -63 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -49 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -35 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -21 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x -7 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 7 y 82 hjc vjc :
+A
+newstring font Time-Roman fontsize 18 x 21 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 35 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 49 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 63 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 77 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 91 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 105 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 119 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 133 y 82 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -133 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -119 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -105 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -91 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -77 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -63 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -49 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -35 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -21 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -7 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 7 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 21 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 35 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 49 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 63 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 77 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 91 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 105 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 119 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x 133 y 77 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -133 y 72 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -119 y 72 hjc vjc :
+B
+newstring font Time-Roman fontsize 18 x -105 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -91 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -77 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -63 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -49 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -35 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -21 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -7 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 7 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 21 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 35 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 49 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 63 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 77 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 91 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 105 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 119 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 133 y 72 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -133 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -119 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -105 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -91 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -77 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -63 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -49 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -35 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -21 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x -7 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 7 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 21 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 35 y 67 hjc vjc :
+C
+newstring font Time-Roman fontsize 18 x 49 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 63 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 77 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 91 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 105 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 119 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 133 y 67 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -133 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -119 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -105 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -91 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -77 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -63 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -49 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -35 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -21 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -7 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 7 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 21 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 35 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 49 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 63 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 77 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 91 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 105 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 119 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x 133 y 62 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -133 y 57 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -119 y 57 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -105 y 57 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -91 y 57 hjc vjc :
+D
+newstring font Time-Roman fontsize 18 x -77 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -63 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -49 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -35 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -21 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -7 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 7 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 21 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 35 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 49 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 63 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 77 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 91 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 105 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 119 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 133 y 57 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -133 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -119 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -105 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -91 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -77 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -63 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -49 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -35 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -21 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x -7 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 7 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 21 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 35 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 49 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 63 y 52 hjc vjc :
+E
+newstring font Time-Roman fontsize 18 x 77 y 52 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x 91 y 52 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 105 y 52 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 119 y 52 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 133 y 52 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -133 y 47 hjc vjc :
+ï
+newstring font Time-Roman fontsize 18 x -119 y 47 hjc vjc :
+¾
+newstring font Time-Roman fontsize 18 x -105 y 47 hjc vjc :
+­
+newstring font Time-Roman fontsize 18 x -91 y 47 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x -77 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -63 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -49 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -35 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -21 y 47 hjc vjc :
+ï
+newstring font Time-Roman fontsize 18 x -7 y 47 hjc vjc :
+¾
+newstring font Time-Roman fontsize 18 x 7 y 47 hjc vjc :
+­
+newstring font Time-Roman fontsize 18 x 21 y 47 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x 35 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 49 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 63 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 77 y 47 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 91 y 47 hjc vjc :
+ï
+newstring font Time-Roman fontsize 18 x 105 y 47 hjc vjc :
+¾
+newstring font Time-Roman fontsize 18 x 119 y 47 hjc vjc :
+­
+newstring font Time-Roman fontsize 18 x 133 y 47 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x -133 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -119 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -105 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -91 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -77 y 42 hjc vjc :
+ï
+newstring font Time-Roman fontsize 18 x -63 y 42 hjc vjc :
+¾
+newstring font Time-Roman fontsize 18 x -49 y 42 hjc vjc :
+­
+newstring font Time-Roman fontsize 18 x -35 y 42 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x -21 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x -7 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 7 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 21 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 35 y 42 hjc vjc :
+ï
+newstring font Time-Roman fontsize 18 x 49 y 42 hjc vjc :
+¾
+newstring font Time-Roman fontsize 18 x 63 y 42 hjc vjc :
+­
+newstring font Time-Roman fontsize 18 x 77 y 42 hjc vjc :
+Þ
+newstring font Time-Roman fontsize 18 x 91 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 105 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 119 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 18 x 133 y 42 hjc vjc :
+ 
+newstring font Time-Roman fontsize 20 x 0 y 35 hjc vjc :
+circ buf 1
+newstring font Time-Roman fontsize 18 x 10 y 25 hjc vjc :
+head
+newline poly color 0.0 1.0 0.0 pfill 1 pts
+-3 25                          -5 27                          -7 25                          -5 23
+newstring font Time-Roman fontsize 18 x 10 y 20 hjc vjc :
+tail
+newline poly color 0.0 0.0 1.0 pfill 1 pts
+-3 20                          -5 22                          -7 20                          -5 18

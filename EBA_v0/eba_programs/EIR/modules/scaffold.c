@@ -1,8 +1,8 @@
 #include "interpreter.h"
 #include "reader.h"
 
-#include "prog1_glob.h"
-#include "eba_utils.h"
+#include "eba_common.h"
+#include "eir_common.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>

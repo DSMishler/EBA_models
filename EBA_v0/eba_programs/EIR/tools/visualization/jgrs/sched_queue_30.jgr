@@ -1,0 +1,347 @@
+newgraph
+xaxis min -70 max 70 nodraw
+yaxis min -20 max 20 nodraw
+newstring font Time-Roman fontsize 25 x 0 y 95 hjc vjc :
+currently running: CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 18 x -200 y 0 hjc vjc :
+l
+newstring font Time-Roman fontsize 18 x 200 y 0 hjc vjc :
+l
+newstring font Time-Roman fontsize 18 x 0 y -60 hjc vjc :
+l
+newline poly pfill 1 pts
+-140 -35 -140 90
+newline poly pfill 1 pts
+-40 -35 -40 90
+newline poly pfill 1 pts
+-140 -35 -40 -35
+newline poly pfill 1 pts
+-140 -30 -40 -30
+newline poly pfill 1 pts
+-140 -25 -40 -25
+newline poly pfill 1 pts
+-140 -20 -40 -20
+newline poly pfill 1 pts
+-140 -15 -40 -15
+newline poly pfill 1 pts
+-140 -10 -40 -10
+newline poly pfill 1 pts
+-140 -5 -40 -5
+newline poly pfill 1 pts
+-140 0 -40 0
+newline poly pfill 1 pts
+-140 5 -40 5
+newline poly pfill 1 pts
+-140 10 -40 10
+newline poly pfill 1 pts
+-140 15 -40 15
+newline poly pfill 1 pts
+-140 20 -40 20
+newline poly pfill 1 pts
+-140 25 -40 25
+newline poly pfill 1 pts
+-140 30 -40 30
+newline poly pfill 1 pts
+-140 35 -40 35
+newline poly pfill 1 pts
+-140 40 -40 40
+newline poly pfill 1 pts
+-140 45 -40 45
+newline poly pfill 1 pts
+-140 50 -40 50
+newline poly pfill 1 pts
+-140 55 -40 55
+newline poly pfill 1 pts
+-140 60 -40 60
+newline poly pfill 1 pts
+-140 65 -40 65
+newline poly pfill 1 pts
+-140 70 -40 70
+newline poly pfill 1 pts
+-140 75 -40 75
+newline poly pfill 1 pts
+-140 80 -40 80
+newline poly pfill 1 pts
+-140 85 -40 85
+newline poly pfill 1 pts
+-140 90 -40 90
+newline poly pfill 1 pts
+0 -35 0 90
+newline poly pfill 1 pts
+50 -35 50 90
+newline poly pfill 1 pts
+0 -35 50 -35
+newline poly pfill 1 pts
+0 -30 50 -30
+newline poly pfill 1 pts
+0 -25 50 -25
+newline poly pfill 1 pts
+0 -20 50 -20
+newline poly pfill 1 pts
+0 -15 50 -15
+newline poly pfill 1 pts
+0 -10 50 -10
+newline poly pfill 1 pts
+0 -5 50 -5
+newline poly pfill 1 pts
+0 0 50 0
+newline poly pfill 1 pts
+0 5 50 5
+newline poly pfill 1 pts
+0 10 50 10
+newline poly pfill 1 pts
+0 15 50 15
+newline poly pfill 1 pts
+0 20 50 20
+newline poly pfill 1 pts
+0 25 50 25
+newline poly pfill 1 pts
+0 30 50 30
+newline poly pfill 1 pts
+0 35 50 35
+newline poly pfill 1 pts
+0 40 50 40
+newline poly pfill 1 pts
+0 45 50 45
+newline poly pfill 1 pts
+0 50 50 50
+newline poly pfill 1 pts
+0 55 50 55
+newline poly pfill 1 pts
+0 60 50 60
+newline poly pfill 1 pts
+0 65 50 65
+newline poly pfill 1 pts
+0 70 50 70
+newline poly pfill 1 pts
+0 75 50 75
+newline poly pfill 1 pts
+0 80 50 80
+newline poly pfill 1 pts
+0 85 50 85
+newline poly pfill 1 pts
+0 90 50 90
+newline poly pfill 1 pts
+90 -35 90 90
+newline poly pfill 1 pts
+140 -35 140 90
+newline poly pfill 1 pts
+90 -35 140 -35
+newline poly pfill 1 pts
+90 -30 140 -30
+newline poly pfill 1 pts
+90 -25 140 -25
+newline poly pfill 1 pts
+90 -20 140 -20
+newline poly pfill 1 pts
+90 -15 140 -15
+newline poly pfill 1 pts
+90 -10 140 -10
+newline poly pfill 1 pts
+90 -5 140 -5
+newline poly pfill 1 pts
+90 0 140 0
+newline poly pfill 1 pts
+90 5 140 5
+newline poly pfill 1 pts
+90 10 140 10
+newline poly pfill 1 pts
+90 15 140 15
+newline poly pfill 1 pts
+90 20 140 20
+newline poly pfill 1 pts
+90 25 140 25
+newline poly pfill 1 pts
+90 30 140 30
+newline poly pfill 1 pts
+90 35 140 35
+newline poly pfill 1 pts
+90 40 140 40
+newline poly pfill 1 pts
+90 45 140 45
+newline poly pfill 1 pts
+90 50 140 50
+newline poly pfill 1 pts
+90 55 140 55
+newline poly pfill 1 pts
+90 60 140 60
+newline poly pfill 1 pts
+90 65 140 65
+newline poly pfill 1 pts
+90 70 140 70
+newline poly pfill 1 pts
+90 75 140 75
+newline poly pfill 1 pts
+90 80 140 80
+newline poly pfill 1 pts
+90 85 140 85
+newline poly pfill 1 pts
+90 90 140 90
+newstring font Time-Roman fontsize 18 x -148 y -28.0 hjc vjc :
+h->
+newstring font Time-Roman fontsize 18 x -34 y -13.0 hjc vjc :
+<-t
+newstring font Time-Roman fontsize 15 x -136 y -33 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y -28 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y -23 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y -18 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y -13 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y -8 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y -3 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 2 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 7 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 12 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 17 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 22 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 27 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 32 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 37 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 42 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 47 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 52 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 57 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 62 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 67 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 72 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 15 x -136 y 77 hjl vjc :
+CIRC_BUF_MAIN
+newstring font Time-Roman fontsize 15 x -136 y 82 hjl vjc :
+CIRC_BUF_READ
+newstring font Time-Roman fontsize 15 x -136 y 87 hjl vjc :
+CIRC_BUF_WRITE
+newstring font Time-Roman fontsize 20 x -90.0 y -40 hjc vjc :
+scheduler
+newstring font Time-Roman fontsize 18 x -8 y -8.0 hjc vjc :
+h->
+newstring font Time-Roman fontsize 18 x 56 y 2.0 hjc vjc :
+<-t
+newstring font Time-Roman fontsize 15 x 4 y -33 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -28 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -23 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -18 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -13 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -8 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y -3 hjl vjc :
+READ_41
+newstring font Time-Roman fontsize 15 x 4 y 2 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 7 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 12 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 17 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 22 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 27 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 32 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 37 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 42 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 47 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 52 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 57 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 62 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 67 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 72 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 77 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 82 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 4 y 87 hjl vjc :
+empty
+newstring font Time-Roman fontsize 20 x 25.0 y -40 hjc vjc :
+read queue
+newstring font Time-Roman fontsize 18 x 82 y 2.0 hjc vjc :
+h->
+newstring font Time-Roman fontsize 18 x 146 y 17.0 hjc vjc :
+<-t
+newstring font Time-Roman fontsize 15 x 94 y -33 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -28 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -23 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -18 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -13 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -8 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y -3 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y 2 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y 7 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y 12 hjl vjc :
+31_ALPH
+newstring font Time-Roman fontsize 15 x 94 y 17 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 22 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 27 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 32 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 37 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 42 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 47 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 52 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 57 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 62 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 67 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 72 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 77 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 82 hjl vjc :
+empty
+newstring font Time-Roman fontsize 15 x 94 y 87 hjl vjc :
+empty
+newstring font Time-Roman fontsize 20 x 115.0 y -40 hjc vjc :
+write queue

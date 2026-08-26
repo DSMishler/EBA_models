@@ -1,0 +1,9 @@
+// error code
+// just flagging that an error occurred
+// args
+// 0 - this buf (always)
+
+PRINT STRING CURRENTLY_RUNNING_ERROR_CODE
+
+// PRINT WORD &4022250974 // little endian-ish for 0xdeadbeef
+PRINT WORD &3735928559 // little endian-ish for 0xdeadbeef
