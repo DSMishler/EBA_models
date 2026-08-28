@@ -296,19 +296,19 @@ BUFREQ RELEASE V34
 
 
 MEMOP READ_FROMBUF V35, V3, &32
-SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n4.frag"
+SCAFFOLD GLFW_MAKESHADERPROG V32, "eba_programs/EIR/EIR_code/streaming_glfw_test/shader.vert", "eba_programs/EIR/EIR_code/streaming_glfw_test/shader_n4.frag"
 MEMOP WRITE_TOBUF V35, &32, V32
 MEMOP READ_FROMBUF V35, V3, &24
-SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n3.frag"
+SCAFFOLD GLFW_MAKESHADERPROG V32, "eba_programs/EIR/EIR_code/streaming_glfw_test/shader.vert", "eba_programs/EIR/EIR_code/streaming_glfw_test/shader_n3.frag"
 MEMOP WRITE_TOBUF V35, &32, V32
 MEMOP READ_FROMBUF V35, V3, &16
-SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n2.frag"
+SCAFFOLD GLFW_MAKESHADERPROG V32, "eba_programs/EIR/EIR_code/streaming_glfw_test/shader.vert", "eba_programs/EIR/EIR_code/streaming_glfw_test/shader_n2.frag"
 MEMOP WRITE_TOBUF V35, &32, V32
 MEMOP READ_FROMBUF V35, V3, &08
-SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n1.frag"
+SCAFFOLD GLFW_MAKESHADERPROG V32, "eba_programs/EIR/EIR_code/streaming_glfw_test/shader.vert", "eba_programs/EIR/EIR_code/streaming_glfw_test/shader_n1.frag"
 MEMOP WRITE_TOBUF V35, &32, V32
 MEMOP READ_FROMBUF V35, V3, &00
-SCAFFOLD GLFW_MAKESHADERPROG V32, "examples/streaming_glfw_test/shader.vert", "examples/streaming_glfw_test/shader_n0.frag"
+SCAFFOLD GLFW_MAKESHADERPROG V32, "eba_programs/EIR/EIR_code/streaming_glfw_test/shader.vert", "eba_programs/EIR/EIR_code/streaming_glfw_test/shader_n0.frag"
 MEMOP WRITE_TOBUF V35, &32, V32
 
 
