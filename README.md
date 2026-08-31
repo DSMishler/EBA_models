@@ -26,6 +26,8 @@ The most recent version of EBA can be found in the `EBA_IR` folder
 - `./eba`
 - when prompted, type `stream_demo.so`
 
+If all is working well, a window should pop up with five triangles moving
+across from left to right with different trajectories and velocities.
 
 Because X11 is doing forwarding on the hydra machines,
 graphics will be *very* slow. Try it on your own machine for
