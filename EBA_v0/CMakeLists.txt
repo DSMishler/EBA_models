@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 project(EBA_test_project LANGUAGES C)
 
+
+
+
 add_library(eba_common
    SHARED
       eba_common.c
@@ -41,3 +44,4 @@ target_link_libraries(eba
 
 add_subdirectory(eba_boot)
 add_subdirectory(eba_programs)
+
