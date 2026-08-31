@@ -18,7 +18,8 @@ The most recent version of EBA can be found in the `EBA_IR` folder
 - ssh into hydra, making sure X11 forwarding is enabled
    - `ssh -X <you>@hydra<favoritenumber>.eecs.utk.edu`
 - find a good directory to
-   - `git clone https://github.com/dsmishler/EBA\_models.git`
+   - `git clone https://github.com/dsmishler/EBA_models.git`
+- `cd EBA_v0`
 - `cmake -B build`
 - `cd build`
 - `make`
