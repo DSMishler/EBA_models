@@ -18,6 +18,23 @@ target_link_libraries(hello_world
       ${CMAKE_DL_LIBS})
 
 
+add_library(sched_demo
+   SHARED
+      sched_demo.c)
+
+set_target_properties(sched_demo
+   PROPERTIES
+      OUTPUT_NAME "sched_demo"
+      PREFIX ""
+      SUFFIX ".so"
+)
+
+target_link_libraries(sched_demo
+   PRIVATE
+      eba_common # links to eba_common
+      ${CMAKE_DL_LIBS})
+
+
 add_library(circ_buf_demo
    SHARED
       circ_buf_demo.c

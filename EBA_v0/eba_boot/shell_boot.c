@@ -69,8 +69,15 @@ void boot(void *eba_arg)
       seekdir(dir, 0);
       for(entry = readdir(dir); entry != NULL; entry = readdir(dir))
       {
-         if (ends_in_dotso(entry->d_name) && !strcmp(line, entry->d_name))
+         if (ends_in_dotso(entry->d_name) && !strncmp(line, entry->d_name, strlen(line)))
          {
+            if (strlen(entry->d_name) > MAX_LINE_LEN)
+            {
+               printf("error: somehow a program with name of length over %d was compiled\n", MAX_LINE_LEN);
+               printf("       program name: \"%s\"\n", entry->d_name);
+
+            }
+            strcpy(line, entry->d_name); // autocomplete the line
             which_prog = line;
             break;
          }
