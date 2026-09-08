@@ -17,7 +17,7 @@ void boot(void *eba_arg)
    // and allow the user to choose one to boot
    free_eba_arg(eba_arg);
 
-   printf("eba boot selection:\n");
+   printf("eba boot selection:\n\n");
 
    char *path = "eba_programs";
    DIR *dir = opendir(path);
@@ -44,7 +44,7 @@ void boot(void *eba_arg)
             printf("%s ", entry->d_name);
          }
       }
-      printf("\n");
+      printf("\n\n");
 
       printf("please select one of the above to run: ");
 
@@ -77,6 +77,11 @@ void boot(void *eba_arg)
                printf("       program name: \"%s\"\n", entry->d_name);
 
             }
+            if (strlen(line) != strlen(entry->d_name))
+            {
+               printf("autocompleting '%s' to '%s'\n", line, entry->d_name);
+            }
+            printf("\n");
             strcpy(line, entry->d_name); // autocomplete the line
             which_prog = line;
             break;
@@ -92,7 +97,7 @@ void boot(void *eba_arg)
       {
          break;
       }
-      printf("Error, no '.so' file matching \"%s\"\n", line);
+      printf("Error, no '.so' file matching \"%s\"\n\n", line);
    }
    closedir(dir);
 

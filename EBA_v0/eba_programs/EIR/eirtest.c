@@ -74,7 +74,6 @@ void test_solofile(char *fname, void *eba_arg)
 {
    EIR_data_t *gd = get_eba_arg(eba_arg, 1);
    char ***IRcode;
-   system("pwd");
    IRcode = full_read(fname);
 
    uint64_t *p_w_node = malloc(sizeof(uint64_t));
