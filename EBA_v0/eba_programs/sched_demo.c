@@ -4,6 +4,16 @@
 // creates a FIFO scheduler with no interrupts and unlimited wait queue.
 // Uses EBA features to manage its memory during its lifespan
 
+// options: will we do A or B?
+// A: requires all operations that are called to have a "next" field, which
+// this will set to point back to itself
+// B: requires EBA_run or some other function that will always run, and the
+// next op that it runs will be some kind of global or settable variable.
+// Perhaps it is passed to called funcitons
+//
+// option B is the better option, as option A would result in arbitrarily
+// long call depth when implemented using C.
+
 #define SCHED_BUF_LENGTH 32
 // scheduler buffer format
 // 0: arg_buf
@@ -30,10 +40,14 @@ void prog_entry(void* args)
    printf("scheduler demo\n");
 }
 
-// we will need:
-// free old fifo sched bufs buffer
-// allocate a new fifo sched bufs buffer
-
+void last_entry_in_buf(void *args)
+{
+   // args are:
+   // 0: this operation
+   // 1: the scheduler
+   // 2: the arg buf to free
+   // 3: the next arg_bufs_buf_next pointer (might be NULL)
+}
 
 void add_to_sched(void *args)
 {
