@@ -30,6 +30,8 @@ struct fifo_sched
    uint64_t next_idx;
    void ** arg_bufs_buf_end;
    uint64_t end_idx;
+   op_loader_t *add_opl;
+   op_loader_t *last_opl;
 };
 typedef struct fifo_sched fifo_sched_t;
 
@@ -55,4 +57,38 @@ void add_to_sched(void *args)
    // 0: this operation
    // 1: the scheduler
    // 2: the arg buf to add to the scheduler
+   fifo_sched_t *fs = get_eba_arg(args, 1);
+   void *add_me = get_eba_arg(args, 2);
+   if (fs->arg_bufs_buf_end[fs->end_idx] == NULL)
+   {
+      // then all is well. Add it in.
+      fs->arg_bufs_buf_end[fs->end_idx] = add_me;
+   }
+   else
+   {
+      // then instead of adding it in, we'll add it in in a NEW block
+      // for error check, we will assert here
+      if (fs->end_idx != SCHED_BUF_LENGTH-1)
+      {
+         fprintf(stderr, "there's been a scheduling error. Add conflict "
+                 "should only occur at end of block\n");
+         exit(1);
+      }
+      void *last_entry_arg_buf = fs->arg_bufs_buf_end[fs->end_idx];
+      
+      void **new_buf = calloc(SCHED_BUF_LENGTH*sizeof(void*));
+
+      
+      set_eba_arg(last_entry_arg_buf, 3, new_buf);
+      fs->arg_bufs_buf_end = new_buf;
+      fs->arg_bufs_buf_end[0] = add_me;
+      fs->end_idx = 1;
+
+      void *new_buf_last_entry = init_eba_arg(4);
+      set_eba_arg(new_buf_last_entry, 0, fs->last_opl);
+      set_eba_arg(new_buf_last_entry, 1, fs);
+      set_eba_arg(new_buf_last_entry, 2, new_buf);
+      set_eba_arg(new_buf_last_entry, 3, NULL);
+      fs->arg_bufs_buf_end[SCHED_BUF_LENGTH-1] = new_buf_last_entry;
+   }
 }
