@@ -49,6 +49,13 @@ void last_entry_in_buf(void *args)
    // 1: the scheduler
    // 2: the arg buf to free
    // 3: the next arg_bufs_buf_next pointer (might be NULL)
+   fifo_sched_t *fs = get_eba_arg(args, 1);
+
+   free(get_eba_arg(args, 2));
+
+   fs->arg_bufs_buf_next = get_eba_arg(args, 3);
+
+   fs->next_idx = 0;
 }
 
 void add_to_sched(void *args)
