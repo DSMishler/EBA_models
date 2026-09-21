@@ -104,6 +104,15 @@ op_loader_t * opl_init(char *fname, char *op_name)
    return opl;
 }
 
+void opl_destroy(op_loader_t *opl)
+{
+   if (opl->handler != NULL)
+   {
+      dlclose(opl->handler);
+   }
+   free(opl);
+}
+
 void check_eba_assumptions(void)
 {
    // necessary error check: EBA ASSUMES these are the same size:
