@@ -1,4 +1,5 @@
 add_subdirectory(EIR)
+add_subdirectory(fifo_sched)
 
 add_library(hello_world
    SHARED
@@ -29,15 +30,12 @@ set_target_properties(sched_demo
       SUFFIX ".so"
 )
 
-target_include_directories(sched_demo
-   PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/sched_demo_include
-)
-
 target_link_libraries(sched_demo
    PRIVATE
+      fifo_sched
       eba_common # links to eba_common
-      ${CMAKE_DL_LIBS})
+      ${CMAKE_DL_LIBS}
+)
 
 
 add_library(circ_buf_demo
