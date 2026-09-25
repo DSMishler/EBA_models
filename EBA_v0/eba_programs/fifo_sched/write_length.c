@@ -28,7 +28,7 @@ void write_length(void *args)
 
 
    // put myself back in the queue if there is more work to be done
-   if (fs->arg_bufs_buf_next == fs->arg_bufs_buf_end && fs->next_idx == fs->end_idx)
+   if (fs->arg_block_next == fs->arg_block_end && fs->next_idx == fs->end_idx)
    {
       // then we are the only thing left on the scheduler and we will be done
       free_eba_arg(args);

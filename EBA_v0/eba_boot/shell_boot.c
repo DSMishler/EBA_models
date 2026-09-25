@@ -41,10 +41,10 @@ void boot(void *eba_arg)
       {
          if (ends_in_dotso(entry->d_name))
          {
-            printf("%s ", entry->d_name);
+            printf(" - %s\n", entry->d_name);
          }
       }
-      printf("\n\n");
+      printf("\n");
 
       printf("please select one of the above to run: ");
 

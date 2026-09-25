@@ -9,15 +9,16 @@
 void prog_entry(void* args)
 {
    free_eba_arg(args);
-   printf("scheduler demo\n");
-   // SCHEDULER INIT
+   printf("scheduler demo: writing length of scheduler queue to write_length.log.\n");
 
+   // checking an assumption
    if (sizeof(void*) < sizeof(FILE*))
    {
       printf("ERROR: pointer size assumptions not met. Aborting.\n");
       return;
    }
 
+   // SCHEDULER INIT
    op_loader_t *fs_main_opl = opl_init("eba_programs/fifo_sched/fifo_sched.so", "sched_run");
    op_loader_t *fs_init_opl = opl_init("eba_programs/fifo_sched/fifo_sched.so", "sched_init");
 

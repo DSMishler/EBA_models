@@ -12,9 +12,9 @@
 
 struct fifo_sched
 {
-   void ** arg_bufs_buf_next;
+   void ** arg_block_next;
    uint64_t next_idx;
-   void ** arg_bufs_buf_end;
+   void ** arg_block_end;
    uint64_t end_idx;
    op_loader_t *add_opl;
    op_loader_t *last_opl;
