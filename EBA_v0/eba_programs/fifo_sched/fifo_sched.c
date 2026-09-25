@@ -22,7 +22,7 @@ void sched_init(void *args)
    // 1: where I will place the scheduler
    fifo_sched_t *fs = malloc(sizeof(fifo_sched_t));
 
-   fs->arg_bufs_buf_next = calloc(SCHED_BUF_LENGTH,sizeof(void*));
+   fs->arg_bufs_buf_next = calloc(SCHED_BUF_LENGTH, sizeof(void*));
    fs->arg_bufs_buf_end = fs->arg_bufs_buf_next;
    fs->next_idx = 0;
    fs->end_idx = 0;
@@ -70,6 +70,7 @@ void add_to_sched(void *args)
    {
       // then all is well. Add it in.
       fs->arg_bufs_buf_end[fs->end_idx] = add_me;
+      fs->end_idx += 1;
    }
    else
    {
@@ -79,6 +80,7 @@ void add_to_sched(void *args)
       {
          fprintf(stderr, "there's been a scheduling error. Add conflict "
                  "should only occur at end of block\n");
+         // sched_print(fs);
          exit(1);
       }
       void *last_entry_arg_buf = fs->arg_bufs_buf_end[fs->end_idx];
@@ -133,3 +135,4 @@ void sched_run(void *args)
       }
    }
 }
+

@@ -26,3 +26,6 @@ void sched_init(void *args);
 void last_entry_in_buf(void *args);
 void add_to_sched(void *args);
 void sched_run(void *args);
+
+// below is for debugging. NOT an EBA arg.
+void sched_print(fifo_sched_t *fs);
