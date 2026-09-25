@@ -8,6 +8,8 @@ void prog_entry(void* args)
 {
    free_eba_arg(args);
    printf("scheduler demo\n");
+   // SCHEDULER INIT
+
    op_loader_t *fs_main_opl = opl_init("eba_programs/fifo_sched/fifo_sched.so", "sched_run");
    op_loader_t *fs_init_opl = opl_init("eba_programs/fifo_sched/fifo_sched.so", "sched_init");
 
@@ -22,8 +24,12 @@ void prog_entry(void* args)
    fifo_sched_t *fs = get_eba_arg(fs_init_arg, 1);
    set_eba_arg(fs_main_arg, 1, fs);
 
+
+
+   // RUN
    eba_op(fs_main_arg);
 
+   // CLEANUP
    opl_destroy(fs_main_opl);
    opl_destroy(fs_init_opl);
    free_eba_arg(fs_main_arg);
